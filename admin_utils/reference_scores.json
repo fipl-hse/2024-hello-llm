@@ -1,0 +1,308 @@
+{
+    "EleutherAI/gpt-neo-125m": {
+        "jtatman/databricks-dolly-8k-qa-open-close": {
+            "bleu": 0.02151,
+            "rouge": 0.10657
+        },
+        "lionelchg/dolly_open_qa": {
+            "bleu": 0.01601,
+            "rouge": 0.09784
+        },
+        "tatsu-lab/alpaca": {
+            "bleu": 0.01733,
+            "rouge": 0.10265
+        },
+        "truthful_qa": {
+            "bleu": 0.00913,
+            "rouge": 0.0521
+        }
+    },
+    "EleutherAI/pythia-160m-deduped": {
+        "jtatman/databricks-dolly-8k-qa-open-close": {
+            "bleu": 0.02312,
+            "rouge": 0.10685
+        },
+        "lionelchg/dolly_open_qa": {
+            "bleu": 0.01259,
+            "rouge": 0.08733
+        },
+        "tatsu-lab/alpaca": {
+            "bleu": 0.01679,
+            "rouge": 0.10376
+        },
+        "truthful_qa": {
+            "bleu": 0.00667,
+            "rouge": 0.0463
+        }
+    },
+    "Helsinki-NLP/opus-mt-en-fr": {
+        "enimai/MuST-C-fr": {
+            "bleu": 0.45351
+        }
+    },
+    "Helsinki-NLP/opus-mt-ru-en": {
+        "shreevigneshs/iwslt-2023-en-ru-train-val-split-0.2": {
+            "bleu": 0.25689
+        }
+    },
+    "Helsinki-NLP/opus-mt-ru-es": {
+        "nuvocare/Ted2020_en_es_fr_de_it_ca_pl_ru_nl": {
+            "bleu": 0.23904
+        }
+    },
+    "JackFram/llama-68m": {
+        "jtatman/databricks-dolly-8k-qa-open-close": {
+            "bleu": 0.01666,
+            "rouge": 0.08982
+        },
+        "lionelchg/dolly_open_qa": {
+            "bleu": 0.01337,
+            "rouge": 0.09195
+        },
+        "tatsu-lab/alpaca": {
+            "bleu": 0.01168,
+            "rouge": 0.08761
+        },
+        "truthful_qa": {
+            "bleu": 0.00634,
+            "rouge": 0.05394
+        }
+    },
+    "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli": {
+        "mnli": {
+            "accuracy": 0.9
+        }
+    },
+    "UrukHan/t5-russian-summarization": {
+        "CarlBrendt/Summ_Dialog_News": {
+            "bleu": 0.00482,
+            "rouge": 0.08104
+        },
+        "IlyaGusev/gazeta": {
+            "bleu": 0.00134,
+            "rouge": 0.09608
+        },
+        "d0rj/curation-corpus-ru": {
+            "bleu": 0.0,
+            "rouge": 0.12595
+        }
+    },
+    "VMware/electra-small-mrqa": {
+        "HuggingFaceH4/no_robots": {
+            "squad": 8.00973
+        },
+        "lionelchg/dolly_closed_qa": {
+            "squad": 19.98425
+        },
+        "starmpcc/Asclepius-Synthetic-Clinical-Notes": {
+            "squad": 3.60667
+        }
+    },
+    "XSY/albert-base-v2-imdb-calssification": {
+        "imdb": {
+            "f1": 0.74
+        }
+    },
+    "aiknowyou/it-emotion-analyzer": {
+        "dair-ai/emotion": {
+            "f1": 0.31
+        }
+    },
+    "blanchefort/rubert-base-cased-sentiment-rusentiment": {
+        "blinoff/healthcare_facilities_reviews": {
+            "f1": 0.89
+        },
+        "blinoff/kinopoisk": {
+            "f1": 0.64
+        }
+    },
+    "cointegrated/rubert-base-cased-nli-threeway": {
+        "cointegrated/nli-rus-translated-v2021": {
+            "accuracy": 0.78
+        },
+        "xnli": {
+            "accuracy": 0.31
+        }
+    },
+    "cointegrated/rubert-tiny-bilingual-nli": {
+        "terra": {
+            "accuracy": 0.43
+        }
+    },
+    "cointegrated/rubert-tiny-toxicity": {
+        "OxAISH-AL-LLM/wiki_toxic": {
+            "f1": 0.8
+        }
+    },
+    "cointegrated/rubert-tiny2-cedr-emotion-detection": {
+        "seara/ru_go_emotions": {
+            "f1": 0.16
+        }
+    },
+    "cross-encoder/qnli-distilroberta-base": {
+        "qnli": {
+            "accuracy": 0.91
+        }
+    },
+    "dmitry-vorobiev/rubert_ria_headlines": {
+        "CarlBrendt/Summ_Dialog_News": {
+            "bleu": 0.00126,
+            "rouge": 0.05016
+        },
+        "IlyaGusev/gazeta": {
+            "bleu": 0.00038,
+            "rouge": 0.09182
+        },
+        "d0rj/curation-corpus-ru": {
+            "bleu": 0.0,
+            "rouge": 0.09538
+        },
+        "trixdade/reviews_russian": {
+            "bleu": 0.00001,
+            "rouge": 0.0
+        }
+    },
+    "fabriceyhc/bert-base-uncased-ag_news": {
+        "ag_news": {
+            "f1": 0.96
+        }
+    },
+    "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization": {
+        "ccdv/govreport-summarization": {
+            "bleu": 0.0,
+            "rouge": 0.06992
+        },
+        "ccdv/pubmed-summarization": {
+            "bleu": 0.00607,
+            "rouge": 0.1271
+        },
+        "cnn_dailymail": {
+            "bleu": 0.05655,
+            "rouge": 0.22234
+        }
+    },
+    "mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization": {
+        "ccdv/govreport-summarization": {
+            "bleu": 0.0,
+            "rouge": 0.06898
+        },
+        "ccdv/pubmed-summarization": {
+            "bleu": 0.00567,
+            "rouge": 0.13025
+        },
+        "cnn_dailymail": {
+            "bleu": 0.05981,
+            "rouge": 0.22073
+        }
+    },
+    "nandakishormpai/t5-small-machine-articles-tag-generation": {
+        "ccdv/govreport-summarization": {
+            "bleu": 0.0,
+            "rouge": 0.02878
+        },
+        "ccdv/pubmed-summarization": {
+            "bleu": 0.00047,
+            "rouge": 0.0786
+        },
+        "cnn_dailymail": {
+            "bleu": 0.06624,
+            "rouge": 0.17856
+        }
+    },
+    "papluca/xlm-roberta-base-language-detection": {
+        "papluca/language-identification": {
+            "f1": 1.0
+        }
+    },
+    "s-nlp/russian_toxicity_classifier": {
+        "d0rj/rudetoxifier_data": {
+            "f1": 1.0
+        },
+        "s-nlp/ru_non_detoxified": {
+            "f1": 0.76999
+        },
+        "s-nlp/ru_paradetox_toxicity": {
+            "f1": 0.72999
+        }
+    },
+    "stevhliu/my_awesome_billsum_model": {
+        "CarlBrendt/Summ_Dialog_News": {
+            "bleu": 0.00351,
+            "rouge": 0.07794
+        },
+        "d0rj/curation-corpus-ru": {
+            "bleu": 0.00072,
+            "rouge": 0.13144
+        },
+        "trixdade/reviews_russian": {
+            "rouge": 0.01052
+        }
+    },
+    "t5-small": {
+        "RocioUrquijo/en_de": {
+            "bleu": 0.24444
+        }
+    },
+    "tatiana-merz/turkic-cyrillic-classifier": {
+        "tatiana-merz/cyrillic_turkic_langs": {
+            "f1": 0.99
+        }
+    },
+    "test_Helsinki-NLP/opus-mt-en-fr": {
+        "enimai/MuST-C-fr": {
+            "bleu": 0.4468
+        }
+    },
+    "test_JackFram/llama-68m": {
+        "tatsu-lab/alpaca": {
+            "bleu": 0.0,
+            "rouge": 0.08893
+        }
+    },
+    "test_VMware/electra-small-mrqa": {
+        "starmpcc/Asclepius-Synthetic-Clinical-Notes": {
+            "squad": 1.68774
+        }
+    },
+    "test_aiknowyou/it-emotion-analyzer": {
+        "dair-ai/emotion": {
+            "f1": 0.3
+        }
+    },
+    "test_cointegrated/rubert-base-cased-nli-threeway": {
+        "cointegrated/nli-rus-translated-v2021": {
+            "accuracy": 0.8
+        }
+    },
+    "test_mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization": {
+        "cnn_dailymail": {
+            "bleu": 0.04108,
+            "rouge": 0.2352
+        }
+    },
+    "timpal0l/mdeberta-v3-base-squad2": {
+        "HuggingFaceH4/no_robots": {
+            "squad": 15.44216
+        },
+        "RussianNLP/wikiomnia": {
+            "squad": 31.66666
+        },
+        "lionelchg/dolly_closed_qa": {
+            "squad": 17.87963
+        },
+        "sberquad": {
+            "squad": 43.75757
+        },
+        "starmpcc/Asclepius-Synthetic-Clinical-Notes": {
+            "squad": 2.78039
+        }
+    },
+    "IlyaGusev/rubertconv_toxic_clf": {
+        "Arsive/toxicity_classification_jigsaw": {
+            "f1": 0.67000
+        },
+        "s-nlp/en_paradetox_toxicity": {
+            "f1": 0.68999
+        }
+    }
+}
