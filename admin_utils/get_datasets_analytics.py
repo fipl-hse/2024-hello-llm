@@ -7,12 +7,14 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from config.get_model_analytics import get_references, save_reference
+from admin_utils.get_model_analytics import get_references, save_reference
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
-from reference_lab_classification.main import (
+
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor  # isort:skip
+from reference_lab_classification.main import (  # isort:skip
     AgNewsDataImporter,
+    AgNewsPreprocessor,
     CyrillicTurkicDataImporter,
     CyrillicTurkicPreprocessor,
     DairAiEmotionDataImporter,
@@ -42,7 +44,8 @@ from reference_lab_classification.main import (
     WikiToxicDataImporter,
     WikiToxicRawDataPreprocessor,
 )
-from reference_lab_generation.main import (
+from reference_lab_generation.main import (  # isort:skip
+    ClinicalNotesRawDataImporter,
     ClinicalNotesRawDataPreprocessor,
     DollyClosedRawDataImporter,
     DollyClosedRawDataPreprocessor,
@@ -53,8 +56,9 @@ from reference_lab_generation.main import (
     WikiOmniaRawDataImporter,
     WikiOmniaRawDataPreprocessor,
 )
-from reference_lab_nli.main import (
+from reference_lab_nli.main import (  # isort:skip
     DatasetTypes,
+    GlueDataImporter,
     NliDataPreprocessor,
     NliRusDataImporter,
     NliRusTranslatedDataPreprocessor,
@@ -62,12 +66,14 @@ from reference_lab_nli.main import (
     RussianSuperGlueDataImporte,
     XnliDataImporter,
 )
-from reference_lab_nmt.main import (
+from reference_lab_nmt.main import (  # isort:skip
     EnDeRawDataPreprocessor,
     RuEnRawDataImporter,
+    RuEnRawDataPreprocessor,
     RuEsRawDataPreprocessor,
 )
-from reference_lab_open_qa.main import (
+from reference_lab_open_qa.main import (  # isort:skip
+    AlpacaRawDataPreprocessor,
     DatabricksRawDataPreprocessor,
     DollyOpenQARawDataImporter,
     DollyOpenQARawDataPreprocessor,
@@ -75,7 +81,8 @@ from reference_lab_open_qa.main import (
     TruthfulQARawDataImporter,
     TruthfulQARawDataPreprocessor,
 )
-from reference_lab_summarization.main import (
+from reference_lab_summarization.main import (  # isort:skip
+    DailymailRawDataImporter,
     DailymailRawDataPreprocessor,
     GovReportRawDataPreprocessor,
     PubMedRawDataPreprocessor,
@@ -89,13 +96,6 @@ from reference_lab_summarization.main import (
     ScientificLiteratureRawDataPreprocessor,
     SummarizationRawDataImporter,
 )
-
-from reference_lab_classification.main import AgNewsPreprocessor  # isort:skip
-from reference_lab_generation.main import ClinicalNotesRawDataImporter  # isort:skip
-from reference_lab_nli.main import GlueDataImporter  # isort:skip
-from reference_lab_nmt.main import RuEnRawDataPreprocessor  # isort:skip
-from reference_lab_open_qa.main import AlpacaRawDataPreprocessor  # isort:skip
-from reference_lab_summarization.main import DailymailRawDataImporter  # isort:skip
 
 
 def main() -> None:
