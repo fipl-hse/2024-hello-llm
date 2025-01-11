@@ -71,10 +71,10 @@ src_paths = [
     "reference_lab_generation",
     "reference_lab_open_qa",
     "core_utils",
+    "admin_utils",
     "config",
     "lab_7_llm",
-    "lab_8_llm",
-    "admin_utils"
+    "lab_8_llm"
 ]
 
 [tool.mypy]
