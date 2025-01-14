@@ -95,6 +95,8 @@ Hello, LLM! для 4-го курса ФПЛ (2024/2025)
 
 1. `Таблица
    успеваемости <https://docs.google.com/spreadsheets/d/1Y66lNzVtdNGyNdZNBLJgKttQ2ejb8ECjfAeMxCo8F1A/edit?usp=sharing>`__
+2. `Таблица
+   c моделями и датасетами <https://docs.google.com/spreadsheets/d/1PiNl1Y7jRtrFHjPY7dywOz0eTCp5VbAJVcCKShkGUcU/edit?usp=sharing>`__
 2. `Сайт с документацией <https://fipl-hse.github.io/>`__
 3. :ref:`starting-guide-label`
 4. :ref:`running-tests-label`
