@@ -105,14 +105,6 @@ def main() -> None:
             code_is_equal = False
             print(f"You have different service and service_stub in {lab_path}")
 
-        if lab_path.name == "lab_8_llm":
-            lab_7_main = get_code(lab_path / "main.py")
-            lab_8_main = get_code(lab_path.parent / "lab_7_llm" / "main.py")
-
-            if lab_7_main != lab_8_main:
-                code_is_equal = False
-                print("You have different main for Lab 7 and Lab 8!")
-
         clear_examples(lab_path)
     if code_is_equal:
         print("All stubs are relevant")

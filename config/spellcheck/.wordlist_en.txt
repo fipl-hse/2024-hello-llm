@@ -326,6 +326,8 @@ especially
 est
 estimating
 estimation
+eval
+evalprediction
 evaluate
 evaluates
 evaluating
@@ -365,7 +367,9 @@ filler
 filling
 finally
 find
+finetune
 finetuned
+finetuning
 first
 float
 folder
@@ -724,6 +728,7 @@ patterns
 pd
 peculiarities
 people
+peftmodel
 perfectly
 perform
 performance

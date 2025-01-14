@@ -12,7 +12,7 @@ else
     "seminars"
     "core_utils"
     "lab_7_llm"
-    "lab_8_llm"
+    "lab_8_finetuning"
     "reference_lab_classification"
     "reference_lab_generation"
     "reference_lab_nli"
@@ -36,5 +36,4 @@ python -m flake8 "${DIRS_TO_CHECK[@]}"
 
 if [[ "$1" != "smoke" ]]; then
   python -m pytest -m "mark10 and lab_7_llm"
-  python -m pytest -m "mark10 and lab_8_llm"
 fi
