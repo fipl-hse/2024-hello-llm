@@ -50,7 +50,7 @@
             512
         ],
         "max_context_length": 512,
-        "num_trainable_params": 184937472,
+        "num_trainable_params": 185723904,
         "output_shape": [
             1,
             512,
@@ -66,7 +66,7 @@
             512
         ],
         "max_context_length": 512,
-        "num_trainable_params": 191089664,
+        "num_trainable_params": 191876096,
         "output_shape": [
             1,
             512,
@@ -82,7 +82,7 @@
             512
         ],
         "max_context_length": 512,
-        "num_trainable_params": 192957440,
+        "num_trainable_params": 193743872,
         "output_shape": [
             1,
             512,
@@ -163,13 +163,13 @@
             ]
         },
         "max_context_length": 20,
-        "num_trainable_params": 13483522,
+        "num_trainable_params": 17453498,
         "output_shape": [
             1,
             512,
-            2
+            30522
         ],
-        "size": 53934088,
+        "size": 69813992,
         "vocab_size": 30522
     },
     "XSY/albert-base-v2-imdb-calssification": {
@@ -527,7 +527,7 @@
             512
         ],
         "max_context_length": 512,
-        "num_trainable_params": 184937472,
+        "num_trainable_params": 185723904,
         "output_shape": [
             1,
             512,
@@ -571,13 +571,13 @@
             ]
         },
         "max_context_length": 20,
-        "num_trainable_params": 13483522,
+        "num_trainable_params": 17453498,
         "output_shape": [
             1,
             512,
-            2
+            30522
         ],
-        "size": 53934088,
+        "size": 69813992,
         "vocab_size": 30522
     },
     "test_aiknowyou/it-emotion-analyzer": {

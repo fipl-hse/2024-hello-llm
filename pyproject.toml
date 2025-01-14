@@ -11,7 +11,7 @@ markers = [
     "reference_lab_generation: tests for generation task",
     "reference_lab_open_qa: tests for open generative Q&A task",
     "lab_7_llm: tests for lab 7",
-    "lab_8_llm: tests for lab 8",
+    "lab_8_finetuning: tests for lab 8",
 ]
 norecursedirs = [
     "venv*"
@@ -43,6 +43,8 @@ add-ignore = [
     'D212',
     'D200'
 ]
+match = '(?!\_\_init\_\_).*\.py'
+match_dir = '^(?!(venv|tests|some_sub_dir)).*'
 
 [tool.flake8]
 max-line-length = 100
@@ -81,8 +83,10 @@ src_paths = [
 python_version = '3.11'
 exclude = [
     'venv*',
-    'test.py'
+    'stubs*',
+    'test.py',
 ]
+mypy_path = "admin_utils/stubs"
 
 disallow_untyped_defs = true
 disallow_any_unimported = true
@@ -110,7 +114,7 @@ module = [
     'memory_profiler',
     'pydantic',
     'torch.*',
-    'transformers',
+    'transformers'
 ]
 ignore_missing_imports = true
 
@@ -131,8 +135,6 @@ module = [
     'core_utils.llm.llm_pipeline',
     'lab_7_llm.service',
     'lab_7_llm.main',
-    'lab_8_llm.service',
-    'lab_8_llm.main',
 ]
 disable_error_code = [
     'no-any-unimported'

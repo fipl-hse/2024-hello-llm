@@ -64,7 +64,7 @@
         "dataset_sample_min_len": 8
     },
     "blinoff/kinopoisk": {
-        "dataset_columns": 10,
+        "dataset_columns": 9,
         "dataset_duplicates": 0,
         "dataset_empty_rows": 9746,
         "dataset_number_of_samples": 36591,

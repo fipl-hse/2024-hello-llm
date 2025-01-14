@@ -7,7 +7,7 @@ from pathlib import Path
 from pandas import DataFrame
 from pydantic.dataclasses import dataclass
 
-from config.get_model_analytics import get_references, save_reference
+from admin_utils.get_model_analytics import get_references, save_reference
 
 from lab_7_llm.main import LLMPipeline, TaskDataset  # isort:skip
 from reference_lab_classification.main import ClassificationLLMPipeline  # isort:skip
@@ -162,7 +162,7 @@ def get_task(model: str, inference_params: InferenceParams, samples: list) -> di
         "dmitry-vorobiev/rubert_ria_headlines",
     ]
 
-    open_generative_qa_model = [
+    _ = [
         "EleutherAI/pythia-160m-deduped",
         "JackFram/llama-68m",
         "EleutherAI/gpt-neo-125m",

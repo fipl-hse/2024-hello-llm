@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic.dataclasses import dataclass
 
-from config.get_model_analytics import get_references, save_reference
+from admin_utils.get_model_analytics import get_references, save_reference
 from config.lab_settings import InferenceParams
 from core_utils.llm.metrics import Metrics
 

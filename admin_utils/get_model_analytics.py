@@ -59,8 +59,8 @@ def main() -> None:
     result = {}
 
     for model, _ in references.items():
-        pipeline = LLMPipeline(model, TaskDataset(DataFrame([])), max_length, batch_size, device)
         print(model)
+        pipeline = LLMPipeline(model, TaskDataset(DataFrame([])), max_length, batch_size, device)
         model_analysis = pipeline.analyze_model()
         result[model] = model_analysis
 

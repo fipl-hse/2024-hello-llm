@@ -2,10 +2,23 @@
     "labs": [
         {
             "name": "lab_7_llm",
-            "coverage": 42
+            "coverage": 85
         }
     ],
-    "addons": [],
+    "addons": [
+        {
+            "name": "admin_utils"
+        },
+        {
+            "name": "config"
+        },
+        {
+            "name": "seminars"
+        },
+        {
+            "name": "core_utils"
+        }
+    ],
     "repository": {
         "admins": [
             "demid5111",

@@ -108,7 +108,7 @@ def main() -> None:
     references = get_references(path=references_path)
 
     datasets_raw = []
-    for model, dataset_pack in references.items():
+    for _, dataset_pack in references.items():
         for dataset_name in dataset_pack.keys():
             datasets_raw.append(dataset_name)
 

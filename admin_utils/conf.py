@@ -11,33 +11,30 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.resolve()))
 
-project = 'Лабораторный Практикум и Курс Лекций'
-copyright = '2023, Демидовский А.В. и другие'
-author = 'Демидовский А.В. и другие'
+project = "Лабораторный Практикум и Курс Лекций"
+copyright = "2023, Демидовский А.В. и другие"
+author = "Демидовский А.В. и другие"
 
 extensions = [
-    'sphinx_design',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',
+    "sphinx_design",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.intersphinx",
 ]
 
 root_doc = "admin_utils/index"
 
 intersphinx_mapping = {
-    "torch": ("https://pytorch.org/docs/stable", 'config/intersphinx/pytorch.inv'),
-    'python': ('https://docs.python.org/3', None),
-    "pandas": ('http://pandas.pydata.org/pandas-docs/stable/', 'config/intersphinx/pandas.inv'),
-    "pydantic": ('https://docs.pydantic.dev/latest/', 'config/intersphinx/pydantic.inv'),
-    "fastapi": ('https://fastapi.tiangolo.com/', 'config/intersphinx/fastapi.inv'),
+    "torch": ("https://pytorch.org/docs/stable", "config/intersphinx/pytorch.inv"),
+    "python": ("https://docs.python.org/3", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/stable/", "config/intersphinx/pandas.inv"),
+    "pydantic": ("https://docs.pydantic.dev/latest/", "config/intersphinx/pydantic.inv"),
+    "fastapi": ("https://fastapi.tiangolo.com/", "config/intersphinx/fastapi.inv"),
 }
 
-exclude_patterns = [
-    'venv/*',
-    'docs/private/*'
-]
+exclude_patterns = ["venv/*", "docs/private/*"]
 
-language = 'en'
+language = "en"
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
