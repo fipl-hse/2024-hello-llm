@@ -21,6 +21,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        pass
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +36,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        pass
 
     @report_time
     def transform(self) -> None:
