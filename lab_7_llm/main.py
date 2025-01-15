@@ -36,6 +36,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        pass
 
     @report_time
     def transform(self) -> None:
