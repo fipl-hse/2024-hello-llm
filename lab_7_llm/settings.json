@@ -1,6 +1,6 @@
 {
   "parameters": {
-    "model": "",
+    "model": "Helsinki-NLP/opus-mt-ru-en",
     "dataset": "",
     "metrics": []
   },
