@@ -1,7 +1,7 @@
 {
   "parameters": {
     "model": "Helsinki-NLP/opus-mt-ru-en",
-    "dataset": "",
+    "dataset": "shreevigneshs/iwslt-2023-en-ru-train-val-split-0.2",
     "metrics": []
   },
   "target_score": 0
