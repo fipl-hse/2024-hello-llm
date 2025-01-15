@@ -1,7 +1,7 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
+    "model": "EleutherAI/pythia-160m-deduped",
+    "dataset": "lionelchg/dolly_open_qa",
     "metrics": []
   },
   "target_score": 0
