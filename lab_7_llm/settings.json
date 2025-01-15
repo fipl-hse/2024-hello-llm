@@ -1,8 +1,8 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
-    "metrics": []
+    "model": "s-nlp/russian_toxicity_classifier",
+    "dataset": "s-nlp/ru_paradetox_toxicity",
+    "metrics": ["F1-score"]
   },
   "target_score": 0
 }
