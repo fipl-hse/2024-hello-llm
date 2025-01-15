@@ -10,7 +10,7 @@ from typing import Iterable, Sequence
 
 class RawDataImporter(AbstractRawDataImporter):
     """
-    A class that imports the HuggingFace dataset./
+    A class that imports the HuggingFace dataset.
     """
 
     @report_time
