@@ -1,7 +1,7 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
+    "model": "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization",
+    "dataset": "ccdv/pubmed-summarization",
     "metrics": ["BLEU", "ROUGE"]
   },
   "target_score": 0
