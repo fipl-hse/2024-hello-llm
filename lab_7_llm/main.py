@@ -12,7 +12,7 @@ class RawDataImporter(AbstractRawDataImporter):
     """
     A class that imports the HuggingFace dataset.
     """
-
+    pass
     @report_time
     def obtain(self) -> None:
         """
