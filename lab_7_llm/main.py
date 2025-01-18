@@ -6,6 +6,17 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+from core_utils.llm.time_decorator import report_time
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from datasets import Dataset
+import torch
+from datasets import load_dataset
+import pandas as pd
+from pandas import DataFrame
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -22,6 +33,14 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
 
+        self._raw_data = load_dataset(
+            path=self._hf_name,
+            split='test'
+        ).to_pandas()
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError('The downloaded dataset is not pd.DataFrame')
+
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
@@ -35,6 +54,31 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+
+        dataset_shape = self._raw_data.shape
+        dataset_number_of_samples = dataset_shape[0]
+        dataset_columns = dataset_shape[1]
+
+        try:
+            dataset_duplicates = self._raw_data.duplicated().value_counts().loc[True]
+        except KeyError:
+            dataset_duplicates = 0
+
+        dataset_empty_rows = self._raw_data.isnull().T.any().sum() # True if any value in a row is NaN
+
+        raw_data_no_nans = self._raw_data.dropna()
+        len_counts = raw_data_no_nans['text'].apply(len)
+        dataset_sample_min_len = len_counts.min()
+        dataset_sample_max_len = len_counts.max()
+
+        return {
+            'dataset_number_of_samples': dataset_number_of_samples,
+            'dataset_columns': dataset_columns,
+            'dataset_duplicates': dataset_duplicates.item(),
+            'dataset_empty_rows': dataset_empty_rows.item(),
+            'dataset_sample_min_len': dataset_sample_min_len.item(),
+            'dataset_sample_max_len': dataset_sample_max_len.item()
+        }
 
     @report_time
     def transform(self) -> None:
