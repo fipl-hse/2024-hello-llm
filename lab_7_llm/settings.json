@@ -4,5 +4,5 @@
     "dataset": "ccdv/pubmed-summarization",
     "metrics": ["BLEU", "ROUGE"]
   },
-  "target_score": 0
+  "target_score": 4
 }

@@ -6,6 +6,13 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+from datasets import load_dataset
+
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+# import pandas as pd
+
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,6 +28,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(path=self._hf_name, split='test').to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +43,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        dataset_properties = {'dataset_number_of_samples': self._raw_data.shape[0],
+                              'dataset_columns': self._raw_data.shape[1],
+                              'dataset_duplicates': self._raw_data.duplicated().sum().item(),
+                              'dataset_empty_rows': self._raw_data.isna().sum().sum().item(),
+                              'dataset_sample_min_len': min(len(sample) for sample in self._raw_data["article"]),
+                              'dataset_sample_max_len': max(len(sample) for sample in self._raw_data["article"])}
+
+        return dataset_properties
 
     @report_time
     def transform(self) -> None:
