@@ -27,7 +27,7 @@ def main() -> None:
 
     analysis = preprocessor.analyze()
     preprocessor.transform()
-    dataset = TaskDataset(preprocessor.data.head(100))
+    dataset = TaskDataset(preprocessor.data.head(5))
 
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
