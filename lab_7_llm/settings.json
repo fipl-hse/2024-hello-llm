@@ -1,8 +1,8 @@
 {
   "parameters": {
-    "model": "https://huggingface.co/UrukHan/t5-russian-summarization",
+    "model": "UrukHan/t5-russian-summarization",
     "dataset": "CarlBrendt/Summ_Dialog_News",
-    "metrics": []
+    "metrics": ["bleu", "rouge"]
   },
   "target_score": 4
 }
