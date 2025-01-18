@@ -189,7 +189,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch(sample)[0]
+        return self._infer_batch([sample])[0]
 
 
     @report_time
@@ -200,7 +200,10 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        def collate_fn(batch_sample):
+        def collate_fn(batch_sample: Sequence[tuple[str, ...]]) -> dict[str, list[str]]:
+            """
+            Function to collate a batch of samples.
+            """
             items, targets = [], []
             for sample in batch_sample:
                 items.append(sample[0])
@@ -208,12 +211,12 @@ class LLMPipeline(AbstractLLMPipeline):
 
             return {"items": items, "targets": targets}
 
-        dl = DataLoader(batch_size=self.batch_size,
-                        dataset=self.dataset,
-                        collate_fn=collate_fn)
+        data_loader = DataLoader(batch_size=self.batch_size,
+                                 dataset=self.dataset,
+                                 collate_fn=collate_fn)
 
         targets, predictions = [], []
-        for sample_batch in dl:
+        for sample_batch in data_loader:
             targets.extend(sample_batch["targets"])
             sample_predictions = self._infer_batch(sample_batch["items"])
             predictions.append(sample_predictions)
@@ -265,8 +268,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self.data_path)
-        predictions, references = df.predictions, df.target
+        data_frame = pd.read_csv(self.data_path)
+        predictions, references = data_frame.predictions, data_frame.target
         evaluation_res = {}
         for metric_name in self._metrics:
             metric = load(metric_name.value, seed=77)

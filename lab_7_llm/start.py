@@ -23,9 +23,14 @@ def main() -> None:
     settings = LabSettings(Path(__file__).parent / "settings.json")
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
+    if not importer.raw_data:
+        return
+
     preprocessor = RawDataPreprocessor(importer.raw_data)
 
     analysis = preprocessor.analyze()
+    print(analysis)
+
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(5))
 
@@ -36,10 +41,10 @@ def main() -> None:
                            device="cpu")
 
     pipeline.analyze_model()
-    df = pipeline.infer_dataset()
-    df.to_csv(Path(__file__).parent / "predictions.csv")
+    data_frame = pipeline.infer_dataset()
+    data_frame.to_csv(Path(__file__).parent / "dist" / "predictions.csv")
 
-    evaluator = TaskEvaluator(Path(__file__).parent / "predictions.csv",
+    evaluator = TaskEvaluator(Path(__file__).parent / "dist" / "predictions.csv",
                               settings.parameters.metrics)
 
     result = evaluator.run()
