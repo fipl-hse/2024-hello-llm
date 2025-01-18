@@ -200,13 +200,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        def collate_fn(batch_sample: Sequence[tuple[str, ...]]) -> dict[str, list[str]]:
+        def collate_fn(batch: Sequence[tuple[str, ...]]) -> dict[str, list]:
             """
             Function to collate a batch of samples.
             """
             items, targets = [], []
-            for sample in batch_sample:
-                items.append(sample[0])
+            for sample in batch:
+                items.append((sample[0],))
                 targets.append(sample[1])
 
             return {"items": items, "targets": targets}
@@ -216,9 +216,9 @@ class LLMPipeline(AbstractLLMPipeline):
                                  collate_fn=collate_fn)
 
         targets, predictions = [], []
-        for sample_batch in data_loader:
-            targets.extend(sample_batch["targets"])
-            sample_predictions = self._infer_batch(sample_batch["items"])
+        for batch in data_loader:
+            targets.extend(batch["targets"])
+            sample_predictions = self._infer_batch(batch["items"])
             predictions.append(sample_predictions)
 
         return pd.DataFrame({"target": targets, "predictions": predictions})
@@ -240,7 +240,7 @@ class LLMPipeline(AbstractLLMPipeline):
                         tokenizer=self.tokenizer,
                         truncation=True)
 
-        res = pipe(list(sample_batch))
+        res = pipe([sample[0] for sample in sample_batch])
         return [r["generated_text"] for r in res]
 
 

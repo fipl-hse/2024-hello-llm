@@ -2,9 +2,8 @@
 Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
-from pathlib import Path
-
 from config.lab_settings import LabSettings
+from config.constants import PROJECT_ROOT
 from lab_7_llm.main import (
     LLMPipeline,
     RawDataImporter,
@@ -20,7 +19,7 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(Path(__file__).parent / "settings.json")
+    settings = LabSettings(PROJECT_ROOT / "lab_7_llm" / "settings.json")
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
     if importer.raw_data is None:
@@ -32,7 +31,7 @@ def main() -> None:
     print(analysis)
 
     preprocessor.transform()
-    dataset = TaskDataset(preprocessor.data.head(5))
+    dataset = TaskDataset(preprocessor.data.head(100))
 
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
@@ -42,12 +41,16 @@ def main() -> None:
 
     pipeline.analyze_model()
     data_frame = pipeline.infer_dataset()
-    data_frame.to_csv(Path(__file__).parent / "dist" / "predictions.csv")
 
-    evaluator = TaskEvaluator(Path(__file__).parent / "dist" / "predictions.csv",
+    (PROJECT_ROOT / "lab_7_llm" / "dist" ).mkdir(exist_ok=True)
+    data_frame.to_csv(PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv")
+    #
+    evaluator = TaskEvaluator(PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv",
                               settings.parameters.metrics)
 
     result = evaluator.run()
+    print(result)
+
     assert result is not None, "Demo does not work correctly"
 
 
