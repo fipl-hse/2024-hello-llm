@@ -5,15 +5,15 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 
 from config.lab_settings import LabSettings
-
 from lab_7_llm.main import (
-    RawDataPreprocessor,
+    LLMPipeline,
     RawDataImporter,
+    RawDataPreprocessor,
     report_time,
     TaskDataset,
-    LLMPipeline,
-    TaskEvaluator
+    TaskEvaluator,
 )
+
 
 @report_time
 def main() -> None:
