@@ -4,8 +4,14 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+import sys
+import pandas as pd
 from pathlib import Path
 from typing import Iterable, Sequence
+from datasets import load_dataset
+
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,6 +27,12 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        ds = load_dataset("lionelchg/dolly_open_qa")
+        if ds.get('train'):
+            train_data = pd.DataFrame(ds['train'])
+            test_data = pd.DataFrame(ds['test'])
+            return train_data, test_data
+        raise TypeError
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
