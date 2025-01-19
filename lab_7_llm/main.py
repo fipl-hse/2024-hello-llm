@@ -7,6 +7,12 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from core_utils.llm.time_decorator import report_time
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+
+import pandas as pd
+from datasets import load_dataset
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,6 +27,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        dataset = load_dataset(self._hf_name, split='val')
+        self._raw_data = pd.DataFrame(dataset)
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError("The downloaded dataset is not a pandas DataFrame.")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
