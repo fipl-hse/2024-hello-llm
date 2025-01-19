@@ -33,7 +33,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(self._hf_name, split='test')
+        dataset = load_dataset(self._hf_name, split='validation')
         self._raw_data = dataset.to_pandas()
 
         if not isinstance(self._raw_data, pd.DataFrame):
@@ -57,8 +57,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
             "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
-            "dataset_sample_min_len": self._raw_data["text"].dropna().str.len().min(),
-            "dataset_sample_max_len": self._raw_data["text"].str.len().max()
+            "dataset_sample_min_len": self._raw_data["text"].map(len).min(),
+            "dataset_sample_max_len": self._raw_data["text"].map(len).max()
         }
 
         return properties_dict

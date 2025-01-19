@@ -2,4 +2,6 @@ datasets==3.2.0
 pandas==2.2.3
 torch==2.5.1
 pydantic==2.10.5
+fastapi==0.115.6
+pytest==8.3.4
 --extra-index-url https://download.pytorch.org/whl/cpu
