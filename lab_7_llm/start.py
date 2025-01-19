@@ -13,7 +13,7 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    with open('settings.json', 'r', encoding='utf-8') as config_file:
+    with open(Path(__file__).parent / 'settings.json', 'r', encoding='utf-8') as config_file:
         config_dict = json.load(config_file)
 
     data_importer = RawDataImporter(config_dict['parameters']['dataset'])
