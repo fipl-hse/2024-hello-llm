@@ -34,7 +34,8 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
         split = 'train'
-        self._raw_data = load_dataset(self._hf_name, split=split)
+        loaded = load_dataset(self._hf_name, split=split)
+        self._raw_data = pd.DataFrame(loaded)
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError("Downloaded dataset's type is not pd.DataFrame")
@@ -82,6 +83,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
