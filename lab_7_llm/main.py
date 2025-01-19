@@ -53,7 +53,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        lens = self._raw_data['neutral'].len()
+        lens = self._raw_data['neutral'].map(len, na_action='ignore')
         analysis = {
             'dataset_number_of_samples': len(self._raw_data),
             'dataset_columns': len(self._raw_data.columns),
