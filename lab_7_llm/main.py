@@ -145,9 +145,9 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name,
-                                                       model_max_length=max_length)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                        model_max_length=max_length)
 
 
     def analyze_model(self) -> dict:
@@ -159,16 +159,20 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         input_ids = torch.ones((1, 768), dtype=torch.long)
         input_data = {"input_ids": input_ids, "decoder_input_ids": input_ids}
-        model_summary = summary(self.model, input_data=input_data, verbose=0)
+
+        if isinstance(self._model, torch.nn.Module):
+            model_summary = summary(self._model, input_data=input_data, verbose=0)
+        else:
+            raise ValueError(f"model type {type(self._model)} is incompatible with torchinfo.summary")
 
         return {
             "input_shape": list(input_ids.size()),
-            "embedding_size": list(self.model.named_parameters())[1][1].shape[0],
+            "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
-            "vocab_size": self.model.config.vocab_size,
+            "vocab_size": self._model.config.vocab_size,
             "size": model_summary.total_param_bytes,
-            "max_context_length": self.model.config.max_length
+            "max_context_length": self._model.config.max_length
         }
 
 
@@ -230,9 +234,10 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         pipe = pipeline("text2text-generation",
-                        model=self.model,
-                        tokenizer=self.tokenizer,
-                        truncation=True)
+                        model=self._model,
+                        tokenizer=self._tokenizer,
+                        truncation=True,
+                        max_length=self._max_length)
 
         res = pipe([sample[0] for sample in sample_batch])
         return [r["generated_text"] for r in res]
