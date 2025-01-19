@@ -18,7 +18,7 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -38,15 +38,12 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         subset = None
         split = "test"
-        if subset:
-            dataset = load_dataset(self._hf_name, subset=subset, split=split)
-        else:
-            dataset = load_dataset(self._hf_name, split=split)
 
+        dataset = load_dataset(self._hf_name, subset=subset, split=split)
         self._raw_data = pd.DataFrame(dataset)
 
-        if not isinstance(self._raw_data, pd.DataFrame):
-            raise TypeError("Downloaded dataset is not a pd.DataFrame.")
+        assert isinstance(self._raw_data, pd.DataFrame), \
+            TypeError("Downloaded dataset is not a pd.DataFrame.")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -65,8 +62,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_number_of_samples": self._raw_data.shape[0],
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
-            "dataset_empty_rows": self._raw_data.isnull().all(axis=1).sum(),
-            "dataset_sample_min_len": self._raw_data["info"].map(len).min(),
+            "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
+            "dataset_sample_min_len": self._raw_data["info"].dropna().map(len).min(),
             "dataset_sample_max_len": self._raw_data["info"].map(len).max()
         }
         return dataset_info
@@ -77,7 +74,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.rename(columns={'info': 'source', 'summary': 'target'})
+        self._data = self._raw_data.rename(columns={"info": ColumnNames.SOURCE.value,
+                                                    "summary": ColumnNames.TARGET.value})
         self._data.reset_index(drop=True, inplace=True)
 
 
@@ -146,11 +144,7 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        self.model_name = model_name
-        self.dataset = dataset
-        self.max_length = max_length
-        self.batch_size = batch_size
-        self.device = device
+        super().__init__(model_name, dataset, max_length, batch_size, device)
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                        model_max_length=max_length)
@@ -211,8 +205,8 @@ class LLMPipeline(AbstractLLMPipeline):
 
             return {"items": items, "targets": targets}
 
-        data_loader = DataLoader(batch_size=self.batch_size,
-                                 dataset=self.dataset,
+        data_loader = DataLoader(batch_size=self._batch_size,
+                                 dataset=self._dataset,
                                  collate_fn=collate_fn)
 
         targets, predictions = [], []
@@ -271,11 +265,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         data_frame = pd.read_csv(self.data_path)
         predictions, references = data_frame.predictions, data_frame.target
         evaluation_res = {}
-        for metric_name in self._metrics:
-            metric = load(metric_name.value, seed=77)
-            scores = metric.compute(predictions=predictions, references=references)
-            if metric_name.value == "rouge":
-                evaluation_res[metric_name.value] = scores["rougeL"]
+        for metric in self._metrics:
+            scores = load(metric.value, seed=77).compute(predictions=predictions,
+                                                         references=references)
+            if metric.value == "rouge":
+                evaluation_res[metric.value] = scores["rougeL"]
             else:
-                evaluation_res[metric_name.value] = scores[metric_name.value]
+                evaluation_res[metric.value] = scores[metric.value]
+
         return evaluation_res

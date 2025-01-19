@@ -42,12 +42,11 @@ def main() -> None:
     pipeline.analyze_model()
     data_frame = pipeline.infer_dataset()
 
-    (PROJECT_ROOT / "lab_7_llm" / "dist" ).mkdir(exist_ok=True)
-    data_frame.to_csv(PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv")
-    #
-    evaluator = TaskEvaluator(PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv",
-                              settings.parameters.metrics)
+    predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    data_frame.to_csv(predictions_path)
 
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     result = evaluator.run()
     print(result)
 
