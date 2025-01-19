@@ -4,8 +4,20 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+import pandas as pd
+import torch
+
+from datasets import load_dataset
 from pathlib import Path
 from typing import Iterable, Sequence
+
+from admin_utils.stubs.datasets import Dataset
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,7 +33,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        pass
+        split = 'train'
+        self._raw_data = load_dataset(self._hf_name, split=split)
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError("Downloaded dataset's type is not pd.DataFrame")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -36,6 +52,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        lens = self._raw_data['neutral'].len()
+        analysis = {
+            'dataset_number_of_samples': len(self._raw_data),
+            'dataset_columns': len(self._raw_data.columns),
+            'dataset_duplicates': self._raw_data.duplicated(),
+            'dataset_empty_rows': self._raw_data.isnull().sum(),
+            'dataset_sample_min_len': lens.min(),
+            'dataset_sample_max_len': lens.max()
+        }
+        return analysis
 
     @report_time
     def transform(self) -> None:
@@ -77,13 +103,14 @@ class TaskDataset(Dataset):
         """
 
     @property
-    def data(self) -> DataFrame:
+    def data(self) -> pd.DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -104,6 +131,11 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        self.model_name = model_name
+        self.dataset = dataset
+        self.max_length = max_length
+        self.batch_size = batch_size
+        self.device = device
 
     def analyze_model(self) -> dict:
         """
@@ -160,6 +192,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self.metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
