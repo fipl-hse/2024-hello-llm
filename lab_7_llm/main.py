@@ -98,7 +98,7 @@ class TaskDataset(Dataset):
         """
 
     @property
-    def data(self) -> DataFrame:
+    def data(self) -> pd.DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
