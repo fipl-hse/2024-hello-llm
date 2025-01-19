@@ -13,8 +13,8 @@ from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from datasets import Dataset
-import torch
 from datasets import load_dataset
+import torch
 import pandas as pd
 from pandas import DataFrame
 
@@ -35,7 +35,7 @@ class RawDataImporter(AbstractRawDataImporter):
 
         self._raw_data = load_dataset(
             path=self._hf_name,
-            split='test'
+            split='validation'
         ).to_pandas()
 
         if not isinstance(self._raw_data, pd.DataFrame):
@@ -59,10 +59,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         dataset_number_of_samples = dataset_shape[0]
         dataset_columns = dataset_shape[1]
 
-        try:
-            dataset_duplicates = self._raw_data.duplicated().value_counts().loc[True]
-        except KeyError:
-            dataset_duplicates = 0
+        dataset_duplicates = self._raw_data.duplicated().sum()
 
         dataset_empty_rows = self._raw_data.isnull().T.any().sum() # True if any value in a row is NaN
 
