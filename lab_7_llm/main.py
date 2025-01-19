@@ -213,7 +213,7 @@ class LLMPipeline(AbstractLLMPipeline):
         for batch in data_loader:
             targets.extend(batch["targets"])
             sample_predictions = self._infer_batch(batch["items"])
-            predictions.append(sample_predictions)
+            predictions.extend(sample_predictions)
 
         return pd.DataFrame({"target": targets, "predictions": predictions})
 
