@@ -4,14 +4,18 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
-import sys
-import pandas as pd
+
 from pathlib import Path
 from typing import Iterable, Sequence
 from datasets import load_dataset
+from pandas import DataFrame
+import pandas as pd
 
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -20,17 +24,17 @@ class RawDataImporter(AbstractRawDataImporter):
     """
 
     @report_time
-    def obtain(self) -> None:
+    def obtain(self) -> tuple | TypeError:
         """
         Download a dataset.
 
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        ds = load_dataset("lionelchg/dolly_open_qa")
-        if ds.get('train'):
-            train_data = pd.DataFrame(ds['train'])
-            test_data = pd.DataFrame(ds['test'])
+        qa_dataset = load_dataset("lionelchg/dolly_open_qa")
+        if qa_dataset.get('train') and qa_dataset.get('test'):
+            train_data = pd.DataFrame(qa_dataset['train'])
+            test_data = pd.DataFrame(qa_dataset['test'])
             return train_data, test_data
         raise TypeError
 
