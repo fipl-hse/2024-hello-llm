@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 import pandas as pd
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
