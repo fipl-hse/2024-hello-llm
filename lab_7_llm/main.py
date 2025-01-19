@@ -13,8 +13,7 @@ from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
-from datasets import Dataset
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 import pandas as pd
 from pandas import DataFrame
 import torch
@@ -82,6 +81,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
