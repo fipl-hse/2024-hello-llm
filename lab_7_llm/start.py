@@ -8,13 +8,14 @@ from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
 from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
 
+SETTINGS_PATH = PROJECT_ROOT / 'lab_7_llm/settings.json'
 
 @report_time
 def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(PROJECT_ROOT + '/lab_7_llm/settings.json')
+    settings = LabSettings(SETTINGS_PATH)
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
