@@ -163,7 +163,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if isinstance(self._model, torch.nn.Module):
             model_summary = summary(self._model, input_data=input_data, verbose=0)
         else:
-            raise ValueError((f"model type {type(self._model)}" 
+            raise ValueError((f"model type {type(self._model)}"
                               " is incompatible with torchinfo.summary"))
 
         return {
