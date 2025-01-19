@@ -96,6 +96,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -124,6 +125,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
