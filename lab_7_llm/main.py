@@ -7,8 +7,11 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from torch.utils.data import Dataset
+
 from core_utils.llm.time_decorator import report_time
-from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter, AbstractLLMPipeline
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 
 import pandas as pd
 from datasets import load_dataset
@@ -87,7 +90,7 @@ class TaskDataset(Dataset):
         """
 
     @property
-    def data(self) -> DataFrame:
+    def data(self) -> pd.DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
