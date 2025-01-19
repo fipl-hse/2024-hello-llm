@@ -6,6 +6,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
+from lab_7_llm.main import LLMPipeline
+
 
 def init_application() -> tuple[FastAPI, LLMPipeline]:
     """
