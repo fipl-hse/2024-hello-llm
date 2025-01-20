@@ -7,7 +7,7 @@ from pathlib import Path
 
 from core_utils.llm.time_decorator import report_time
 from config.constants import PROJECT_ROOT
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset
 
 
 @report_time
@@ -21,9 +21,11 @@ def main() -> None:
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    print(preprocessor.analyze())
+    # print(preprocessor.analyze())
+    preprocessor.transform()
+    dataset = TaskDataset(preprocessor.data.head(100))
 
-    result = preprocessor
+    result = dataset
     assert result is not None, "Demo does not work correctly"
 
 
