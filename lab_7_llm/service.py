@@ -4,8 +4,11 @@ Web service for model inference.
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from pathlib import Path
 
-from fastapi import FastAPI
-
+try:
+    from fastapi import FastAPI
+except ImportError:
+    print('Library "fastapi" not installed. Failed to import.')
+    FastAPI = None
 from lab_7_llm.main import LLMPipeline
 
 
