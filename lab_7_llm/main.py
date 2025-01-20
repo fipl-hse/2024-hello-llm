@@ -59,10 +59,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         properties = {
             'dataset_number_of_samples': self._raw_data.shape[0],
             'dataset_columns': self._raw_data.shape[1],
-            # only columns relevant to the task are left
-            'dataset_duplicates': self._raw_data.drop(['Idx', 'review_id', 'source_url', 'category', 'title'], axis=1).duplicated().sum(),
+            'dataset_duplicates': self._raw_data.duplicated().sum(),
             'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
-            'dataset_sample_min_len	': self._raw_data['content'].dropna().str.len().min(),
+            'dataset_sample_min_len': self._raw_data['content'].dropna().str.len().min(),
             'dataset_sample_max_len': self._raw_data['content'].dropna().str.len().max()
         }
         return properties
@@ -74,7 +73,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = self._raw_data.copy()
         self._data.drop(['Idx', 'review_id', 'source_url', 'category', 'title'], axis=1, inplace=True)
-        self._data.rename(columns={'sentiment': ColumnNames.TARGET, 'content': ColumnNames.SOURCE}, inplace=True)
+        self._data.rename(columns={
+            'sentiment': ColumnNames.TARGET.value,
+            'content': ColumnNames.SOURCE.value
+        }, inplace=True)
         # RuBERT model trained on data with neutral as 0, positive as 1 and negative as 2
         self._data['target'] = self._data['target'].map({'positive': 1, 'negative': 2})
 
