@@ -73,7 +73,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = self._raw_data.copy()
-        self._data.drop(['Idx', 'review_id', 'source_url', 'category', 'title'], inplace=True)
+        self._data.drop(['Idx', 'review_id', 'source_url', 'category', 'title'], axis=1, inplace=True)
         self._data.rename(columns={'sentiment': ColumnNames.TARGET, 'content': ColumnNames.SOURCE}, inplace=True)
         # RuBERT model trained on data with neutral as 0, positive as 1 and negative as 2
         self._data['target'] = self._data['target'].map({'positive': 1, 'negative': 2})
