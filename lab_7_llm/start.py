@@ -7,7 +7,7 @@ from pathlib import Path
 
 from core_utils.llm.time_decorator import report_time
 from config.constants import PROJECT_ROOT
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline
 
 
 @report_time
@@ -26,7 +26,13 @@ def main() -> None:
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    result = dataset
+    pipeline = LLMPipeline(settings['parameters']['model'], dataset, max_length=120, batch_size=64, device='cpu')
+    print(pipeline.analyze_model())
+
+    sample = pipeline.infer_sample(dataset[1])
+    print(sample)
+
+    result = sample
     assert result is not None, "Demo does not work correctly"
 
 

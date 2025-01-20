@@ -6,4 +6,6 @@ pydantic==2.5.3
 pytest==7.4.4
 simplejson==3.19.2
 torch==2.5.1
+torchinfo==1.8.0
 tqdm==4.67.1
+transformers==4.48.0
