@@ -9,11 +9,15 @@ from typing import Iterable, Sequence
 
 import torch
 import pandas as pd
-from datasets import Dataset, load_dataset
+from datasets import load_dataset
+from torchinfo import summary
+from transformers import BertForSequenceClassification, BertTokenizerFast
+
+from torch.utils.data import Dataset
 
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.metrics import Metrics
@@ -54,8 +58,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         properties = {
             'dataset_number_of_samples': self._raw_data.shape[0],
             'dataset_columns': self._raw_data.shape[1],
-            # ids aren't duplicated, source_url is irrelevant for analysis
-            'dataset_duplicates': self._raw_data.drop(['Idx', 'review_id', 'source_url'], axis=1).duplicated().sum(),
+            # only columns relevant to the task are left
+            'dataset_duplicates': self._raw_data.drop(['Idx', 'review_id', 'source_url', 'category', 'title'], axis=1).duplicated().sum(),
             'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
             'dataset_sample_min_len	': self._raw_data['content'].dropna().str.len().min(),
             'dataset_sample_max_len': self._raw_data['content'].dropna().str.len().max()
@@ -67,6 +71,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = self._raw_data.copy()
+        self._data.drop(['Idx', 'review_id', 'source_url', 'category', 'title'], inplace=True)
+        self._data.rename(columns={'sentiment': ColumnNames.TARGET, 'content': ColumnNames.SOURCE}, inplace=True)
+        # RuBERT model trained on data with neutral as 0, positive as 1 and negative as 2
+        self._data['target'] = self._data['target'].map({'positive': 1, 'negative': 2})
 
 
 class TaskDataset(Dataset):
@@ -81,6 +90,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -89,6 +99,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return self._data.shape[0]
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -100,6 +111,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.loc[index])
 
     @property
     def data(self) -> pd.DataFrame:
@@ -109,6 +121,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -129,6 +142,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = BertForSequenceClassification.from_pretrained(model_name)
+        self._tokenizer = BertTokenizerFast.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
