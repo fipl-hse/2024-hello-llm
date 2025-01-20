@@ -1,7 +1,7 @@
 datasets==3.2.0
 pandas==2.2.3
 torch==2.5.1
-tqdm==4.66.1
+tqdm==4.67.1
 ghapi==1.0.4
 pydantic==2.5.3
 logging518==1.0.0
