@@ -4,6 +4,9 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+from pathlib import Path
+from typing import Iterable, Sequence
+
 import pandas as pd
 import torch
 import torchinfo
@@ -12,7 +15,6 @@ from pandas import DataFrame
 from pathlib import Path
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from typing import Iterable, Sequence
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
