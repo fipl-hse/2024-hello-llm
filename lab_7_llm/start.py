@@ -21,6 +21,7 @@ def main() -> None:
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
     preprocessor = RawDataPreprocessor(importer.raw_data)
+
     # print(preprocessor.analyze())
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
