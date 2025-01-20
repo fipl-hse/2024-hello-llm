@@ -4,26 +4,22 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+import pandas as pd
+import torch
+import torchinfo
+from datasets import load_dataset
+from pandas import DataFrame
 from pathlib import Path
+from torch.utils.data import Dataset
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from typing import Iterable, Sequence
-from torch.utils.data import Dataset
-from datasets import load_dataset
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
-import pandas as pd
-from pandas import DataFrame
-
-# from start import settings
-
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-
-import torch
-import torchinfo
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -139,7 +135,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=self._max_length)
         self._max_length = max_length
 
     def analyze_model(self) -> dict:
@@ -155,9 +151,10 @@ class LLMPipeline(AbstractLLMPipeline):
         summary = torchinfo.summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
 
         return {'input_shape': list(tensor.shape), 'embedding_size': list(tensor.shape)[1],
-                'output_shape': summary.summary_list[-1], 'num_trainable_params': summary.trainable_params,
+                'output_shape': summary.summary_list[-1].output_size, 'num_trainable_params': summary.trainable_params,
                 'vocab_size': self._model.config.vocab_size, 'size': summary.total_param_bytes,
                 'max_context_length': self._model.config.max_length}
+
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
