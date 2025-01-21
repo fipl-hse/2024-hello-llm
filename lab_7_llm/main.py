@@ -9,7 +9,7 @@ from typing import Iterable, Sequence
 
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor,  ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -18,6 +18,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 from pandas import DataFrame
 import torch
+from torchinfo import summary
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -33,11 +34,8 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(self._hf_name, split='validation')
+        dataset = load_dataset(self._hf_name, subset="split", split='validation')
         self._raw_data = dataset.to_pandas()
-
-        if not isinstance(self._raw_data, pd.DataFrame):
-            raise TypeError('The downloaded dataset is not pd.DataFrame.')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -52,13 +50,15 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        dataset_no_empty_rows = self._raw_data["text"].dropna()
+
         properties_dict = {
             "dataset_number_of_samples": self._raw_data.shape[0],
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
             "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
-            "dataset_sample_min_len": self._raw_data["text"].map(len).min(),
-            "dataset_sample_max_len": self._raw_data["text"].map(len).max()
+            "dataset_sample_min_len": dataset_no_empty_rows.map(len).min(),
+            "dataset_sample_max_len": dataset_no_empty_rows.map(len).max()
         }
 
         return properties_dict
@@ -68,6 +68,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = self._raw_data.rename(columns={"text": ColumnNames.SOURCE.value,
+                                                    "label": ColumnNames.TARGET.value})
+        self._data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -91,6 +94,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -102,6 +106,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        data = self._data.iloc[index]
+        return tuple(data)
 
     @property
     def data(self) -> DataFrame:
@@ -132,6 +138,7 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
 
     def analyze_model(self) -> dict:
         """
