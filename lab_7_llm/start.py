@@ -25,7 +25,11 @@ def main() -> None:
     key_properties = preprocessor.analyze()
     preprocessor.transform()
 
-    dataset = TaskDataset(preprocessor.data.head(100))
+    # dataset = TaskDataset(preprocessor.data.head(100))
+    #
+    # pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=1, device='cpu')
+    # model_properties = pipeline.analyze_model()
+    # print(model_properties)
 
     result = key_properties
     assert result is not None, "Demo does not work correctly"

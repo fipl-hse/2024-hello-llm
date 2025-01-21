@@ -37,8 +37,7 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
         # dataset requires additional custom code to load properly
-        dataset = load_dataset(self._hf_name, split='validation', trust_remote_code=True)
-        self._raw_data = dataset.to_pandas()
+        self._raw_data = load_dataset(self._hf_name, split='validation', trust_remote_code=True).to_pandas()
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError('The downloaded dataset is not pd.DataFrame.')
@@ -156,6 +155,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        model_summary = summary(self._model)
+
+        properties = {
+            'input_shape': ...,
+            'embedding_size': ...,
+            'output_shape': ...,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': ...,
+            'size': model_summary.total_param_bytes,
+            'max_context_length': ...
+        }
+
+        return properties
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
