@@ -56,6 +56,16 @@ application_import_names = ['config']
 select = ['I']
 count = true
 
+[tool.autoflake]
+in_place = true
+recursive = true
+remove_unused_variables = true
+remove_all_unused_imports = true
+exclude = [
+    'venv*',
+    '*stub.py'
+]
+
 [tool.isort]
 profile = 'black'
 py_version = '311'
@@ -68,6 +78,7 @@ force_alphabetical_sort_within_sections = true
 src_paths = [
     "reference_lab_classification",
     "reference_lab_summarization",
+    "reference_lab_ner",
     "reference_lab_nmt",
     "reference_lab_nli",
     "reference_lab_generation",
