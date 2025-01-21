@@ -95,7 +95,6 @@ class TaskDataset(Dataset):
             int: The number of items in the dataset
         """
 
-
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
         Retrieve an item from the dataset by index.
