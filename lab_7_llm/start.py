@@ -18,10 +18,12 @@ def main() -> None:
     settings = LabSettings(PROJECT_ROOT / "lab_7_llm" / "settings.json")
 
     importer = RawDataImporter(settings.parameters.dataset)
+    importer.obtain()
+
     preprocessor = RawDataPreprocessor(importer.raw_data)
+    analysis = preprocessor.analyze()
 
-
-    result = None
+    result = analysis
     assert result is not None, "Demo does not work correctly"
 
 

@@ -34,7 +34,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(self._hf_name, split='val')
+        dataset = load_dataset(self._hf_name, split='test')
         self._raw_data = pd.DataFrame(dataset)
 
         if not isinstance(self._raw_data, pd.DataFrame):
@@ -53,6 +53,17 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        dataset_info = {
+            'dataset_number_of_samples': self._raw_data.shape[0],
+            'dataset_columns': self._raw_data.shape[1],
+            'dataset_duplicates': self._raw_data.duplicated().sum(),
+            'dataset_empty_rows': self._raw_data.isnull().all(axis=1).sum(),
+            'dataset_sample_min_len': self._raw_data['text'].dropna(how='all').map(len).min(),
+            'dataset_sample_max_len': self._raw_data['text'].dropna(how='all').map(len).max()
+
+        }
+
+        return dataset_info
 
     @report_time
     def transform(self) -> None:
