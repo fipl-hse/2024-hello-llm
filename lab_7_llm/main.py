@@ -7,18 +7,20 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from core_utils.llm.time_decorator import report_time
-from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor,  ColumnNames
-from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
 from datasets import load_dataset
-from torch.utils.data import Dataset
 import pandas as pd
 from pandas import DataFrame
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from torchinfo import summary
+from torch.utils.data import Dataset
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -34,7 +36,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(self._hf_name, subset="split", split='validation')
+        dataset = load_dataset(self._hf_name,  split='validation')
         self._raw_data = dataset.to_pandas()
 
 
@@ -139,6 +141,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
     def analyze_model(self) -> dict:
         """
@@ -147,6 +151,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        input_data = torch.ones((self._batch_size, self._max_length), dtype=torch.long)
+        model_summary = summary(self._model, input_data=input_data, verbose=0)
+
+        return {
+            "input_shape": list(input_data.size()),
+            "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
+            "output_shape": model_summary.summary_list[-1].output_size,
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": self._model.config.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self._model.config.max_length
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:

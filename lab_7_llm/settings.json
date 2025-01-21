@@ -1,6 +1,6 @@
 {
   "parameters": {
-    "model": "it-emotion-analyzer",
+    "model": "aiknowyou/it-emotion-analyzer",
     "dataset": "dair-ai/emotion",
     "metrics": []
   },

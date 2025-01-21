@@ -4,7 +4,7 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, report_time
+from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 
@@ -20,8 +20,20 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     properties = preprocessor.analyze()
-    # print(properties)
-    result = properties
+    print(properties)
+
+    preprocessor.transform()
+    dataset = TaskDataset(preprocessor.data.head(100))
+
+    pipeline = LLMPipeline(lab_settings.parameters.model,
+                           dataset,
+                           max_length=120,
+                           batch_size=1,
+                           device="cpu")
+
+    model_summary = pipeline.analyze_model()
+    print(model_summary)
+    result = model_summary
     assert result is not None, "Demo does not work correctly"
 
 
