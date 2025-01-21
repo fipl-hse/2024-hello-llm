@@ -7,11 +7,9 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import pandas as pd
 import torch
 import torchinfo
 from datasets import load_dataset
-from pandas import DataFrame
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -21,6 +19,8 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
+import pandas as pd
+from pandas import DataFrame
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -123,7 +123,9 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str) -> None:
+    def __init__(
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+    ) -> None:
         """
         Initialize an instance of LLMPipeline.
 
