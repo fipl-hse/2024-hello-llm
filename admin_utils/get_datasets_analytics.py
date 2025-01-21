@@ -11,11 +11,6 @@ from tqdm import tqdm
 from admin_utils.get_model_analytics import get_references, save_reference
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
-from reference_lab_ner.main import (
-    Conll2003DataImporter,
-    NERRawDataPreprocessor,
-    WikineuralDataImporter,
-)
 
 from lab_7_llm.main import RawDataImporter, RawDataPreprocessor  # isort:skip
 from reference_lab_classification.main import (  # isort:skip
@@ -61,6 +56,11 @@ from reference_lab_generation.main import (  # isort:skip
     SberquadRawDataPreprocessor,
     WikiOmniaRawDataImporter,
     WikiOmniaRawDataPreprocessor,
+)
+from reference_lab_ner.main import (  # isort:skip
+    Conll2003DataImporter,
+    NERRawDataPreprocessor,
+    WikineuralDataImporter,
 )
 from reference_lab_nli.main import (  # isort:skip
     DatasetTypes,
