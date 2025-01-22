@@ -17,7 +17,7 @@ from core_utils.llm.time_decorator import report_time
 from datasets import load_dataset
 import pandas as pd
 from pandas import DataFrame
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoConfig, AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import torch
 from torchinfo import summary
 from torch.utils.data import Dataset
@@ -142,6 +142,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        #self._model = AutoModelForSequenceClassification.from_config(AutoConfig.from_pretrained(model_name)).to(device)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
     def analyze_model(self) -> dict:
@@ -151,17 +152,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        input_data = torch.ones((self._batch_size, self._max_length), dtype=torch.long)
+        input_data = torch.ones((1, 512), dtype=torch.long)
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
         return {
-            "input_shape": list(input_data.size()),
             "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
-            "output_shape": model_summary.summary_list[-1].output_size,
+            "input_shape": {'attention_mask': list(input_data.size()), 'input_ids': list(input_data.size())},
+            "max_context_length": self._model.config.max_length,
             "num_trainable_params": model_summary.trainable_params,
-            "vocab_size": self._model.config.vocab_size,
+            "output_shape": model_summary.summary_list[-1].output_size,
             "size": model_summary.total_param_bytes,
-            "max_context_length": self._model.config.max_length
+            "vocab_size": self._model.config.vocab_size,
         }
 
     @report_time
@@ -175,6 +176,11 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        input_data = self._tokenizer(" ".join(sample), return_tensors="pt", truncation=True)
+        with torch.no_grad():
+            logits = self._model(**input_data).logits
+        predicted_label = torch.argmax(logits, dim=-1).item()
+        return str(predicted_label)
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
