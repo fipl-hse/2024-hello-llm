@@ -6,7 +6,20 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
-#
+
+import datasets
+import pandas as pd
+import torch
+from torch.utils.data import Dataset
+from datasets import load_dataset
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline, DataFrame
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,6 +34,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        dataset = load_dataset(path=self._hf_name, split='train')
+        self._raw_data = dataset.to_pandas() if isinstance(dataset, datasets.Dataset) else None
+
+        if self._raw_data is None:
+            raise TypeError(f"Failed to convert dataset to DataFrame. Expected 'Dataset', got {type(dataset)} instead.")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,12 +53,31 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        data_no_empty_rows = self._raw_data.dropna(subset=["article_content"])
+
+        dataset_properties = {
+            'dataset_number_of_samples': self._raw_data.shape[0],
+            'dataset_columns': self._raw_data.shape[1],
+            'dataset_duplicates': self._raw_data.duplicated().sum(),
+            "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
+            'dataset_sample_min_len': min(
+                len(sample) for sample in data_no_empty_rows["article_content"]),
+            'dataset_sample_max_len': max(
+                len(sample) for sample in data_no_empty_rows["article_content"])
+        }
+
+        return dataset_properties
+
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = (self._raw_data.drop(columns=['title', 'date', 'url'])
+                      .rename(columns={'article_content': ColumnNames.SOURCE.value,
+                                       'summary': ColumnNames.TARGET.value})
+                      .reset_index(drop=True))
 
 
 class TaskDataset(Dataset):
@@ -55,6 +92,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -63,6 +101,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -74,6 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.iloc[index])
 
     @property
     def data(self) -> DataFrame:
@@ -83,6 +123,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
