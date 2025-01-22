@@ -6,6 +6,19 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+import logging
+import datasets
+from datasets import load_dataset
+from pandas import DataFrame
+import torch
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+import pandas as pd
+from torch.utils.data import DataLoader, Dataset
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,7 +34,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        pass
+        dataset = load_dataset(path=self._hf_name, revision="v2.0", split='test', trust_remote_code=True)
+        self._raw_data = dataset.to_pandas() if isinstance(dataset, datasets.Dataset) else None
+
+        if self._raw_data is None:
+            raise TypeError(f"Failed to convert dataset to DataFrame. Expected 'Dataset', got {type(dataset)} instead.")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -36,13 +53,36 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        pass
+        if self._raw_data is None:
+            raise ValueError("Raw data is not set. Cannot analyze an empty dataset.")
+
+        non_empty_data = self._raw_data.dropna(subset=["text"])
+
+        dataset_properties = {
+            "dataset_number_of_samples": len(non_empty_data),
+            "dataset_columns": len(non_empty_data.columns),
+            "dataset_duplicates": non_empty_data.duplicated().sum(),
+            "dataset_empty_rows": len(self._raw_data) - len(non_empty_data),
+            'dataset_sample_min_len': min(
+                len(sample) for sample in non_empty_data["text"]),
+            'dataset_sample_max_len': max(
+                len(sample) for sample in non_empty_data["text"])
+        }
+
+        return dataset_properties
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        if self._raw_data is None:
+            raise ValueError("Raw data is not set. Cannot transform an empty dataset.")
+
+        self._data = (self._raw_data.drop(columns=['title', 'date', 'url'])
+                      .rename(columns={'text': ColumnNames.SOURCE.value,
+                                       'summary': ColumnNames.TARGET.value})
+                      .reset_index(drop=True))
 
 
 class TaskDataset(Dataset):
@@ -93,7 +133,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.

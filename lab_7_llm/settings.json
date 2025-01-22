@@ -1,8 +1,8 @@
 {
   "parameters": {
-    "model": "55",
-    "dataset": "",
-    "metrics": []
+    "model": "dmitry-vorobiev/rubert_ria_headlines",
+    "dataset": "IlyaGusev/gazeta",
+    "metrics": ["bleu", "rouge"]
   },
-  "target_score": 0
+  "target_score": 4
 }
