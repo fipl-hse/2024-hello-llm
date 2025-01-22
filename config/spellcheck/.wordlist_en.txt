@@ -78,6 +78,7 @@ autoformat
 autoformatting
 autongramlanguagemodel
 available
+babelscape
 back-off
 backoff
 backoffgenerator
@@ -131,6 +132,7 @@ calls
 calssification
 can
 candidates
+cannot
 capturing
 card
 cards
@@ -140,6 +142,8 @@ ccdv
 cd
 cedr
 change
+changes
+changing
 changing-code
 check
 checking
@@ -160,6 +164,7 @@ clicks
 clone
 closed
 closely
+cn
 code
 coding
 cointegrated
@@ -175,6 +180,7 @@ combination
 combinations
 command
 commit
+committing
 committing-changes
 community
 compare
@@ -190,8 +196,10 @@ concordance
 config
 configuration
 configuring
+conll
 consequently
 considering
+consuming
 containing
 contains
 content
@@ -212,6 +220,7 @@ course
 coverageresults
 cpu
 create
+creating
 creating-pat
 criteria
 css
@@ -235,6 +244,7 @@ decode
 decoded
 decorator
 deduped
+deep
 deep-learning
 def
 define
@@ -262,6 +272,7 @@ different
 dimensions
 directory
 displayed
+dist
 distance
 distilbe
 distilbert
@@ -281,6 +292,7 @@ downloading
 downloads
 drive
 drop
+dslim
 dto
 duplicates
 duplication
@@ -319,6 +331,7 @@ eos
 eow
 epoch
 er
+eriktks
 error
 es
 escape
@@ -344,10 +357,12 @@ execution
 expected
 expiration
 explanations
+extra
 extra-index-url
 extract
 f-string
 fabriceyhc
+faq
 faq-label
 far
 farther
@@ -367,6 +382,8 @@ filler
 filling
 finally
 find
+fine
+fine-tuning
 finetune
 finetuned
 finetuning
@@ -434,6 +451,7 @@ greedy
 greedyrulestudent
 greedytextgenerator
 group
+guide
 had
 handle
 handler
@@ -525,6 +543,7 @@ its
 iwslt
 jackfram
 javascript
+jiaweiyu
 jinja
 join
 js
@@ -541,6 +560,7 @@ lab
 label
 labeled
 laboratory
+labs
 labsettings
 lang
 langs
@@ -551,6 +571,7 @@ leap
 learn
 learning
 learns
+lectures
 lectures-content-label
 legb
 len
@@ -561,6 +582,7 @@ let
 letterstorage
 level
 level-labs
+levow
 library
 life
 like
@@ -633,6 +655,7 @@ mrm
 mro
 mrqa
 mse
+msra
 much
 multiclass
 multiple
@@ -647,6 +670,7 @@ natural
 need
 needed
 needs
+ner
 neural
 new
 next
@@ -724,11 +748,12 @@ passed
 pat
 path
 pathlib
+pathstokeep
 patterns
 pd
 peculiarities
-people
 peftmodel
+people
 perfectly
 perform
 performance
@@ -754,6 +779,7 @@ pr
 practical
 pre
 pre-trained
+pre-training
 precision
 precisions
 prediction
@@ -796,6 +822,7 @@ pubmed
 pull
 purpose
 push
+pushing
 pushing-changes
 put
 putting
@@ -840,6 +867,7 @@ relationships
 reload
 remains
 remember
+remotebranches
 renders
 repo
 report
@@ -940,6 +968,7 @@ stage
 stages
 starmpcc
 start
+starting
 starting-guide-label
 state
 statistical
@@ -1049,6 +1078,7 @@ trixdade
 true
 truncation
 try
+tuning
 tuple
 tutorial
 two
@@ -1115,6 +1145,7 @@ whl
 whole
 why
 width
+wikineural
 wikiomnia
 will
 windows
@@ -1141,5 +1172,3 @@ xsy
 xx
 you
 your
-RemoteBranches
-pathsToKeep
