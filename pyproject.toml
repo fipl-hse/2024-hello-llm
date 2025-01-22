@@ -136,7 +136,7 @@ disable_error_code = [
 ]
 
 [[tool.mypy.overrides]]
-module = ['seminars.seminar_01_16_2024.try_iter_data', ]
+module = ['seminars.seminar_01_22_2025.try_iter_data', ]
 disable_error_code = [
     'arg-type'
 ]
