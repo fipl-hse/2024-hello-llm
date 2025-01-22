@@ -1,8 +1,8 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
-    "metrics": ["BLEU", "ROUGE"]
+    "model": "dmitry-vorobiev/rubert_ria_headlines",
+    "dataset": "CarlBrendt/Summ_Dialog_News",
+    "metrics": ["bleu", "rouge"]
   },
-  "target_score": 0
+  "target_score": 4
 }

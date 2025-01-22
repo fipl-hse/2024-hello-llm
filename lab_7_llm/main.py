@@ -5,7 +5,20 @@ Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
+import pandas as pd
 from typing import Iterable, Sequence
+
+import torch
+from datasets import load_dataset
+from pandas import DataFrame
+
+from torch.utils.data import Dataset
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,6 +34,9 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(path=self._hf_name, split='test').to_pandas()
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +51,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        return {
+            'dataset_number_of_samples': len(self._raw_data),
+            'dataset_columns': self._raw_data.shape[1],
+            'dataset_duplicates': self._raw_data.duplicated().sum(),
+            'dataset_empty_rows': self._raw_data.isna().sum().sum(),
+            'dataset_sample_min_len': min(len(text) for text in self._raw_data['info']),
+            'dataset_sample_max_len': max(len(text) for text in self._raw_data['info'])
+        }
 
     @report_time
     def transform(self) -> None:
