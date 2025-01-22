@@ -18,7 +18,7 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -36,9 +36,8 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        try:
-            self._raw_data = load_dataset(path=self._hf_name, split='test').to_pandas()
-        except TypeError:
+        self._raw_data = load_dataset(path=self._hf_name, split='test').to_pandas()
+        if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError
 
 
@@ -68,8 +67,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.rename(columns={'article': 'source',
-                                                    'abstract': 'target'}).reset_index(drop=True)
+        self._data = (self._raw_data.rename(columns={'article': ColumnNames.SOURCE.value,
+                                                    'abstract': ColumnNames.TARGET.value}).reset_index(drop=True)
+                      .drop_duplicates())
 
 
 class TaskDataset(Dataset):
@@ -148,7 +148,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        tensor = torch.ones((1, 512), dtype=torch.long)
+        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
 
         summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)

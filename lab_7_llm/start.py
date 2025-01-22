@@ -31,7 +31,7 @@ def main() -> None:
     print(pipeline.analyze_model())
 
     sample = pipeline.infer_sample(dataset[1])
-    print(sample)
+    # print(sample)
 
     result = sample
     assert result is not None, "Demo does not work correctly"
