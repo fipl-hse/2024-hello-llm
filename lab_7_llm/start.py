@@ -4,9 +4,9 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
+from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset
 
 
 @report_time
