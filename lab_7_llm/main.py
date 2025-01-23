@@ -11,6 +11,7 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from evaluate import load
+from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
@@ -36,10 +37,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        subset = None
-        split = "test"
-
-        dataset = load_dataset(self._hf_name, subset=subset, split=split)
+        dataset = load_dataset(self._hf_name, split="test")
         self._raw_data = pd.DataFrame(dataset)
 
         assert isinstance(self._raw_data, pd.DataFrame), \
@@ -116,7 +114,7 @@ class TaskDataset(Dataset):
         return tuple(item)
 
     @property
-    def data(self) -> pd.DataFrame:
+    def data(self) -> DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
@@ -220,7 +218,8 @@ class LLMPipeline(AbstractLLMPipeline):
             sample_predictions = self._infer_batch(batch["items"])
             predictions.extend(sample_predictions)
 
-        return pd.DataFrame({"target": targets, "predictions": predictions})
+        return pd.DataFrame({ColumnNames.TARGET: targets,
+                             ColumnNames.PREDICTION: predictions})
 
 
     @torch.no_grad()

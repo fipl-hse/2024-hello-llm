@@ -5,9 +5,10 @@ Web service for model inference.
 from pathlib import Path
 
 from lab_7_llm.main import LLMPipeline
+from fastapi import FastAPI
 
 
-def init_application() -> tuple[LLMPipeline, LLMPipeline]:
+def init_application() -> tuple[FastAPI, LLMPipeline]:
     """
     Initialize core application.
 
