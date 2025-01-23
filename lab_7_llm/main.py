@@ -110,8 +110,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        item = self._data.iloc[index]
-        return tuple(item)
+        item = self._data.loc[index, ColumnNames.SOURCE.value]
+        return item,
 
     @property
     def data(self) -> DataFrame:
@@ -144,8 +144,10 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
-                                                        model_max_length=max_length)
+                                                        model_max_length=max_length,
+                                                        device=self._device)
 
 
     def analyze_model(self) -> dict:
@@ -197,29 +199,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        def collate_fn(batch: Sequence[tuple[str, ...]]) -> dict[str, list]:
-            """
-            Function to collate a batch of samples.
-            """
-            items, targets = [], []
-            for sample in batch:
-                items.append((sample[0],))
-                targets.append(sample[1])
-
-            return {"items": items, "targets": targets}
-
         data_loader = DataLoader(batch_size=self._batch_size,
-                                 dataset=self._dataset,
-                                 collate_fn=collate_fn)
+                                 dataset=self._dataset)
 
-        targets, predictions = [], []
+        predictions = []
         for batch in data_loader:
-            targets.extend(batch["targets"])
-            sample_predictions = self._infer_batch(batch["items"])
+            sample_predictions = self._infer_batch(batch)
             predictions.extend(sample_predictions)
 
-        return pd.DataFrame({ColumnNames.TARGET: targets,
-                             ColumnNames.PREDICTION: predictions})
+        res = self._dataset.data.copy()
+        res[ColumnNames.PREDICTION.value] = predictions
+
+        return res
 
 
     @torch.no_grad()
@@ -239,7 +230,7 @@ class LLMPipeline(AbstractLLMPipeline):
                         truncation=True,
                         max_length=self._max_length)
 
-        res = pipe([sample[0] for sample in sample_batch])
+        res = pipe(list(sample_batch[0]))
         return [r["generated_text"] for r in res]
 
 
