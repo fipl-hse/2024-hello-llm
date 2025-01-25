@@ -3,8 +3,7 @@ Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
-from core_utils.llm.time_decorator import report_time
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, report_time
 import json
 
 @report_time
@@ -25,10 +24,7 @@ def main() -> None:
     analysis = preprocessor.analyze()
 
     result = analysis
-    print(result)
 
-    for i in result.values():
-        print(type(i))
     assert result is not None, "Demo does not work correctly"
 
 
