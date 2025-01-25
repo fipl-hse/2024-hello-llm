@@ -7,12 +7,13 @@ Working with Large Language Models.
 
 from pathlib import Path
 from typing import Iterable, Sequence
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from pandas import DataFrame
 import pandas as pd
+import torch
 
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
@@ -24,18 +25,18 @@ class RawDataImporter(AbstractRawDataImporter):
     """
 
     @report_time
-    def obtain(self) -> tuple | TypeError:
+    def obtain(self) -> None:
         """
         Download a dataset.
 
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        qa_dataset = load_dataset("lionelchg/dolly_open_qa")
-        if qa_dataset.get('train') and qa_dataset.get('test'):
-            train_data = pd.DataFrame(qa_dataset['train'])
-            test_data = pd.DataFrame(qa_dataset['test'])
-            return train_data, test_data
+        qa_dataset = load_dataset(self._hf_name, split='test')
+        if qa_dataset:
+            self._raw_data = qa_dataset.to_pandas()
+        if isinstance(self._raw_data, pd.DataFrame):
+            return self._raw_data
         raise TypeError
 
 
@@ -51,12 +52,33 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        dataset_number_of_samples, dataset_columns = self._raw_data.shape
+        dataset_duplicates = self._raw_data.duplicated().sum()
+        # it is written in readme "Number of empty rows in dataset". Did you mean..
+        # ..any empty cell or when the row is totally empty?
+        dataset_empty_rows = self._raw_data.isna().sum().sum()
+        self._raw_data.dropna(inplace=True)
+        dataset_sample_min_len = len(min(self._raw_data['question']))
+        dataset_sample_max_len = len(max(self._raw_data['question']))
+
+        df_analysis = {
+            'dataset_number_of_samples': dataset_number_of_samples,
+            'dataset_columns': dataset_columns,
+            'dataset_duplicates': dataset_duplicates,
+            'dataset_empty_rows': dataset_empty_rows,
+            'dataset_sample_min_len': dataset_sample_min_len,
+            'dataset_sample_max_len': dataset_sample_max_len
+        }
+        return df_analysis
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = self._raw_data.drop(['context', 'category', 'text'], axis=1)
+        self._data = self._raw_data.rename(columns={'instruction': ColumnNames.QUESTION,
+                                                    'response': ColumnNames.TARGET})
 
 
 class TaskDataset(Dataset):

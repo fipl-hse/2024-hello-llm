@@ -3,7 +3,6 @@ Module with description of abstract data importer.
 """
 
 # pylint: disable=duplicate-code
-import pandas as pd
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -34,14 +33,13 @@ class AbstractRawDataImporter(ABC):
              hf_name (str | None): Name of the HuggingFace dataset
         """
         self._hf_name = hf_name
-        self._raw_data = self.obtain()
+        self._raw_data = None
 
     @abstractmethod
     def obtain(self) -> None:
         """
         Download a dataset.
         """
-        pass
 
     @property
     def raw_data(self) -> DataFrame | None:
