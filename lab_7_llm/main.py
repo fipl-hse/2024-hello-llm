@@ -8,6 +8,21 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 
+import pandas as pd
+import torch
+
+from datasets import load_dataset
+from pandas import DataFrame
+from torch.utils.data import Dataset
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
+
 class RawDataImporter(AbstractRawDataImporter):
     """
     A class that imports the HuggingFace dataset.
@@ -21,6 +36,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        dataset = load_dataset(self._hf_name, split="validation")
+        self._raw_data = dataset.to_pandas()
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError("The downloaded dataset is not pd.DataFrame")
 
 
 
@@ -36,6 +56,25 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        dataset_number_of_samples=self._raw_data.shape[0]
+        dataset_columns=self._raw_data.shape[1]
+        dataset_duplicates=self._raw_data.duplicated().sum()
+        dataset_empty_rows=self._raw_data.df.isna().any(axis=1).sum()
+        dataset_sample_min_len=self._raw_data["content"].dropna().map(len).min()
+        dataset_sample_max_len=self._raw_data["content"].map(len).max()
+
+        return {
+            "dataset_number_of_samples": dataset_number_of_samples,
+            "dataset_columns": dataset_columns,
+            "dataset_duplicates": dataset_duplicates,
+            "dataset_empty_rows": dataset_empty_rows,
+            "dataset_sample_min_len": dataset_sample_min_len,
+            "dataset_sample_max_len": dataset_sample_max_len
+        }
+
+
+
+
 
     @report_time
     def transform(self) -> None:
