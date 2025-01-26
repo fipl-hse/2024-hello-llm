@@ -56,12 +56,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        no_na_data =  self._raw_data.replace("", pd.NA).dropna()
+
         dataset_info = {
             "dataset_number_of_samples": self._raw_data.shape[0],
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
-            "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
-            "dataset_sample_min_len": self._raw_data["info"].dropna().map(len).min(),
+            "dataset_empty_rows": self._raw_data.shape[0] - no_na_data.shape[0],
+            "dataset_sample_min_len": self._raw_data["info"].map(len).min(),
             "dataset_sample_max_len": self._raw_data["info"].map(len).max()
         }
         return dataset_info
@@ -72,6 +74,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = self._raw_data.replace("", pd.NA).dropna()
         self._data = self._raw_data.rename(columns={"info": ColumnNames.SOURCE.value,
                                                     "summary": ColumnNames.TARGET.value})
         self._data.reset_index(drop=True, inplace=True)
@@ -111,7 +114,7 @@ class TaskDataset(Dataset):
             tuple[str, ...]: The item to be received
         """
         item = self._data.loc[index, ColumnNames.SOURCE.value]
-        return item,
+        return (item,)
 
     @property
     def data(self) -> DataFrame:
@@ -144,7 +147,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model.to(self._device)
+        self._model = self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                         model_max_length=max_length,
                                                         device=self._device)
@@ -168,7 +171,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return {
             "input_shape": list(input_ids.size()),
-            "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
+            "embedding_size": self._model.config.d_model,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._model.config.vocab_size,
@@ -224,14 +227,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        pipe = pipeline("text2text-generation",
-                        model=self._model,
-                        tokenizer=self._tokenizer,
-                        truncation=True,
-                        max_length=self._max_length)
+        inputs = self._tokenizer(list(sample_batch[0]),
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True)
 
-        res = pipe(list(sample_batch[0]))
-        return [r["generated_text"] for r in res]
+        output_sequences = self._model.generate(
+            input_ids=inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
+            max_length=self._max_length
+        )
+
+        return self._tokenizer.batch_decode(output_sequences,
+                                            skip_special_tokens=True)
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
