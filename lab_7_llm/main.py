@@ -4,9 +4,22 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+import torch
+from datasets import load_dataset
+from pandas import DataFrame
+from typing import Sequence, Iterable
+from torch.utils.data import Dataset
 from pathlib import Path
-from typing import Iterable, Sequence
-#nothing is identical
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+from evaluate import load
+import pandas as pd
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,12 +34,34 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        dataset = load_dataset("trixdade/reviews_russian", split="train")
+        df = pd.DataFrame(dataset)
+        df.rename(columns={"Reviews": "source", "Summary": "target"}, inplace=True)
+        df.reset_index(drop=True, inplace=True)
+
+        # Debugging step: print or log the DataFrame to confirm it's correct
+        print("Obtained DataFrame:", df.head())
+
+        return df
+
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
     """
+    def __init__(self, raw_data: pd.DataFrame) -> None:
+        if raw_data is None:
+            raise ValueError("Raw data cannot be None")
+        self._raw_data = raw_data
+        self._data = raw_data
+
+    @property
+    def data(self) -> pd.DataFrame:
+        """
+        Property to access the preprocessed dataset.
+        """
+        return self._data
 
     def analyze(self) -> dict:
         """
@@ -35,12 +70,27 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        cleaned_data = self._data.dropna()
+
+        return {
+            "dataset_number_of_samples": len(self._data),
+            "dataset_columns": len(self._data.columns),
+            "dataset_duplicates": self._data.duplicated().sum(),
+            "dataset_empty_rows": self._data.isnull().sum().sum(),
+            "dataset_sample_min_len": cleaned_data["source"].str.len().min(),
+            "dataset_sample_max_len": cleaned_data["source"].str.len().max(),
+        }
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
+
+        Returns:
+            pd.DataFrame: Preprocessed dataset
         """
+        self._data.dropna(inplace=True)
+        self._data.rename(columns={"Reviews": "source", "Summary": "target"}, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -55,6 +105,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -63,6 +114,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -74,6 +126,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        row = self._data.iloc[index]
+        return row["source"], row["target"]
 
     @property
     def data(self) -> DataFrame:
@@ -83,6 +137,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
