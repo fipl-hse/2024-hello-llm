@@ -114,7 +114,7 @@ class TaskDataset(Dataset):
             tuple[str, ...]: The item to be received
         """
         item = self._data.loc[index, ColumnNames.SOURCE.value]
-        return (item,)
+        return (str(item),)
 
     @property
     def data(self) -> DataFrame:
@@ -149,8 +149,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._model = self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
-                                                        model_max_length=max_length,
-                                                        device=self._device)
+                                                        model_max_length=max_length)
 
 
     def analyze_model(self) -> dict:
@@ -160,7 +159,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        input_ids = torch.ones((1, 768), dtype=torch.long)
+        input_ids = torch.ones((1, 768), dtype=torch.long, device=self._device)
         input_data = {"input_ids": input_ids, "decoder_input_ids": input_ids}
 
         if isinstance(self._model, torch.nn.Module):
@@ -210,7 +209,7 @@ class LLMPipeline(AbstractLLMPipeline):
             sample_predictions = self._infer_batch(batch)
             predictions.extend(sample_predictions)
 
-        res = self._dataset.data.copy()
+        res = pd.DataFrame(self._dataset.data)
         res[ColumnNames.PREDICTION.value] = predictions
 
         return res
@@ -232,14 +231,15 @@ class LLMPipeline(AbstractLLMPipeline):
                                  padding=True,
                                  truncation=True)
 
-        output_sequences = self._model.generate(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
+        output_ids = self._model.generate(
+            input_ids=inputs["input_ids"].to(self._device),
+            attention_mask=inputs["attention_mask"].to(self._device),
             max_length=self._max_length
         )
 
-        return self._tokenizer.batch_decode(output_sequences,
-                                            skip_special_tokens=True)
+        output_sequences = self._tokenizer.batch_decode(output_ids,
+                                                        skip_special_tokens=True)
+        return [str(seq) for seq in output_sequences]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
