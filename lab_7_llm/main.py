@@ -18,6 +18,7 @@ from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.metrics import Metrics
 
 import pandas as pd
+from pandas import DataFrame
 from datasets import load_dataset
 
 
@@ -105,7 +106,7 @@ class TaskDataset(Dataset):
         """
 
     @property
-    def data(self) -> pd.DataFrame:
+    def data(self) -> DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
