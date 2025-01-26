@@ -1,10 +1,12 @@
 datasets==3.2.0
-evaluate
-fastapi
-jinja2
+evaluate==0.4.3
+fastapi==0.115.7
 numpy==1.24.3
 pandas==1.5.3
-torch
-transformers
-uvicorn
+pydantic==2.10.6
+rouge-score==0.1.2
+torch==2.5.1
+torchinfo==1.8.0
+transformers==4.48.0
+uvicorn==0.34.0
 
