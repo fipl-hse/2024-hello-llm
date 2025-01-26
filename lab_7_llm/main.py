@@ -9,6 +9,9 @@ from typing import Iterable, Sequence
 
 import torch
 from torch.utils.data import Dataset
+from torchinfo import summary
+
+from transformers import BertForSequenceClassification, BertTokenizer
 
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
@@ -93,6 +96,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -101,6 +105,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return self._data.shape[0]
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -112,6 +117,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.loc[index, [ColumnNames.SOURCE, ColumnNames.TARGET]])
 
     @property
     def data(self) -> DataFrame:
@@ -121,6 +127,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -141,6 +148,10 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+
+        self._model = BertForSequenceClassification.from_pretrained(model_name)
+        self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -149,6 +160,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        model_summary = summary(self.model)
+
+        model_properties = {
+            "input_shape": list(model_summary.input_size),
+            "embedding_size": self.model.config.hidden_size,
+            "output_shape": [self._batch_size, self.model.config.num_labels],
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": self.model.config.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self.model.config.max_position_embeddings
+        }
+
+        return model_properties
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
