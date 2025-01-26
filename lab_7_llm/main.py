@@ -13,7 +13,7 @@ from torch.utils.data import Dataset
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.metrics import Metrics
 
@@ -35,7 +35,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(self._hf_name, split='test')
+        dataset = load_dataset(self._hf_name, split='validation')
         self._raw_data = pd.DataFrame(dataset)
 
         if not isinstance(self._raw_data, pd.DataFrame):
@@ -71,6 +71,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        renamed_dataset = self._raw_data.rename(columns={
+            ColumnNames.LABEL: ColumnNames.TARGET,
+            ColumnNames.TEXT: ColumnNames.SOURCE
+        })
+
+        renamed_dataset[ColumnNames.TARGET], _ = pd.factorize(renamed_dataset[ColumnNames.TARGET])
+
+        self._data = renamed_dataset
 
 
 class TaskDataset(Dataset):
