@@ -7,6 +7,12 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from datasets import load_dataset
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.time_decorator import report_time
+import pandas as pd
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,6 +27,10 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(self._hf_name, subset='simplified', split= 'validation').to_pandas()
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError('The downloaded dataset is not pd.DataFrame')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +45,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        strings_count = self._raw_data.shape()
+        empty = self._raw_data[self._raw_data.isna().any(axis=1)]
+        duplicates = self._raw_data[self._raw_data.duplicated()]
+        # dataset_columns = self._raw_data.columns
+        # columns_count = ''s
+        # cleaned = raw_data_df.dropna().drop_duplicates()
+        print(strings_count[0], len(empty), len(duplicates))
 
     @report_time
     def transform(self) -> None:
