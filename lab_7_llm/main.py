@@ -7,6 +7,18 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import pandas as pd
+import torch
+from pandas import DataFrame
+from datasets import load_dataset, Dataset
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,6 +33,9 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(self._hf_name, split='train').to_pandas()
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +50,19 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        dataset_number_of_samples = self._raw_data.shape[0]
+        dataset_columns = self._raw_data.shape[1]
+        dataset_duplicates = len(self._raw_data[self._raw_data.duplicated()])
+        dataset_empty_rows = len(self._raw_data[self._raw_data.isna().any(axis=1)])
+        cleaned = self._raw_data.dropna().drop_duplicates()
+        dataset_sample_min_len = int(cleaned['instruction'].str.len().min())
+        dataset_sample_max_len = int(cleaned['instruction'].str.len().max())
+        return {'dataset_number_of_samples': dataset_number_of_samples,
+                'dataset_columns': dataset_columns,
+                'dataset_duplicates':dataset_duplicates,
+                'dataset_empty_rows': dataset_empty_rows,
+                'dataset_sample_min_len': dataset_sample_min_len,
+                'dataset_sample_max_len': dataset_sample_max_len}
 
     @report_time
     def transform(self) -> None:
