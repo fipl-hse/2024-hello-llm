@@ -53,8 +53,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         dataset_number_of_samples = self._raw_data.shape[0]
         dataset_columns = self._raw_data.shape[1]
         dataset_duplicates = len(self._raw_data[self._raw_data.duplicated()])
-        dataset_empty_rows = len(self._raw_data[self._raw_data.isna().any(axis=1)])
-        cleaned = self._raw_data.dropna().drop_duplicates()
+        df = self._raw_data.replace('', pd.NA)
+        dataset_empty_rows = len(df[df.isna().any(axis=1)])
+        cleaned = self._raw_data.replace('', pd.NA).dropna().drop_duplicates()
         dataset_sample_min_len = int(cleaned['instruction'].str.len().min())
         dataset_sample_max_len = int(cleaned['instruction'].str.len().max())
         return {'dataset_number_of_samples': dataset_number_of_samples,
