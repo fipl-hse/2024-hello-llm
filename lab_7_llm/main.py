@@ -40,9 +40,6 @@ class RawDataImporter(AbstractRawDataImporter):
         dataset = load_dataset(self._hf_name, split="test")
         self._raw_data = pd.DataFrame(dataset)
 
-        assert isinstance(self._raw_data, pd.DataFrame), \
-            TypeError("Downloaded dataset is not a pd.DataFrame.")
-
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
@@ -59,10 +56,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         no_na_data =  self._raw_data.replace("", pd.NA).dropna()
 
         dataset_info = {
-            "dataset_number_of_samples": self._raw_data.shape[0],
+            "dataset_number_of_samples": len(self._raw_data),
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
-            "dataset_empty_rows": self._raw_data.shape[0] - no_na_data.shape[0],
+            "dataset_empty_rows": len(self._raw_data) - len(no_na_data),
             "dataset_sample_min_len": self._raw_data["info"].map(len).min(),
             "dataset_sample_max_len": self._raw_data["info"].map(len).max()
         }
@@ -113,8 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        item = self._data.loc[index, ColumnNames.SOURCE.value]
-        return (str(item),)
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -132,6 +128,8 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
+    _model: torch.nn.Module
+
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
@@ -147,7 +145,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model = self._model.to(self._device)
+        self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                         model_max_length=max_length)
 
@@ -162,11 +160,7 @@ class LLMPipeline(AbstractLLMPipeline):
         input_ids = torch.ones((1, 768), dtype=torch.long, device=self._device)
         input_data = {"input_ids": input_ids, "decoder_input_ids": input_ids}
 
-        if isinstance(self._model, torch.nn.Module):
-            model_summary = summary(self._model, input_data=input_data, verbose=0)
-        else:
-            raise ValueError((f"model type {type(self._model)}"
-                              " is incompatible with torchinfo.summary"))
+        model_summary = summary(self._model, input_data=input_data, verbose=0)
 
         return {
             "input_shape": list(input_ids.size()),

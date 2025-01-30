@@ -1,5 +1,5 @@
-const userInput = document.getElementById('user-input');
-const submitBtn = document.getElementById('submit-btn');
+const userInput = document.getElementById('user-full-text-input');
+const submitBtn = document.getElementById('summarize-btn');
 const responseText = document.getElementById('response');
 
 const updateResponseText = (message) => {
@@ -14,22 +14,25 @@ submitBtn.addEventListener('click', async () => {
         return;
     }
 
+    updateResponseText('Doing AI magic...')
+
     try {
-        const response = await fetch("/summarize", {
+        const response = await fetch("/infer", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ query: userText })
+            body: JSON.stringify({ question: userText })
         });
 
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            const errorMessage = await response.text()
+            throw new Error(`Network response was not ok: ${errorMessage}`);
         }
 
         const data = await response.json();
         updateResponseText(data.infer);
     } catch (error) {
-        updateResponseText('Error: ' + error.message);
+        updateResponseText(`Error!  ${error.message}`);
     }
 });

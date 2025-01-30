@@ -1,7 +1,6 @@
 """
 Web service for model inference.
 """
-import json
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from pathlib import Path
 
@@ -11,7 +10,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic.dataclasses import dataclass
-import uvicorn
 
 from config.lab_settings import LabSettings
 from lab_7_llm.main import LLMPipeline, TaskDataset
@@ -41,20 +39,22 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     """
     settings = LabSettings(PARENT_DIRECTORY / "settings.json")
 
-    pipe = LLMPipeline(
+    llm_pipe = LLMPipeline(
         model_name=settings.parameters.model,
         dataset=TaskDataset(pd.DataFrame()),
         max_length=120,
-        batch_size=64,
+        batch_size=1,
         device="cpu"
     )
 
-    app = FastAPI()
-    app.mount(path="/assets",
-              app=StaticFiles(directory=PARENT_DIRECTORY / "assets"),
-              name="assets")
+    llm_app = FastAPI()
+    llm_app.mount(
+        path="/assets",
+        app=StaticFiles(directory=PARENT_DIRECTORY / "assets"),
+        name="assets"
+    )
 
-    return app, pipe
+    return llm_app, llm_pipe
 
 
 app, pipeline = init_application()
@@ -86,5 +86,4 @@ async def infer(query: Query) -> dict[str, str]:
     Returns:
         dict[str, str]: Inference results as a dictionary.
     """
-    res = pipeline.infer_sample((query.question, ))
-    return {"infer": f"Summary: {res}"}
+    return {"infer": pipeline.infer_sample((query.question,))}
