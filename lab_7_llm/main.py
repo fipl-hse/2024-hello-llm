@@ -7,6 +7,19 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import torch
+import pandas as pd
+from datasets import load_dataset
+
+from torch.utils.data import Dataset
+
+from core_utils.llm.time_decorator import report_time
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.metrics import Metrics
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,6 +34,8 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        dataset = load_dataset(self._hf_name, split="test")
+        self._raw_data = pd.DataFrame(dataset)
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,12 +50,27 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        props = {
+            'dataset_number_of_samples': self._raw_data.shape[0],
+            'dataset_columns': self._raw_data.shape[1],
+            'dataset_duplicates': self._raw_data.duplicated().sum(),
+            'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
+            'dataset_sample_min_len': self._raw_data['text'].dropna().str.len().min(),
+            'dataset_sample_max_len': self._raw_data['text'].dropna().str.len().max()
+        }
+        return props
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = self._raw_data.copy()
+        self._data.rename(columns={
+            'labels': ColumnNames.TARGET.value,
+            'text': ColumnNames.SOURCE.value
+        }, inplace=True)
+        self._data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -55,6 +85,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -63,6 +94,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return self._data.shape[0]
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -74,6 +106,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.loc[index])
 
     @property
     def data(self) -> DataFrame:
@@ -83,6 +116,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
