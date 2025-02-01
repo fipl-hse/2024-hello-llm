@@ -11,6 +11,9 @@ import torch
 import pandas as pd
 from datasets import load_dataset
 from pandas import DataFrame
+from torch.utils.data import DataLoader
+from torchinfo import summary
+from transformers import AlbertTokenizer, AlbertModel
 
 from torch.utils.data import Dataset
 
@@ -125,6 +128,8 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
+    _model: torch.nn.Module
+
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
@@ -138,6 +143,10 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = AlbertModel.from_pretrained(model_name)
+        self._model.to(self._device)
+        self._tokenizer = AlbertTokenizer.from_pretrained(model_name, model_max_length=max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -146,6 +155,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        model_summary = summary(self._model)
+
+        return {
+            "input_shape": [self._model.config.batch_size, self._model.config.max_length],
+            "embedding_size": self._model.config.d_model,
+            "output_shape": model_summary.summary_list[-1].output_size,
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": self._model.config.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self._model.config.max_length
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -158,6 +178,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -167,6 +188,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(batch_size=self._batch_size,
+                                 dataset=self._dataset)
+
+        predictions = []
+        for batch in data_loader:
+            sample_predictions = self._infer_batch(batch)
+            predictions.extend(sample_predictions)
+
+        res = pd.DataFrame(self._dataset.data)
+        res[ColumnNames.PREDICTION.value] = predictions
+
+        return res
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -179,6 +212,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        inputs = self._tokenizer(list(sample_batch[0]),
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True).to(self._device)
+
+        outputs = self._model(inputs)
+        return [str(seq) for seq in outputs]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -203,4 +243,3 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-

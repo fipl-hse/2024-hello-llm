@@ -17,14 +17,27 @@ def main() -> None:
     Run the translation pipeline.
     """
     settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
-
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     key_properties = preprocessor.analyze()
+    print(key_properties)
+
     preprocessor.transform()
-    result = key_properties
+    dataset = TaskDataset(preprocessor.data.head(100))
+
+    pipeline = LLMPipeline(settings.parameters.model,
+                           dataset,
+                           max_length=120,
+                           batch_size=1,
+                           device="cpu")
+
+    pipeline.analyze_model()
+    sample_inference = pipeline.infer_sample(dataset.__getitem__(0))
+
+    result = sample_inference
+
     assert result is not None, "Demo does not work correctly"
 
 
