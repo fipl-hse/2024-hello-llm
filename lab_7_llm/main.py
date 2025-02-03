@@ -39,7 +39,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         self._raw_data = load_dataset(path=self._hf_name, split='if_test').to_pandas()
 
-        if isinstance(self._raw_data, pd.DataFrame):
+        if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError
 
 
