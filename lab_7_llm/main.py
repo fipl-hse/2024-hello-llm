@@ -6,6 +6,23 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+import pandas as pd
+import torch
+from torch.utils.data import Dataset
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.time_decorator import report_time
+from pandas.core.frame import DataFrame
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.metrics import Metrics
+
+
+
+
+from datasets import load_dataset
+
+
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,6 +38,13 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        dataset = load_dataset(self._hf_name, split="train").to_pandas()
+
+        if not isinstance(dataset, pd.DataFrame):
+            raise TypeError("Downloaded dataset is not a pandas DataFrame.")
+
+        self._raw_data = dataset
+
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,12 +59,32 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        num_samples = self._raw_data.shape[0]
+        num_columns = self._raw_data.shape[1]
+
+        num_duplicates = self._raw_data.duplicated().sum()
+        num_empty_rows = self._raw_data.isnull().all(axis=1).sum()
+
+        cleaned_data = self._raw_data.dropna()
+
+        min_sample_length, max_sample_length = cleaned_data["text"].str.len().agg(["min", "max"])
+
+        return {
+            "dataset_number_of_samples": num_samples,
+            "dataset_columns": num_columns,
+            "dataset_duplicates": num_duplicates,
+            "dataset_empty_rows": num_empty_rows,
+            "dataset_sample_min_len": min_sample_length,
+            "dataset_sample_max_len": max_sample_length,
+        }
+
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+
 
 
 class TaskDataset(Dataset):
