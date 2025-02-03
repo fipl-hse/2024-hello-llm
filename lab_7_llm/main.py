@@ -3,15 +3,25 @@ Laboratory work.
 
 Working with Large Language Models.
 """
-
-from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
-from core_utils.llm.time_decorator import report_time
-# pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
-from datasets import load_dataset
 from pathlib import Path
 from typing import Iterable, Sequence
+
+import torch
 import pandas as pd
+from datasets import load_dataset
+from transformers import BertForSequenceClassification, BertTokenizerFast
+from pandas import DataFrame
+
+from torch.utils.data import Dataset
+
+from core_utils.llm.time_decorator import report_time
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.metrics import Metrics
+
+# pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -63,12 +73,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        pass
 
 
 class TaskDataset(Dataset):
     """
     A class that converts pd.DataFrame to Dataset and works with it.
     """
+    pass
 
     def __init__(self, data: pd.DataFrame) -> None:
         """
@@ -77,7 +89,8 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
-
+        pass
+    
     def __len__(self) -> int:
         """
         Return the number of items in the dataset.
@@ -85,7 +98,8 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
-
+        pass
+    
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
         Retrieve an item from the dataset by index.
@@ -96,6 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        pass
 
     @property
     def data(self) -> DataFrame:
@@ -105,6 +120,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        pass
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -125,6 +141,7 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        pass
 
     def analyze_model(self) -> dict:
         """
@@ -133,6 +150,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        pass
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -145,6 +163,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        pass
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -154,6 +173,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        pass
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -166,6 +186,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        pass
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -181,6 +202,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        pass
 
     @report_time
     def run(self) -> dict | None:
@@ -190,3 +212,4 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        pass
