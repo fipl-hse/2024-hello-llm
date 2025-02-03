@@ -2,8 +2,8 @@
 Starter for demonstration of laboratory work.
 """
 import json
-# pylint: disable= too-many-locals, undefined-variable, unused-import
 
+# pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
 from config.constants import PROJECT_ROOT
