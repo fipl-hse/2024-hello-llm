@@ -51,7 +51,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        info = {
+        return {
             'dataset_number_of_samples': self._raw_data.shape[0],
             'dataset_columns': self._raw_data.shape[1],
             'dataset_duplicates': self._raw_data.duplicated().sum(),
@@ -59,7 +59,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_sample_min_len": self._raw_data['text'].dropna().map(len).min(),
             "dataset_sample_max_len": self._raw_data['text'].map(len).max()
         }
-        return info
 
     @report_time
     def transform(self) -> None:
