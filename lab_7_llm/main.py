@@ -186,7 +186,10 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True)
         with torch.no_grad():
             outputs = self._model(**inputs)
-        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        logits = outputs.logits
+        predicted = torch.argmax(logits, dim=-1)
+        decoded_text = self._tokenizer.batch_decode(predicted, skip_special_tokens=True)[0]
+        return decoded_text
 
     @report_time
     def infer_dataset(self) -> DataFrame:
