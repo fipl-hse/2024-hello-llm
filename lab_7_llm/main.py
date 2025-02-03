@@ -155,10 +155,7 @@ class LLMPipeline(AbstractLLMPipeline):
         max_position_embeddings = self._model.config.max_position_embeddings
         tensor = torch.ones((1, max_position_embeddings), dtype=torch.long)
         input_data = {"input_ids": tensor, "attention_mask": tensor}
-        try:
-            model_summary = summary(self._model, input_data=input_data, verbose=False)
-        except Exception as e:
-            raise RuntimeError(f"Failed to run torchinfo: {e}")
+        model_summary = summary(self._model, input_data=input_data, verbose=False)
         return {
             "input_shape": list(tensor.shape),
             "embedding_size": self._model.config.hidden_size,
@@ -166,7 +163,7 @@ class LLMPipeline(AbstractLLMPipeline):
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._model.config.vocab_size,
             "size": model_summary.total_param_bytes,
-            "max_context_length": self._model.config.max_length
+            "max_context_length": max_position_embeddings
         }
 
     @report_time
