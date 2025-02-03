@@ -58,14 +58,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         properties = dict()
         properties['dataset_number_of_samples'] = self._raw_data.shape[0]
         properties['dataset_columns'] = self._raw_data.shape[1]
-        properties['dataset_duplicates'] = self._raw_data.duplicated().sum()
+        properties['dataset_duplicates'] = self._raw_data.duplicated().sum().tolist()
         empty_str = self._raw_data[['ru', 'en', 'ru_annotated']].apply(lambda row: sum(len(x) for x in row), axis=1)
         self._raw_data = self._raw_data.drop(empty_str[empty_str == 0], axis=0)
-        properties['dataset_empty_rows'] = self._raw_data.isna().sum().sum() + len(empty_str[empty_str == 0])
+        properties['dataset_empty_rows'] = self._raw_data.isna().sum().sum().tolist() + len(empty_str[empty_str == 0])
         if properties['dataset_empty_rows'] > 0:
             self._raw_data = self._raw_data.dropna()
-        properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(lambda x: len(x)).max()
-        properties['dataset_sample_min_len'] = self._raw_data['ru'].apply(lambda x: len(x)).min()
+        properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(lambda x: len(x)).max().tolist()
+        properties['dataset_sample_min_len'] = self._raw_data['ru'].apply(lambda x: len(x)).min().tolist()
         return properties
 
     @report_time
