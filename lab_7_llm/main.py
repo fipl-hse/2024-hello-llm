@@ -15,7 +15,7 @@ from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
 
-from admin_utils.stubs.datasets import Dataset
+from torch.utils.data import Dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
