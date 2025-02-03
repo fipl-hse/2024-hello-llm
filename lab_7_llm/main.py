@@ -177,7 +177,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        inputs = self._tokenizer(sample[0], return_tensors='pt', padding=True, truncation=True)
+        inputs = self._tokenizer(sample[0], return_tensors='pt', padding=True,
+                                 truncation=True, return_token_type_ids=False)
         with torch.no_grad():
             outputs = self._model(**inputs)
         return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
