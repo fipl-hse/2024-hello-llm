@@ -126,6 +126,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
+    _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -151,7 +152,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        self._model: torch.nn.Module
         input_data = torch.ones((1, 512), dtype=torch.long, device=self._device)
         model_summary = summary(self._model, input_data=input_data, verbose=0)
         return {
@@ -178,9 +178,8 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
         inputs = self._tokenizer(sample[0], return_tensors='pt', padding=True,
-                                 truncation=True, return_token_type_ids=False)
-        with torch.no_grad():
-            outputs = self._model(**inputs)
+                                 truncation=True)
+        outputs = self._model.generate(**inputs)
         return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 
     @report_time
