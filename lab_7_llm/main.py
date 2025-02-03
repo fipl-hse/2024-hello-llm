@@ -7,18 +7,20 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import torch
 import pandas as pd
-from torchinfo import summary
+import torch
 from datasets import load_dataset
-from torch.utils.data import Dataset, DataLoader
-from core_utils.llm.time_decorator import report_time
+from pandas import DataFrame
+from torch.utils.data import Dataset
+from torchinfo import summary
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
-from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
-from core_utils.llm.metrics import Metrics
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -181,7 +183,7 @@ class LLMPipeline(AbstractLLMPipeline):
         return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 
     @report_time
-    def infer_dataset(self) -> pd.DataFrame:
+    def infer_dataset(self) -> DataFrame:
         """
         Infer model on a whole dataset.
 
