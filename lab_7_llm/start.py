@@ -5,7 +5,7 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 
 from config.constants import PROJECT_ROOT
-from main import RawDataImporter, RawDataPreprocessor
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
 from core_utils.llm.time_decorator import report_time
 from config.lab_settings import LabSettings
 
