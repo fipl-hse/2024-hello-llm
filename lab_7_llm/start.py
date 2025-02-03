@@ -5,7 +5,7 @@ Starter for demonstration of laboratory work.
 
 from pathlib import Path
 import json
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, report_time
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline, report_time
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 
@@ -22,10 +22,19 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
+
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    result = analysis
+    pipeline = LLMPipeline(settings.parameters.model,
+                           dataset,
+                           max_length=120,
+                           batch_size=1,
+                           device="cpu")
+    summary = pipeline.analyze_model()
+    sample = pipeline.infer_sample(dataset[1])
+
+    result = sample
     assert result is not None, "Demo does not work correctly"
 
 
