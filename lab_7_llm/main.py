@@ -3,9 +3,15 @@ Laboratory work.
 
 Working with Large Language Models.
 """
+
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.time_decorator import report_time
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+from datasets import load_dataset
 from pathlib import Path
 from typing import Iterable, Sequence
+import pandas as pd
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,6 +27,10 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(path=self._hf_name, split='if_test').to_pandas()
+
+        if isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +45,18 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        properties = dict()
+        properties['dataset_number_of_samples'] = self._raw_data.shape[0]
+        properties['dataset_columns'] = self._raw_data.shape[1]
+        properties['dataset_duplicates'] = self._raw_data.duplicated().sum()
+        empty_str = self._raw_data[['ru', 'en', 'ru_annotated']].apply(lambda row: sum(len(x) for x in row), axis=1)
+        self._raw_data = self._raw_data.drop(empty_str[empty_str == 0], axis=0)
+        properties['dataset_empty_rows'] = self._raw_data.isna().sum().sum() + len(empty_str[empty_str == 0])
+        if properties['dataset_empty_rows'] > 0:
+            self._raw_data = self._raw_data.dropna()
+        properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(lambda x: len(x)).max()
+        properties['dataset_sample_min_len'] = self._raw_data['ru'].apply(lambda x: len(x)).min()
+        return properties
 
     @report_time
     def transform(self) -> None:
