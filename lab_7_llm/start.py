@@ -22,8 +22,8 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
-    #preprocessor.transform()
-    #dataset = TaskDataset(preprocessor.data.head(100))
+    preprocessor.transform()
+    dataset = TaskDataset(preprocessor.data.head(100))
 
     result = analysis
     assert result is not None, "Demo does not work correctly"
