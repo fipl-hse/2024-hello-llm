@@ -156,7 +156,7 @@ class LLMPipeline(AbstractLLMPipeline):
         model_summary = summary(self._model, input_data=input_data, verbose=0)
         return {
             "input_shape": list(input_data.size()),
-            "embedding_size": self._model.config.d_model,
+            "embedding_size": self._model.config.hidden_size,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._model.config.vocab_size,
