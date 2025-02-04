@@ -1,15 +1,18 @@
 """
 Starter for demonstration of laboratory work.
 """
-# pylint: disable= too-many-locals, undefined-variable, unused-import
-from pathlib import Path
-
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline
-
-from core_utils.llm.time_decorator import report_time
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+    TaskEvaluator,
+)
 
+# pylint: disable= too-many-locals, undefined-variable, unused-import
 
 @report_time
 def main() -> None:
@@ -34,7 +37,7 @@ def main() -> None:
                            device="cpu")
 
     pipeline.analyze_model()
-    sample_inference = pipeline.infer_sample(dataset.__getitem__(0))
+    sample_inference = pipeline.infer_sample(dataset[0])
 
     result = sample_inference
 
