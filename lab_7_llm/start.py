@@ -25,8 +25,8 @@ def main() -> None:
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(config_file['parameters']['model'], dataset, max_length=120, batch_size=64, device='cpu')
     #print(pipeline.analyze_model())
-    infer_sample_result = pipeline.infer_sample(dataset[1])
-    assert infer_sample_result is not None, "Demo does not work correctly"
+    result = pipeline.infer_sample(dataset[1])
+    assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":
