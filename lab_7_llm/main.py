@@ -13,7 +13,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
-from transformers import MarianMTModel, MarianTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -143,9 +143,9 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = MarianMTModel.from_pretrained(model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._model.to(self._device)
-        self._tokenizer = MarianTokenizer.from_pretrained(model_name, max_length=self._max_length)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name, max_length=self._max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -187,10 +187,9 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=sample[0], padding=True, truncation=True,
-                                                       max_length=self._max_length, return_tensors='pt').input_ids
-        outputs = self._model.generate(inputs, max_length=self._max_length)
-
+        inputs = self._tokenizer(sample[0], max_length=self._max_length, truncation=True,
+                                 return_tensors="pt", return_token_type_ids=False)
+        outputs = self._model.generate(**inputs, max_length=self._max_length)
         return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 
     @report_time
