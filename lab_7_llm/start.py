@@ -24,9 +24,8 @@ def main() -> None:
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(config_file['parameters']['model'], dataset, max_length=120, batch_size=1, device='cpu')
-    #pipeline.analyze_model()
+    print(pipeline.analyze_model())
     infer_sample_result = pipeline.infer_sample(dataset[0])
-
     assert infer_sample_result is not None, "Demo does not work correctly"
 
 

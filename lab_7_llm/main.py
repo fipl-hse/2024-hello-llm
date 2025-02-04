@@ -6,7 +6,6 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
-
 import pandas as pd
 import torch
 
@@ -161,7 +160,7 @@ class LLMPipeline(AbstractLLMPipeline):
         model_properties['vocab_size'] = model_config.vocab_size
         model_properties['embedding_size'] = model_config.max_position_embeddings
 
-        ids = torch.ones((self._batch_size, model_properties['embedding_size']), dtype=torch.long, device=self._device)
+        ids = torch.ones((1, model_properties['embedding_size']), dtype=torch.long, device=self._device)
         input_data = {"input_ids": ids, "decoder_input_ids": ids}
 
         model_stats = summary(self._model, input_data=input_data, verbose=0)
