@@ -5,6 +5,8 @@ Laboratory work.
 
 Working with Large Language Models.
 """
+from __future__ import annotations
+
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 #from re import split
@@ -17,6 +19,7 @@ from pandas import DataFrame
 
 from torch.utils.data import Dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
