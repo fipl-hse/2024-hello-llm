@@ -6,6 +6,19 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+from datasets import load_dataset
+
+import pandas as pd
+import numpy as np
+from torch.utils.data import Dataset
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+import torch
+from fastapi import FastAPI
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,7 +34,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-
+        self._raw_data = pd.DataFrame(load_dataset(self._hf_name, split='validation', trust_remote_code=True))
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
@@ -35,13 +48,32 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        temp_df = self._raw_data.copy()
+
+        for column in temp_df.columns:
+            temp_df[column] = temp_df[column].str.join(" ")
+
+        duplicates = temp_df[temp_df.duplicated()].shape[0]
+
+        empty_rows = self._raw_data[self._raw_data.isnull().all(axis=1)].shape[0]
+
+        no_na_df = self._raw_data.dropna()
+
+        return {
+            'dataset_columns': self._raw_data.shape[1],
+            'dataset_duplicates': duplicates,
+            'dataset_empty_rows': empty_rows,
+            'dataset_number_of_samples': self._raw_data.shape[0],
+            'dataset_sample_max_len': int(no_na_df["tokens"].str.len().max()),
+            'dataset_sample_min_len': int(no_na_df["tokens"].str.len().min())
+        }
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
-
+        pass
 
 class TaskDataset(Dataset):
     """
@@ -76,7 +108,7 @@ class TaskDataset(Dataset):
         """
 
     @property
-    def data(self) -> DataFrame:
+    def data(self) -> pd.DataFrame:
         """
         Property with access to preprocessed DataFrame.
 

@@ -1,8 +1,8 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
+    "model": "dslim/distilbert-NER",
+    "dataset": "eriktks/conll2003",
     "metrics": []
   },
-  "target_score": 0
+  "target_score": 4
 }
