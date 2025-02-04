@@ -146,6 +146,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length)
+        self.batch_size = batch_size
 
     def analyze_model(self) -> dict:
         """
@@ -157,7 +158,7 @@ class LLMPipeline(AbstractLLMPipeline):
         model_summary = summary(self._model)
 
         return {
-            "input_shape": [self._model.config.batch_size, self._model.config.max_length],
+            "input_shape": [self.batch_size, self._model.config.max_length],
             "embedding_size": self._model.config.d_model,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
@@ -217,7 +218,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True).to(self._device)
 
         outputs = self._model(inputs["input_ids"])
-        return [pred.item() for pred in F.softmax(outputs["logits"], dim=1).argmax(axis=1)]
+        return [str(pred.item()) for pred in F.softmax(outputs["logits"], dim=1).argmax(axis=1)]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
