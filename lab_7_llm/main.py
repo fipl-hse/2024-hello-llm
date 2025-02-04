@@ -18,7 +18,7 @@ from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 import torch
-from fastapi import FastAPI
+import fastapi
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -34,7 +34,10 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = pd.DataFrame(load_dataset(self._hf_name, split='validation', trust_remote_code=True))
+        self._raw_data = pd.DataFrame(
+            load_dataset(self._hf_name, split="validation", trust_remote_code=True)
+        )
+
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
@@ -60,12 +63,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         no_na_df = self._raw_data.dropna()
 
         return {
-            'dataset_columns': self._raw_data.shape[1],
-            'dataset_duplicates': duplicates,
-            'dataset_empty_rows': empty_rows,
-            'dataset_number_of_samples': self._raw_data.shape[0],
-            'dataset_sample_max_len': int(no_na_df["tokens"].str.len().max()),
-            'dataset_sample_min_len': int(no_na_df["tokens"].str.len().min())
+            "dataset_columns": self._raw_data.shape[1],
+            "dataset_duplicates": duplicates,
+            "dataset_empty_rows": empty_rows,
+            "dataset_number_of_samples": self._raw_data.shape[0],
+            "dataset_sample_max_len": int(no_na_df["tokens"].str.len().max()),
+            "dataset_sample_min_len": int(no_na_df["tokens"].str.len().min()),
         }
 
     @report_time
@@ -74,6 +77,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         pass
+
 
 class TaskDataset(Dataset):
     """
@@ -116,6 +120,7 @@ class TaskDataset(Dataset):
             pandas.DataFrame: Preprocessed DataFrame
         """
         pass
+
 
 class LLMPipeline(AbstractLLMPipeline):
     """
