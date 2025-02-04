@@ -70,7 +70,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        pass
+        data = pd.DataFrame
+        data.rename(columns={'reasons':'target', 'toxic_comment':'source'}, inplace=True)
+
+        data['target'] = data['target'].apply(lambda x: 1 if x == {'toxic_content':True} else 0)
+
+        data = data[data['irrelevant_column']!= 2]
+
+        data.drop_duplicates(inplace=True)
+
+        data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -85,7 +94,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
-        pass
+
 
     def __len__(self) -> int:
         """
