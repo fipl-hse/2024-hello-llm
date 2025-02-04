@@ -210,7 +210,7 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         sample_batch_squeezed = [sample for el in sample_batch for sample in el]
-        inputs = self._tokenizer.tok.prepare_seq2seq_batch(src_texts=sample_batch_squeezed,
+        inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=sample_batch_squeezed,
                                                            padding=True, truncation=True,
                                                            return_tensors='pt').input_ids
         return list(self._tokenizer.batch_decode(self._model.generate(inputs), skip_special_tokens=True))
