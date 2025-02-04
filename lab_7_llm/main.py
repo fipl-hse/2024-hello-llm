@@ -1,21 +1,19 @@
 """
 Laboratory work.
 
-Мой коммент
-
 Working with Large Language Models.
 """
 from __future__ import annotations
 
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
-#from re import split
 from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
-#from evaluate import load
 from pandas import DataFrame
+from fastapi import FastAPI, Request
+
 
 from torch.utils.data import Dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -40,7 +38,7 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
         dataset = load_dataset(self._hf_name, split='train')
-        self.raw_data=pd.DataFrame(dataset)
+        self._raw_data=pd.DataFrame(dataset)
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
