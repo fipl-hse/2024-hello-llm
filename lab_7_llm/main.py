@@ -9,11 +9,12 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+import torch.nn.functional as F
 from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AlbertModel, AlbertTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -142,9 +143,9 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AlbertModel.from_pretrained(model_name)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self._model.to(self._device)
-        self._tokenizer = AlbertTokenizer.from_pretrained(model_name, model_max_length=max_length)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -215,8 +216,8 @@ class LLMPipeline(AbstractLLMPipeline):
                                  padding=True,
                                  truncation=True).to(self._device)
 
-        outputs = self._model(inputs)
-        return [str(seq) for seq in outputs]
+        outputs = self._model(inputs["input_ids"])
+        return [pred.item() for pred in F.softmax(outputs["logits"], dim=1).argmax(axis=1)]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
