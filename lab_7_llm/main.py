@@ -145,7 +145,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._model.to(self._device)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name, max_length=self._max_length)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -168,7 +168,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_properties['input_shape'] = [model_stats.input_size['input_ids'][0],
                                            model_stats.input_size['input_ids'][1]]
-        model_properties['num_trainable_params'] = model_stats.trainable_params
+        model_properties['num_trainable_params'] = model_stats.total_params
         model_properties['output_shape'] = model_stats.summary_list[-1].output_size
         model_properties['size'] = model_stats.total_param_bytes
 
