@@ -187,7 +187,11 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        return self._infer_batch([sample])[0]
+        inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=sample[0], padding=True, truncation=True,
+                                                       max_length=self._max_length, return_tensors='pt').input_ids
+        outputs = self._model.generate(inputs, max_length=self._max_length)
+
+        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -210,11 +214,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        sample_batch_squeezed = [sample for el in sample_batch for sample in el]
-        inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=sample_batch_squeezed,
-                                                       padding=True, truncation=True,
-                                                       return_tensors='pt').input_ids
-        return list(self._tokenizer.batch_decode(self._model.generate(inputs), skip_special_tokens=True))
+        pass
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
