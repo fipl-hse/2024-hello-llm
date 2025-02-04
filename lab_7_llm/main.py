@@ -54,7 +54,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        data = self._raw_data['source'].map(len, na_action='ignore')
+        data = self._raw_data['toxic_comment', 'reason'].map(len, na_action='ignore')
         analyze = {
             'dataset_number_of_samples' : len(self._raw_data),
             'dataset_columns' : len(self._raw_data.columns),
