@@ -12,7 +12,6 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from fastapi import FastAPI, Request
 
 
 from torch.utils.data import Dataset
@@ -40,6 +39,9 @@ class RawDataImporter(AbstractRawDataImporter):
         dataset = load_dataset(self._hf_name, split='train')
         self._raw_data=pd.DataFrame(dataset)
 
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError("Downloaded dataset's type is not pd.DataFrame")
+
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
@@ -52,14 +54,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        data = self._raw_data['neutral'].map(len, na_action='ignore')
+        data = self._raw_data['source'].map(len, na_action='ignore')
         analyze = {
-            'dataset_number_of_samples':len(self._raw_data),
-            'dataset_columns':len(self._raw_data.columns),
-            'dataset_duplicates':self._raw_data.duplicated().sum(),
-            'dataset_empty_rows':self._raw_data.isnull().sum(),
-            'dataset_sample_min_len':data.min(),
-            'dataset_sample_max_len':data.max()
+            'dataset_number_of_samples' : len(self._raw_data),
+            'dataset_columns' : len(self._raw_data.columns),
+            'dataset_duplicates' : self._raw_data.duplicated().sum(),
+            'dataset_empty_rows' : self._raw_data.isna().all(axis=1).sum(),
+            'dataset_sample_min_len' : data.min(),
+            'dataset_sample_max_len' : data.max()
         }
         return analyze
 
