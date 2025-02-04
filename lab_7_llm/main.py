@@ -6,9 +6,9 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+
 import pandas as pd
 import torch
-
 from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
@@ -73,7 +73,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = self._raw_data.drop(columns=['ru_annotated', 'styles'])
-        self._data = self._data.rename(columns={'ru': 'source', 'en': 'target'}).reset_index()
+        self._data = self._data.rename(columns={'ru': ColumnNames.SOURCE.value,
+                                                'en':  ColumnNames.TARGET.value}).reset_index()
 
 
 class TaskDataset(Dataset):
@@ -144,7 +145,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = MarianMTModel.from_pretrained(model_name)
         self._model.to(self._device)
-        self._tokenizer = MarianTokenizer.from_pretrained(model_name)
+        self._tokenizer = MarianTokenizer.from_pretrained(model_name, max_length=self._max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -160,7 +161,7 @@ class LLMPipeline(AbstractLLMPipeline):
         model_properties['vocab_size'] = model_config.vocab_size
         model_properties['embedding_size'] = model_config.max_position_embeddings
 
-        ids = torch.ones((1, model_properties['embedding_size']), dtype=torch.long, device=self._device)
+        ids = torch.ones((1, model_properties['embedding_size']), dtype=torch.long)
         input_data = {"input_ids": ids, "decoder_input_ids": ids}
 
         model_stats = summary(self._model, input_data=input_data, verbose=0)
@@ -211,8 +212,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         sample_batch_squeezed = [sample for el in sample_batch for sample in el]
         inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=sample_batch_squeezed,
-                                                           padding=True, truncation=True,
-                                                           return_tensors='pt').input_ids
+                                                       padding=True, truncation=True,
+                                                       return_tensors='pt').input_ids
         return list(self._tokenizer.batch_decode(self._model.generate(inputs), skip_special_tokens=True))
 
 
