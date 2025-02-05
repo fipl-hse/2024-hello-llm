@@ -9,6 +9,7 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+import torch.nn.functional as F
 from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
@@ -18,7 +19,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -73,7 +74,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         self._data.rename(columns={'label': 'target',
                                    'text': 'source'},
                           inplace=True)
-        self._data.reset_index(drop=True, inplace=True)
+        self._data.reset_index(drop=True).drop_duplicates()
 
 
 class TaskDataset(Dataset):
@@ -109,7 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.iloc[index])
+        return tuple(self._data.source.iloc[index])
 
     @property
     def data(self) -> pd.DataFrame:
@@ -157,13 +158,13 @@ class LLMPipeline(AbstractLLMPipeline):
         input_data = {"input_ids": tensor, "attention_mask": tensor}
         model_summary = summary(self._model, input_data=input_data, verbose=False)
         return {
-            "input_shape": list(tensor.shape),
-            "embedding_size": self._model.config.hidden_size,
+            "input_shape": list(tensor.size()),
+            "embedding_size": max_position_embeddings,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._model.config.vocab_size,
             "size": model_summary.total_param_bytes,
-            "max_context_length": max_position_embeddings
+            "max_context_length": self._model.config.max_length
         }
 
     @report_time
@@ -179,15 +180,14 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        inputs = self._tokenizer(sample[0], return_tensors='pt', padding=True,
+
+        inputs = self._tokenizer(list(sample[0]), return_tensors="pt", padding=True,
                                  truncation=True)
-        with torch.no_grad():
-            return self._tokenizer.batch_decode(
-                torch.argmax(self._model(**inputs).logits, dim=-1),
-                skip_special_tokens=True)[0]
+        outputs = self._model(**inputs)
+        return [str(pred.item()) for pred in F.softmax(outputs.logits, dim=1).argmax(axis=1)][0]
 
     @report_time
-    def infer_dataset(self) -> DataFrame:
+    def infer_dataset(self) -> pd.DataFrame:
         """
         Infer model on a whole dataset.
 
