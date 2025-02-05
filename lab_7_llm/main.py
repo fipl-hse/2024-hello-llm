@@ -36,7 +36,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         self._raw_data = load_dataset(path=self._hf_name, split='test').to_pandas()
         if not isinstance(self._raw_data, pd.DataFrame):
-            raise TypeError
+            raise TypeError('Dataset is not pd.Dataframe')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
