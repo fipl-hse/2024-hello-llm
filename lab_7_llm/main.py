@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -38,7 +38,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         self._raw_data = load_dataset(path=self._hf_name, split='test').to_pandas()
         if not isinstance(self._raw_data, pd.DataFrame):
-            raise TypeError
+            raise TypeError('Downloaded dataset is not pd.DataFrame')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -53,14 +53,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        dataset_properties = {'dataset_number_of_samples': self._raw_data.shape[0],
-                              'dataset_columns': self._raw_data.shape[1],
-                              'dataset_duplicates': self._raw_data.duplicated().sum().item(),
-                              'dataset_empty_rows': self._raw_data.isna().sum().sum().item(),
-                              'dataset_sample_min_len': min(len(sample) for sample in self._raw_data["article"]),
-                              'dataset_sample_max_len': max(len(sample) for sample in self._raw_data["article"])}
-
-        return dataset_properties
+        return {'dataset_number_of_samples': self._raw_data.shape[0],
+                'dataset_columns': self._raw_data.shape[1],
+                'dataset_duplicates': self._raw_data.duplicated().sum().item(),
+                'dataset_empty_rows': self._raw_data.isna().sum().sum().item(),
+                'dataset_sample_min_len': min(len(sample) for sample in self._raw_data["article"]),
+                'dataset_sample_max_len': max(len(sample) for sample in self._raw_data["article"])}
 
     @report_time
     def transform(self) -> None:
@@ -105,7 +103,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.source.iloc[index])
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]), )
 
     @property
     def data(self) -> DataFrame:
@@ -124,7 +122,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -137,9 +135,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=self._max_length)
-        self._max_length = max_length
 
     def analyze_model(self) -> dict:
         """
@@ -153,11 +150,13 @@ class LLMPipeline(AbstractLLMPipeline):
 
         summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
 
-        return {'input_shape': list(tensor.shape), 'embedding_size': list(tensor.shape)[1],
-                'output_shape': summary_m.summary_list[-1].output_size, 'num_trainable_params': summary_m.trainable_params,
-                'vocab_size': self._model.config.vocab_size, 'size': summary_m.total_param_bytes,
+        return {'input_shape': list(tensor.shape),
+                'embedding_size': self._model.config.encoder.max_position_embeddings,
+                'output_shape': summary_m.summary_list[-1].output_size,
+                'num_trainable_params': summary_m.trainable_params,
+                'vocab_size': self._model.config.vocab_size,
+                'size': summary_m.total_param_bytes,
                 'max_context_length': self._model.config.max_length}
-
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -172,10 +171,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        inputs = self._tokenizer(sample[0], max_length=self._max_length, truncation=True,
-                                 return_tensors="pt", return_token_type_ids=False)
-        outputs = self._model.generate(**inputs, max_length=self._max_length)
-        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -185,6 +181,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(batch_size=self._batch_size, dataset=self._dataset)
+        outputs = []
+
+        for batch in data_loader:
+            summarized = self._infer_batch(batch)
+            outputs.extend(summarized)
+
+        infered_dataset = pd.DataFrame(self._dataset.data)
+        infered_dataset[ColumnNames.PREDICTION.value] = outputs
+
+        return infered_dataset
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -197,6 +204,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        inputs = self._tokenizer(list(sample_batch[0]),
+                                 max_length=self._max_length,
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True,
+                                 return_token_type_ids=False)
+        input_ids = inputs["input_ids"].to(self._device)
+        attention_mask = inputs["attention_mask"].to(self._device)
+        outputs = self._model.generate(input_ids, attention_mask=attention_mask)
+        summarized_texts = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
+        return [str(text) for text in summarized_texts]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):

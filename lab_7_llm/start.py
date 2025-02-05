@@ -30,10 +30,16 @@ def main() -> None:
     pipeline = LLMPipeline(settings['parameters']['model'], dataset, max_length=120, batch_size=64, device='cpu')
     print(pipeline.analyze_model())
 
-    sample = pipeline.infer_sample(dataset[1])
-    # print(sample)
+    sample = pipeline.infer_sample(dataset[0])
+    print(sample)
+
+    infered_df = pipeline.infer_dataset()
+
+    path_to_outputs = PROJECT_ROOT/'lab_7_llm'/'dist'/'predictions.csv'
+    infered_df.to_csv(path_to_outputs, index=False)
 
     result = sample
+
     assert result is not None, "Demo does not work correctly"
 
 
