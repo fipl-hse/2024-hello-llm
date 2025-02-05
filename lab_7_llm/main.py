@@ -146,7 +146,6 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
-
         summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
 
         return {'input_shape': list(tensor.shape), 'embedding_size': list(tensor.shape)[1],
