@@ -7,9 +7,14 @@ import json
 from pathlib import Path
 
 from config.constants import PROJECT_ROOT
-from lab_7_llm.main import LLMPipeline, RawDataImporter, \
-    RawDataPreprocessor, report_time, \
-    TaskDataset, TaskEvaluator
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+    TaskEvaluator,
+)
 
 
 @report_time

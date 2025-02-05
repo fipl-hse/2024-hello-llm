@@ -123,7 +123,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -246,7 +246,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         outputs_df = pd.read_csv(self.data_path)
-        summaries, targets = outputs_df[ColumnNames.PREDICTION.value], outputs_df[ColumnNames.TARGET.value]
+        summaries, targets = outputs_df[ColumnNames.PREDICTION.value], \
+                             outputs_df[ColumnNames.TARGET.value]
 
         evaluation = {}
         string_metrics = [format(item) for item in self._metrics]
