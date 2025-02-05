@@ -6,6 +6,8 @@ import json
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
+import pandas as pd
+
 from config.constants import PROJECT_ROOT
 from lab_7_llm.main import (
     LLMPipeline,
@@ -27,35 +29,36 @@ def main() -> None:
 
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
-    preprocessor = RawDataPreprocessor(importer.raw_data)
+    if isinstance(importer.raw_data, pd.DataFrame):
+        preprocessor = RawDataPreprocessor(importer.raw_data)
 
-    # print(preprocessor.analyze())
-    preprocessor.transform()
-    dataset = TaskDataset(preprocessor.data.head(100))
+        # print(preprocessor.analyze())
+        preprocessor.transform()
+        dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings['parameters']['model'],
-                           dataset,
-                           max_length=120,
-                           batch_size=64,
-                           device='cpu')
-    print(pipeline.analyze_model())
+        pipeline = LLMPipeline(settings['parameters']['model'],
+                               dataset,
+                               max_length=120,
+                               batch_size=64,
+                               device='cpu')
+        print(pipeline.analyze_model())
 
-    # sample = pipeline.infer_sample(dataset[0])
-    # print(sample)
+        # sample = pipeline.infer_sample(dataset[0])
+        # print(sample)
 
-    infered_df = pipeline.infer_dataset()
+        infered_df = pipeline.infer_dataset()
 
-    path_to_outputs = PROJECT_ROOT/'lab_7_llm'/'dist'/'predictions.csv'
-    path_to_outputs.parent.mkdir(exist_ok=True)
-    infered_df.to_csv(path_to_outputs, index=False)
+        path_to_outputs = PROJECT_ROOT/'lab_7_llm'/'dist'/'predictions.csv'
+        path_to_outputs.parent.mkdir(exist_ok=True)
+        infered_df.to_csv(path_to_outputs, index=False)
 
-    evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
-    results = evaluation.run()
-    # print(results)
+        evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
+        results = evaluation.run()
+        # print(results)
 
-    result = results
+        result = results
 
-    assert result is not None, "Demo does not work correctly"
+        assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":
