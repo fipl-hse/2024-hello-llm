@@ -66,7 +66,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = (self._raw_data.rename(columns={'article': ColumnNames.SOURCE.value,
-                                                    'abstract': ColumnNames.TARGET.value})
+                                                     'abstract': ColumnNames.TARGET.value})
                       .reset_index(drop=True).drop_duplicates())
 
 
@@ -136,8 +136,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name,
-                                                        model_max_length=self._max_length)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+                                                        #model_max_length=self._max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -146,14 +146,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings),
+        tensor = torch.ones((1, self._model.config.n_positions),
                             dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
 
         summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
 
         return {'input_shape': list(tensor.shape),
-                'embedding_size': self._model.config.encoder.max_position_embeddings,
+                'embedding_size': self._model.config.n_positions,
                 'output_shape': summary_m.summary_list[-1].output_size,
                 'num_trainable_params': summary_m.trainable_params,
                 'vocab_size': self._model.config.vocab_size,
@@ -207,14 +207,14 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         inputs = self._tokenizer(list(sample_batch[0]),
-                                 max_length=self._max_length,
                                  return_tensors="pt",
                                  padding=True,
                                  truncation=True,
-                                 return_token_type_ids=False)
-        input_ids = inputs["input_ids"].to(self._device)
-        attention_mask = inputs["attention_mask"].to(self._device)
-        outputs = self._model.generate(input_ids, attention_mask=attention_mask)
+                                 max_length=self._max_length)
+                                 # return_token_type_ids=False)
+        # input_ids = inputs["input_ids"].to(self._device)
+        # attention_mask = inputs["attention_mask"].to(self._device)
+        outputs = self._model.generate(**inputs, max_length=self._max_length)
         summarized_texts = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         return [str(text) for text in summarized_texts]

@@ -1,6 +1,6 @@
 {
   "parameters": {
-    "model": "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization",
+    "model": "nandakishormpai/t5-small-machine-articles-tag-generation",
     "dataset": "ccdv/pubmed-summarization",
     "metrics": ["bleu", "rouge"]
   },
