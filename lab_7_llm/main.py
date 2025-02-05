@@ -158,7 +158,7 @@ class LLMPipeline(AbstractLLMPipeline):
         input_data = {"input_ids": tensor, "attention_mask": tensor}
         model_summary = summary(self._model, input_data=input_data, verbose=False)
         return {
-            "input_shape": list(tensor.size()),
+            "input_shape": {"input_ids": list(tensor.size()), "attention_mask": list(tensor.size())},
             "embedding_size": max_position_embeddings,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
