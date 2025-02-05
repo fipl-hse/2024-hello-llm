@@ -180,11 +180,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-
-        inputs = self._tokenizer(list(sample[0]), return_tensors="pt", padding=True,
-                                 truncation=True)
-        outputs = self._model(**inputs)
-        return [str(pred.item()) for pred in F.softmax(outputs.logits, dim=1).argmax(axis=1)][0]
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -206,6 +202,10 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        inputs = self._tokenizer(list(sample_batch[0]), return_tensors="pt", padding=True,
+                                 truncation=True)
+        outputs = self._model(**inputs)
+        return [str(pred.item()) for pred in F.softmax(outputs.logits, dim=1).argmax(dim=1)]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
