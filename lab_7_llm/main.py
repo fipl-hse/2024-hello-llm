@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -66,8 +66,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = (self._raw_data.rename(columns={'article': ColumnNames.SOURCE.value,
-                                                    'abstract': ColumnNames.TARGET.value}).reset_index(drop=True)
-                      .drop_duplicates())
+                                                    'abstract': ColumnNames.TARGET.value})
+                      .reset_index(drop=True).drop_duplicates())
 
 
 class TaskDataset(Dataset):
@@ -136,7 +136,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=self._max_length)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                        model_max_length=self._max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -145,7 +146,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
+        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings),
+                            dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
 
         summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)

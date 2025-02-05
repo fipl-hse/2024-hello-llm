@@ -27,7 +27,11 @@ def main() -> None:
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings['parameters']['model'], dataset, max_length=120, batch_size=64, device='cpu')
+    pipeline = LLMPipeline(settings['parameters']['model'],
+                           dataset,
+                           max_length=120,
+                           batch_size=64,
+                           device='cpu')
     print(pipeline.analyze_model())
 
     sample = pipeline.infer_sample(dataset[0])
@@ -36,6 +40,7 @@ def main() -> None:
     infered_df = pipeline.infer_dataset()
 
     path_to_outputs = PROJECT_ROOT/'lab_7_llm'/'dist'/'predictions.csv'
+    path_to_outputs.parent.mkdir(exist_ok=True)
     infered_df.to_csv(path_to_outputs, index=False)
 
     result = sample
