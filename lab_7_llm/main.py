@@ -151,7 +151,7 @@ class LLMPipeline(AbstractLLMPipeline):
         return {'input_shape': list(tensor.shape), 'embedding_size': list(tensor.shape)[1],
                 'output_shape': summary_m.summary_list[-1].output_size,
                 'num_trainable_params': summary_m.trainable_params,
-                'vocab_size': self._model.config.vocab_size, 'size': summary_m.total_param_bytes,
+                'vocab_size': self._model.config.encoder.vocab_size, 'size': summary_m.total_param_bytes,
                 'max_context_length': self._model.config.max_length}
 
     @report_time
