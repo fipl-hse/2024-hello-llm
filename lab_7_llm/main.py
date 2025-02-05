@@ -109,7 +109,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.loc[index])
+        return tuple(self._data.SOURCE.iloc[index])
 
     @property
     def data(self) -> DataFrame:
@@ -212,7 +212,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        inputs = self._tokenizer(list(sample_batch),
+        inputs = self._tokenizer(list(sample_batch[0]),
                                  return_tensors="pt",
                                  padding=True,
                                  truncation=True).to(self._device)
