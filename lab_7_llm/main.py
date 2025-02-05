@@ -7,13 +7,14 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import evaluate
 import torch
 import pandas as pd
 from datasets import load_dataset
 from torchinfo import summary
 from transformers import BertForSequenceClassification, BertTokenizerFast
 
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
@@ -113,7 +114,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.loc[index])
+        return tuple(str(self._data.loc[index, ColumnNames.SOURCE.value]))
 
     @property
     def data(self) -> pd.DataFrame:
@@ -155,16 +156,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        model_summary = summary(self._model)
+        tensor = torch.zeros(1, self._model.config.max_position_embeddings, dtype=torch.long)
+        model_summary = summary(self._model, input_data={'input_ids': tensor, 'attention_mask': tensor}, device='cpu')
 
         properties = {
-            'input_shape': ...,
-            'embedding_size': ...,
-            'output_shape': ...,
+            'input_shape': {'input_ids': list(tensor.size()), 'attention_mask': list(tensor.size())},
+            'embedding_size': self._model.config.max_position_embeddings,
+            'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
-            'vocab_size': ...,
+            'vocab_size': self._model.config.vocab_size,
             'size': model_summary.total_param_bytes,
-            'max_context_length': ...
+            'max_context_length': self._model.config.max_length
         }
 
         return properties
@@ -180,6 +182,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -189,6 +192,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        df = pd.DataFrame(self._dataset.data)
+        predicted = []
+        for batch in dataloader:
+            predicted.extend(self._infer_batch(batch))
+        df[ColumnNames.PREDICTION.value] = predicted
+        return df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -201,6 +211,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        inputs = self._tokenizer(
+            list(sample_batch[0]),
+            max_length=self._max_length,
+            padding=True,
+            truncation=True,
+            return_tensors='pt'
+        )
+        outputs = self._model(**inputs)
+        predicted = torch.nn.functional.softmax(outputs.logits, dim=1)
+        predicted = torch.argmax(predicted, dim=1).numpy()
+        return [str(i) if i != 0 else '2' for i in predicted]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
