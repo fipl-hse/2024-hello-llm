@@ -165,6 +165,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+        encoded_batch = self._tokenizer.prepare_seq2seq_batch(
+            [sample],
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=self._max_length)
+
+        output_ids = self._model.generate(
+            input_ids=encoded_batch["input_ids"],
+            max_length=self._max_length
+        )
+
+        headline = self._tokenizer.decode(output_ids[0],
+                                    skip_special_tokens=True,
+                                    clean_up_tokenization_spaces=False)
+
+        return headline[0]
 
 
     @report_time
