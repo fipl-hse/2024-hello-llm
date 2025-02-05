@@ -70,8 +70,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = self._raw_data.copy()
         self._data.rename(columns={
-            'labels': ColumnNames.TARGET.value,
-            'text': ColumnNames.SOURCE.value
+            'label': 'target',
+            'text': 'source'
         }, inplace=True)
         self._data.reset_index(drop=True, inplace=True)
 
@@ -109,7 +109,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.SOURCE.iloc[index])
+        return tuple(self._data.source.iloc[index])
 
     @property
     def data(self) -> DataFrame:
