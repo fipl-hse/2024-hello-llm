@@ -164,6 +164,7 @@ clicks
 clone
 closed
 closely
+cls
 cn
 code
 coding
@@ -238,6 +239,7 @@ dataloader
 dataset
 dataset's
 datasets
+datasettypes
 de
 deberta
 decode
@@ -308,6 +310,7 @@ edition
 efficiency
 efficient
 efficiently
+ei
 eleutherai
 elif
 eliminate
@@ -479,6 +482,7 @@ huge
 huggingface
 huggingfaceh
 hundreds
+ic
 id
 identify
 idf
@@ -551,6 +555,7 @@ json
 jtatman
 juice
 kashchikhin
+ke
 key
 kinopoisk
 knn
@@ -574,6 +579,7 @@ learns
 lectures
 lectures-content-label
 legb
+leicestershire
 len
 length
 lengths
@@ -1121,6 +1127,7 @@ variety
 various
 vary
 varying
+ve
 vec
 venv
 vernon
