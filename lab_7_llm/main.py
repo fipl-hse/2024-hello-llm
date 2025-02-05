@@ -75,11 +75,22 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         renamed_dataset = self._raw_data.rename(columns={
-            ColumnNames.LABEL: ColumnNames.TARGET,
-            ColumnNames.TEXT: ColumnNames.SOURCE
-        })
+            'label': 'target',
+            'text': 'source'
+        }, inplace=False)
 
-        renamed_dataset[ColumnNames.TARGET], _ = pd.factorize(renamed_dataset[ColumnNames.TARGET])
+        label_map = {'tat': '0',
+                     'rus': '1',
+                     'kir': '2',
+                     'krc': '3',
+                     'bak': '4',
+                     'sah': '5',
+                     'kaz': '6',
+                     'tyv': '7',
+                     'chv': '8'
+                     }
+
+        renamed_dataset['target'] = renamed_dataset['target'].map(label_map)
 
         self._data = renamed_dataset
 
@@ -117,7 +128,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.loc[index, [ColumnNames.SOURCE, ColumnNames.TARGET]])
+        return tuple(self._data.loc[index, ['source', 'target']])
 
     @property
     def data(self) -> DataFrame:
@@ -134,6 +145,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
+    _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -151,6 +163,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
         self._model = BertForSequenceClassification.from_pretrained(model_name)
+        self._model.to(self._device)
         self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -160,16 +173,21 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        model_summary = summary(self.model)
+        model_config = self._model.config
+
+        embeddings_length = model_config.max_position_embeddings
+        ids = torch.ones(1, embeddings_length, dtype=torch.long)
+        tokens = {"input_ids": ids, "attention_mask": ids}
+        model_summary = summary(self._model, input_data=tokens, device=self._device, verbose=0)
 
         model_properties = {
-            "input_shape": list(model_summary.input_size),
-            "embedding_size": self.model.config.hidden_size,
-            "output_shape": [self._batch_size, self.model.config.num_labels],
+            "input_shape": {"attention_mask": list(model_summary.input_size['attention_mask']), "input_ids": list(model_summary.input_size['input_ids'])},
+            "embedding_size": model_config.max_position_embeddings,
+            "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
-            "vocab_size": self.model.config.vocab_size,
+            "vocab_size": model_config.vocab_size,
             "size": model_summary.total_param_bytes,
-            "max_context_length": self.model.config.max_position_embeddings
+            "max_context_length": model_config.max_length
         }
 
         return model_properties
@@ -185,6 +203,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+
+        inputs = self._tokenizer(sample, return_tensors="pt", padding=True, truncation=True)
+
+        with torch.no_grad():
+            logits = self._model(**inputs).logits
+
+        return str(logits.argmax().item())
+
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -206,6 +234,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
