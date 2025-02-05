@@ -10,6 +10,7 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
@@ -103,7 +104,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (str(self._data.loc[index, ColumnNames.SOURCE.value]), )
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -122,7 +123,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -137,7 +138,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-                                                        #model_max_length=self._max_length)
+        # model_max_length=self._max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -211,7 +212,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  padding=True,
                                  truncation=True,
                                  max_length=self._max_length)
-                                 # return_token_type_ids=False)
+        # return_token_type_ids=False)
         # input_ids = inputs["input_ids"].to(self._device)
         # attention_mask = inputs["attention_mask"].to(self._device)
         outputs = self._model.generate(**inputs, max_length=self._max_length)
@@ -233,6 +234,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -242,3 +245,15 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        df = pd.read_csv(self.data_path)
+        summaries, targets = df[ColumnNames.PREDICTION.value], df[ColumnNames.TARGET.value]
+
+        evaluation = {}
+        for m in self._metrics:
+            m = str(m)
+            metric = load(m, seed=77).compute(predictions=summaries, references=targets)
+            if m == 'rouge':
+                evaluation[m] = metric['rougeL']
+            else:
+                evaluation[m] = metric[m]
+        return evaluation

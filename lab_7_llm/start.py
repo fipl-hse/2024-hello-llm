@@ -8,7 +8,7 @@ from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset
+from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset, TaskEvaluator
 
 
 @report_time
@@ -34,8 +34,8 @@ def main() -> None:
                            device='cpu')
     print(pipeline.analyze_model())
 
-    sample = pipeline.infer_sample(dataset[0])
-    print(sample)
+    # sample = pipeline.infer_sample(dataset[0])
+    # print(sample)
 
     infered_df = pipeline.infer_dataset()
 
@@ -43,7 +43,11 @@ def main() -> None:
     path_to_outputs.parent.mkdir(exist_ok=True)
     infered_df.to_csv(path_to_outputs, index=False)
 
-    result = sample
+    evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
+    results = evaluation.run()
+    # print(results)
+
+    result = results
 
     assert result is not None, "Demo does not work correctly"
 
