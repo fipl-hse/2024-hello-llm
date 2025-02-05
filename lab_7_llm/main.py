@@ -245,15 +245,17 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self.data_path)
-        summaries, targets = df[ColumnNames.PREDICTION.value], df[ColumnNames.TARGET.value]
+        outputs_df = pd.read_csv(self.data_path)
+        summaries, targets = outputs_df[ColumnNames.PREDICTION.value], outputs_df[ColumnNames.TARGET.value]
 
         evaluation = {}
-        for m in self._metrics:
-            m = str(m)
-            metric = load(m, seed=77).compute(predictions=summaries, references=targets)
-            if m == 'rouge':
-                evaluation[m] = metric['rougeL']
+        string_metrics = [format(item) for item in self._metrics]
+
+        for metr in string_metrics:
+            # metr = str(metr)
+            metric = load(metr, seed=77).compute(predictions=summaries, references=targets)
+            if metr == 'rouge':
+                evaluation[metr] = metric['rougeL']
             else:
-                evaluation[m] = metric[m]
+                evaluation[metr] = metric[metr]
         return evaluation
