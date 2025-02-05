@@ -13,10 +13,12 @@ from datasets import load_dataset
 from pandas import DataFrame
 
 from torch.utils.data import Dataset
+from torchinfo import summary
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -65,6 +67,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = (self._raw_data.rename(columns={'info': ColumnNames.SOURCE.value,
+                                                     'summary': ColumnNames.TARGET.value}).reset_index(drop=True))
 
 
 class TaskDataset(Dataset):
@@ -79,6 +83,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -87,6 +92,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -98,6 +104,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return (self._data.iloc[index],)
 
     @property
     def data(self) -> DataFrame:
@@ -107,6 +114,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -114,9 +122,7 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
-    ) -> None:
+    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -127,6 +133,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -135,6 +144,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
+        inputs = {"input_ids": tensor, "attention_mask": tensor}
+
+        summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
+
+        return {'input_shape': list(tensor.shape), 'embedding_size': list(tensor.shape)[1],
+                'output_shape': summary_m.summary_list[-1].output_size,
+                'num_trainable_params': summary_m.trainable_params,
+                'vocab_size': self._model.config.vocab_size, 'size': summary_m.total_param_bytes,
+                'max_context_length': self._model.config.max_length}
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -147,6 +166,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:

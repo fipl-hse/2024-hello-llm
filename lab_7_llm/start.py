@@ -7,7 +7,7 @@ from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, LLMPipeline, TaskDataset
 
 
 @report_time
@@ -20,6 +20,11 @@ def main() -> None:
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
     preprocessor = RawDataPreprocessor(importer.raw_data)
+    preprocessor.transform()
+    dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings['parameters']['model'], dataset, 120, 64, 'cpu')
+    #print(pipeline.analyze_model())
+
     result = importer
     assert result is not None, "Demo does not work correctly"
 
