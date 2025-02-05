@@ -70,6 +70,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        df = self._raw_data.copy()
+        df = df[df['category'] == 'open_qa']
+        df = df.drop(columns=['context', 'category', '__index_level_0__'])
+        df = df.rename(columns={"instruction": "question", "response": "target"})
+        self._data = df
 
 
 class TaskDataset(Dataset):
@@ -84,6 +89,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = Dataset.from_pandas(data)
 
     def __len__(self) -> int:
         """
@@ -92,6 +98,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return self._data.num_rows
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -103,6 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.select([index]))
 
     @property
     def data(self) -> DataFrame:
@@ -112,6 +120,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data.to_pandas()
 
 
 class LLMPipeline(AbstractLLMPipeline):
