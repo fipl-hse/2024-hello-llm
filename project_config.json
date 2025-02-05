@@ -2,21 +2,25 @@
     "labs": [
         {
             "name": "lab_7_llm",
-            "coverage": 84
+            "coverage": 83
         }
     ],
     "addons": [
         {
-            "name": "admin_utils"
+            "name": "admin_utils",
+            "coverage": 0
         },
         {
-            "name": "config"
+            "name": "config",
+            "coverage": 0
         },
         {
-            "name": "seminars"
+            "name": "seminars",
+            "coverage": 0
         },
         {
-            "name": "core_utils"
+            "name": "core_utils",
+            "coverage": 0
         }
     ],
     "repository": {

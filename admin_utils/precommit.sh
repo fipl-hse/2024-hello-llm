@@ -39,3 +39,4 @@ python -m flake8 "${DIRS_TO_CHECK[@]}"
 sphinx-build -b html -W --keep-going -n . dist -c admin_utils
 
 python -m pytest -m "mark10 and lab_7_llm"
+python -m pytest -m "mark10 and lab_8_finetuning"
