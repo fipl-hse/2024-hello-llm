@@ -1,4 +1,20 @@
 {
+    "Arsive/toxicity_classification_jigsaw": {
+        "dataset_columns": 8,
+        "dataset_duplicates": 0,
+        "dataset_empty_rows": 0,
+        "dataset_number_of_samples": 6490,
+        "dataset_sample_max_len": 5000,
+        "dataset_sample_min_len": 17
+    },
+    "Babelscape/wikineural": {
+        "dataset_columns": 3,
+        "dataset_duplicates": 0,
+        "dataset_empty_rows": 0,
+        "dataset_number_of_samples": 11590,
+        "dataset_sample_max_len": 143,
+        "dataset_sample_min_len": 2
+    },
     "CarlBrendt/Summ_Dialog_News": {
         "dataset_columns": 2,
         "dataset_duplicates": 0,
@@ -135,6 +151,14 @@
         "dataset_sample_max_len": 713,
         "dataset_sample_min_len": 7
     },
+    "eriktks/conll2003": {
+        "dataset_columns": 5,
+        "dataset_duplicates": 0,
+        "dataset_empty_rows": 0,
+        "dataset_number_of_samples": 3250,
+        "dataset_sample_max_len": 109,
+        "dataset_sample_min_len": 1
+    },
     "imdb": {
         "dataset_columns": 2,
         "dataset_duplicates": 199,
@@ -199,6 +223,14 @@
         "dataset_sample_max_len": 1136,
         "dataset_sample_min_len": 4
     },
+    "s-nlp/en_paradetox_toxicity": {
+        "dataset_columns": 2,
+        "dataset_duplicates": 2227,
+        "dataset_empty_rows": 0,
+        "dataset_number_of_samples": 26507,
+        "dataset_sample_max_len": 149,
+        "dataset_sample_min_len": 1
+    },
     "s-nlp/ru_non_detoxified": {
         "dataset_columns": 2,
         "dataset_duplicates": 9454,
@@ -258,7 +290,7 @@
     "tatsu-lab/alpaca": {
         "dataset_columns": 4,
         "dataset_duplicates": 0,
-        "dataset_empty_rows": 31351,
+        "dataset_empty_rows": 31339,
         "dataset_number_of_samples": 52002,
         "dataset_sample_max_len": 431,
         "dataset_sample_min_len": 14
@@ -294,21 +326,5 @@
         "dataset_number_of_samples": 2490,
         "dataset_sample_max_len": 310,
         "dataset_sample_min_len": 8
-    },
-    "Arsive/toxicity_classification_jigsaw": {
-        "dataset_columns": 8,
-        "dataset_duplicates": 0,
-        "dataset_empty_rows": 0,
-        "dataset_number_of_samples": 6490,
-        "dataset_sample_max_len": 5000,
-        "dataset_sample_min_len": 17
-    },
-    "s-nlp/en_paradetox_toxicity": {
-        "dataset_columns": 2,
-        "dataset_duplicates": 2227,
-        "dataset_empty_rows": 0,
-        "dataset_number_of_samples": 26507,
-        "dataset_sample_max_len": 149,
-        "dataset_sample_min_len": 1
     }
 }

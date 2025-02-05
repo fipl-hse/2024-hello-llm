@@ -1,4 +1,26 @@
 {
+    "Babelscape/wikineural-multilingual-ner": {
+        "embedding_size": 512,
+        "input_shape": {
+            "attention_mask": [
+                1,
+                512
+            ],
+            "input_ids": [
+                1,
+                512
+            ]
+        },
+        "max_context_length": 20,
+        "num_trainable_params": 177269769,
+        "output_shape": [
+            1,
+            512,
+            9
+        ],
+        "size": 709079076,
+        "vocab_size": 119547
+    },
     "EleutherAI/gpt-neo-125m": {
         "embedding_size": 2048,
         "input_shape": {
@@ -90,6 +112,27 @@
         ],
         "size": 438460416,
         "vocab_size": 63430
+    },
+    "IlyaGusev/rubertconv_toxic_clf": {
+        "embedding_size": 512,
+        "input_shape": {
+            "attention_mask": [
+                1,
+                512
+            ],
+            "input_ids": [
+                1,
+                512
+            ]
+        },
+        "max_context_length": 20,
+        "num_trainable_params": 177854978,
+        "output_shape": [
+            1,
+            2
+        ],
+        "size": 711419912,
+        "vocab_size": 119547
     },
     "JackFram/llama-68m": {
         "embedding_size": 2048,
@@ -355,6 +398,28 @@
         ],
         "size": 1904027628,
         "vocab_size": 119547
+    },
+    "dslim/distilbert-NER": {
+        "embedding_size": 512,
+        "input_shape": {
+            "attention_mask": [
+                1,
+                512
+            ],
+            "input_ids": [
+                1,
+                512
+            ]
+        },
+        "max_context_length": 20,
+        "num_trainable_params": 65197833,
+        "output_shape": [
+            1,
+            512,
+            9
+        ],
+        "size": 260791332,
+        "vocab_size": 28996
     },
     "fabriceyhc/bert-base-uncased-ag_news": {
         "embedding_size": 512,
@@ -659,26 +724,5 @@
         ],
         "size": 1111308296,
         "vocab_size": 251000
-    },
-    "IlyaGusev/rubertconv_toxic_clf": {
-        "embedding_size": 512,
-        "input_shape": {
-            "attention_mask": [
-                1,
-                512
-            ],
-            "input_ids": [
-                1,
-                512
-            ]
-        },
-        "max_context_length": 20,
-        "num_trainable_params": 177854978,
-        "output_shape": [
-            1,
-            2
-        ],
-        "size": 711419912,
-        "vocab_size": 119547
     }
 }
