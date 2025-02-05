@@ -193,7 +193,6 @@ class LLMPipeline(AbstractLLMPipeline):
         outputs = self._model.generate(**inputs)
         return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 
-
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
         """
