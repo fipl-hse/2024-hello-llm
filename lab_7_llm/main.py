@@ -5,13 +5,13 @@ Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 import torch
+from pathlib import Path
+from typing import Sequence, Iterable
+
+import pandas as pd
 from datasets import load_dataset
 from pandas import DataFrame
-from typing import Sequence, Iterable
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-from pathlib import Path
-
+from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from evaluate import load as load_metric
 
@@ -21,7 +21,6 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-import pandas as pd
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -48,20 +47,19 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
         dataset = load_dataset(self.hf_name, split="train")
-        df = dataset.to_pandas()
+        dataset_df = dataset.to_pandas()
 
-        if not isinstance(df, pd.DataFrame):
-            raise TypeError(f"Expected a pandas DataFrame, but got {type(df)}")
+        if not isinstance(dataset_df, pd.DataFrame):
+            raise TypeError(f"Expected a pandas DataFrame, but got {type(dataset_df)}")
 
-        return df
-
+        return dataset_df
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
     """
-    def __init__(self, raw_data: pd.DataFrame) -> None:
+    def __init__(self, raw_data: DataFrame) -> None:
         if raw_data is None:
             raise ValueError("Raw data cannot be None")
         self._raw_data = raw_data
@@ -81,15 +79,17 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        cleaned_data = self._data.dropna()
+        cleaned_dataset = self._data.dropna()
 
         return {
             "dataset_number_of_samples": len(self._data),
             "dataset_columns": len(self._data.columns),
             "dataset_duplicates": self._data.duplicated().sum(),
             "dataset_empty_rows": self._data.isnull().sum().sum(),
-            "dataset_sample_min_len": cleaned_data["source"].str.len().min() if "source" in cleaned_data else None,
-            "dataset_sample_max_len": cleaned_data["source"].str.len().max() if "source" in cleaned_data else None,
+            "dataset_sample_min_len": cleaned_dataset["source"].str.len().min()
+            if "source" in cleaned_dataset else None,
+            "dataset_sample_max_len": cleaned_dataset["source"].str.len().max()
+            if "source" in cleaned_dataset else None,
         }
 
     @report_time
@@ -101,7 +101,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             pd.DataFrame: Preprocessed dataset
         """
         if "Reviews" not in self._data.columns or "Summary" not in self._data.columns:
-            raise KeyError("Dataset does not contain 'Reviews' and 'Summary' columns. Check dataset structure.")
+            raise KeyError("Dataset does not contain 'Reviews' and 'Summary' columns.")
 
         self._data.dropna(inplace=True)
         self._data.rename(columns={"Reviews": "source", "Summary": "target"}, inplace=True)
@@ -206,8 +206,9 @@ class LLMPipeline(AbstractLLMPipeline):
             str | None: A prediction
         """
         input_text = sample[0]
-        inputs = self.tokenizer(input_text, return_tensors="pt", truncation=True, max_length=self.max_length).to(
-            self.device)
+        inputs = self.tokenizer(
+            input_text, return_tensors="pt", truncation=True, max_length=self.max_length
+        ).to(self.device)
         with torch.no_grad():
             output = self.model.generate(**inputs, max_length=self.max_length)
         return self.tokenizer.decode(output[0], skip_special_tokens=True)
@@ -223,25 +224,11 @@ class LLMPipeline(AbstractLLMPipeline):
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False)
         predictions = []
 
-        total_batches = 0
-
         for batch in dataloader:
-            total_batches += 1
-            batch_predictions = self._infer_batch(batch)
-            predictions.extend(batch_predictions)
+            predictions.extend(self._infer_batch(batch))
 
-        print(f"Total batches processed: {total_batches}")
-        print(f"Total predictions: {len(predictions)}")
-        print(f"Expected dataset size: {len(self.dataset.data)}")
-
-        if len(predictions) != len(self.dataset.data):
-            raise ValueError(
-                f"Number of predictions ({len(predictions)}) does not match number of samples in dataset ({len(self.dataset.data)}).")
-
-        self.dataset.data['predicted_summary'] = pd.Series(predictions)
-
+        self.dataset.data["predicted_summary"] = pd.Series(predictions)
         return self.dataset.data
-
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -254,20 +241,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        input_texts, _ = sample_batch
-
+        input_texts = [sample[0] for sample in sample_batch]
         inputs = self.tokenizer(
-            list(input_texts),
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=self.max_length
+            input_texts, return_tensors="pt", padding=True, truncation=True, max_length=self.max_length
         ).to(self.device)
-
         outputs = self.model.generate(**inputs, max_length=self.max_length)
-        predictions = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
-
-        return predictions
+        return self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -302,7 +281,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         results = {}
 
         for metric_name in self.metrics:
-            if metric_name == "rougeL":
+            if metric_name == "rouge":
                 metric = load_metric("rouge")
                 metric_result = metric.compute(
                     predictions=data['predicted_summary'].tolist(),

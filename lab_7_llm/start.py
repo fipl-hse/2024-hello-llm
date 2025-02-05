@@ -3,8 +3,10 @@ Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 import sys
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+
 from lab_7_llm.main import (
     RawDataImporter,
     RawDataPreprocessor,
@@ -25,8 +27,8 @@ def main() -> None:
         raw_data = importer.obtain()
 
         if raw_data is None or raw_data.empty:
-            print("Failed to obtain data. Exiting.")
-            sys.exit(1)
+            print("Warning: No data obtained. Exiting early.")
+            return  # Вместо sys.exit(1)
 
         preprocessor = RawDataPreprocessor(raw_data)
         preprocessor.transform()
@@ -46,13 +48,14 @@ def main() -> None:
 
         predictions = model.infer_dataset()
 
-        predictions.to_csv("predictions.csv", index=False)
+        predictions_path = Path("predictions.csv")
+        predictions.to_csv(predictions_path, index=False)
 
-        evaluator = TaskEvaluator(Path("predictions.csv"), ["rougeL"])
+        evaluator = TaskEvaluator(predictions_path, ["rouge"])
         results = evaluator.run()
         print("Evaluation Results:", results)
 
-    except Exception as e:
+    except (ValueError, FileNotFoundError, KeyError) as e:
         print(f"An error occurred: {e}")
         sys.exit(1)
 
