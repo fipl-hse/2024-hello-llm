@@ -5,7 +5,7 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline
 
 
 @report_time
@@ -15,18 +15,20 @@ def main() -> None:
     """
     importer = RawDataImporter('jtatman/databricks-dolly-8k-qa-open-close')
     importer.obtain()
-    #print(importer._raw_data.head())
+
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
     preprocessor.transform()
-    result = preprocessor._data
+
     dataset = TaskDataset(preprocessor.data.head(100))
-    print(len(dataset))
-    print(dataset[1])
-    print(type(dataset.data))
-    #print(result)
-    #result = None
-    assert result is not None, "Demo does not work correctly"
+
+    pipeline = LLMPipeline("JackFram/llama-68m", dataset, 120, 1, 'cpu')
+    model_analysis = pipeline.analyze_model()
+    print(model_analysis)
+
+    sample = pipeline.infer_sample(('what is natural language processing'))
+    print(sample)
+    #assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":

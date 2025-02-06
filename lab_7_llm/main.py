@@ -11,6 +11,9 @@ import pandas as pd
 import torch
 from pandas import DataFrame
 from datasets import load_dataset, Dataset
+from torchinfo import summary
+from transformers import LlamaConfig, LlamaTokenizer, AutoModelForCausalLM, AutoTokenizer, AutoConfig
+
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -127,7 +130,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
-
+    _model: torch.nn.Module
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
@@ -141,6 +144,15 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        self._model_name = model_name
+        self._model = AutoModelForCausalLM.from_pretrained(model_name)
+        self._dataset = dataset
+        self._device = device
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._batch_size = batch_size
+        self._max_length = max_length
+        self._config = AutoConfig.from_pretrained(model_name)
+        #print(config)
 
     def analyze_model(self) -> dict:
         """
@@ -149,6 +161,32 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        #config = self._model.config
+        vocab_size = self._config.vocab_size
+        embeddings_length = self._config.max_position_embeddings
+        print(self._config)
+        ids = torch.ones((1, embeddings_length), dtype=torch.long)
+        input_data = {"input_ids": ids, "attention_mask": ids}
+
+        statistics = summary(self._model, input_data=input_data, verbose=0)
+        print(statistics)
+        print(statistics.summary_list)
+        input_shape = {'attention_mask': list(statistics.input_size['attention_mask']),
+                       'input_ids': list(statistics.input_size['input_ids'])}
+        output_shape = statistics.summary_list[-1].output_size
+
+        #max context length should be 20???????
+        max_context_length = self._config.max_length
+        trainable_params = statistics.trainable_params
+        total_param_bytes = statistics.total_param_bytes
+
+        return {'embedding_size': embeddings_length,
+                'input_shape': input_shape,
+                'max_context_length': max_context_length,
+                'num_trainable_params': trainable_params,
+                'output_shape': output_shape,
+                'size': total_param_bytes,
+                'vocab_size': vocab_size}
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -161,6 +199,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+
+        inputs = self._tokenizer(sample, return_tensors="pt")
+        generate_ids = self._model.generate(inputs.input_ids, max_length=self._max_length)
+        return self._tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:

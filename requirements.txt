@@ -1,8 +1,17 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+blobfile==3.0.0
 datasets==3.2.0
 fastapi==0.115.6
 httpx==0.28.1
 mypy==1.14.1
 pandas==2.2.3
+protobuf==5.29.3
 pydantic==2.10.6
 pytest==8.3.4
+sentencepiece==0.2.0
+tiktoken==0.8.0
 torch==2.5.1
+torchinfo==1.8.0
+transformers==4.48.2
+
+
