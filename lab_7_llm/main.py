@@ -146,7 +146,6 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length)
-        self.batch_size = batch_size
 
     def analyze_model(self) -> dict:
         """
@@ -155,14 +154,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        model_summary = summary(self._model)
+        max_position_embeddings = self._model.config.max_position_embeddings
+        input_ids = torch.ones((1, max_position_embeddings), dtype=torch.long)
+        input_data = {"input_ids": input_ids, "attention_mask": input_ids}
+        model_summary = summary(self._model, input_data=input_data, verbose=False)
 
         return {
-            "input_shape": [self.batch_size, self._model.config.max_length],
-            "embedding_size": ...,
+            "input_shape": {"input_ids": list(input_ids.size()), "attention_mask": list(input_ids.size())},
+            "embedding_size": self._model.config.embedding_size,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
-            "vocab_size": ...,
+            "vocab_size": self._model.config.vocab_size,
             "size": model_summary.total_param_bytes,
             "max_context_length": self._model.config.max_length
         }
