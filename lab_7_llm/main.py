@@ -161,7 +161,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return {
             "input_shape": {"input_ids": list(input_ids.size()), "attention_mask": list(input_ids.size())},
-            "embedding_size": self._model.config.embedding_size,
+            "embedding_size": self._model.config.max_position_embeddings,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._model.config.vocab_size,
