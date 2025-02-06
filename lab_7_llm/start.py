@@ -20,6 +20,8 @@ def main() -> None:
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
+    dataset = TaskDataset(preprocessor.data.head(100))
+
     preprocessor = RawDataPreprocessor(importer.raw_data)
     result = preprocessor.analyze()
     assert result is not None, "Demo does not work correctly"

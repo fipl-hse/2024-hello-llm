@@ -12,13 +12,16 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
+from torchinfo import summary
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 
 
 from torch.utils.data import Dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -70,16 +73,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        data = pd.DataFrame
-        data.rename(columns={'reasons':'target', 'toxic_comment':'source'}, inplace=True)
+        self._data = self._raw_data.replace('', pd.NA).dropna()
+        self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET.value,
+                                                    'toxic_comment': ColumnNames.SOURCE.value})
 
-        data['target'] = data['target'].apply(lambda x: 1 if x == {'toxic_content':True} else 0)
-
-        data = data[data['irrelevant_column']!= 2]
-
-        data.drop_duplicates(inplace=True)
-
-        data.reset_index(drop=True, inplace=True)
+        # data = pd.DataFrame
+        # data.rename(columns={'reasons':'target', 'toxic_comment':'source'}, inplace=True)
+        # data['target'] = data['target'].apply(lambda x: 1 if x == {'toxic_content':True} else 0)
+        # data = data[data['irrelevant_column']!= 2]
+        # data.drop_duplicates(inplace=True)
+        # data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -94,6 +97,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
 
     def __len__(self) -> int:
@@ -103,7 +107,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
-        pass
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -115,7 +119,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        pass
+        row = self._data.iloc[index]
+        return tuple(row)
 
     @property
     def data(self) -> DataFrame:
@@ -125,7 +130,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
-        pass
+        return self._data
 
 
 
@@ -147,7 +152,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        pass
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -156,7 +163,35 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        pass
+        model_summary = summary(
+            self._model,
+            input_size=(self._batch_size, self._max_length),
+            dtypes=[torch.long],
+            device=self._device,
+            verbose=0,
+        )
+
+        # Extract properties from the model and tokenizer
+        vocab_size = self._tokenizer.vocab_size
+        embedding_size = self._model.config.hidden_size
+        max_context_length = self._model.config.max_position_embeddings
+
+        # Prepare the result dictionary
+        result = {
+            "input_shape": [self._batch_size, self._max_length],
+            "embedding_size": embedding_size,
+            "output_shape": [
+                self._batch_size,
+                self._max_length,
+                vocab_size,
+            ],
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": max_context_length,
+        }
+
+        return result
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -169,7 +204,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        pass
+        if not self._model:
+            return None
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
