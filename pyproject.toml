@@ -8,6 +8,7 @@ markers = [
     "reference_lab_classification: tests for classification task",
     "reference_lab_summarization: tests for summarization task",
     "reference_lab_nli: tests for nli task",
+    "reference_lab_ner: tests for NER task",
     "reference_lab_generation: tests for generation task",
     "reference_lab_open_qa: tests for open generative Q&A task",
     "lab_7_llm: tests for lab 7",
@@ -56,6 +57,16 @@ application_import_names = ['config']
 select = ['I']
 count = true
 
+[tool.autoflake]
+in_place = true
+recursive = true
+remove_unused_variables = true
+remove_all_unused_imports = true
+exclude = [
+    'venv*',
+    '*stub.py'
+]
+
 [tool.isort]
 profile = 'black'
 py_version = '311'
@@ -68,6 +79,7 @@ force_alphabetical_sort_within_sections = true
 src_paths = [
     "reference_lab_classification",
     "reference_lab_summarization",
+    "reference_lab_ner",
     "reference_lab_nmt",
     "reference_lab_nli",
     "reference_lab_generation",
@@ -76,7 +88,7 @@ src_paths = [
     "admin_utils",
     "config",
     "lab_7_llm",
-    "lab_8_llm"
+    "lab_8_finetuning"
 ]
 
 [tool.mypy]
@@ -125,7 +137,7 @@ disable_error_code = [
 ]
 
 [[tool.mypy.overrides]]
-module = ['seminars.seminar_01_16_2024.try_iter_data', ]
+module = ['seminars.seminar_01_22_2025.try_iter_data', ]
 disable_error_code = [
     'arg-type'
 ]
