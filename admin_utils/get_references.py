@@ -1,12 +1,13 @@
 """
 Collect and store model analytics.
 """
-# pylint: disable=import-error, too-many-branches, no-else-return, inconsistent-return-statements, too-many-locals, too-many-statements, wrong-import-order
+# pylint: disable=import-error, too-many-branches, no-else-return, inconsistent-return-statements, too-many-locals, too-many-statements, wrong-import-order, too-many-return-statements
 from decimal import Decimal, ROUND_FLOOR
 from pathlib import Path
 from typing import Any
 
 from pydantic.dataclasses import dataclass
+from tqdm import tqdm
 
 from admin_utils.get_model_analytics import get_references, save_reference
 from config.lab_settings import InferenceParams
@@ -14,10 +15,11 @@ from core_utils.llm.metrics import Metrics
 
 from reference_lab_classification.start import get_result_for_classification  # isort:skip
 from reference_lab_generation.start import get_result_for_generation  # isort:skip
+from reference_lab_ner.start import get_result_for_ner  # isort:skip
 from reference_lab_nli.start import get_result_for_nli  # isort:skip
 from reference_lab_nmt.start import get_result_for_nmt  # isort:skip
 from reference_lab_open_qa.start import get_result_for_open_qa  # isort:skip
-from reference_lab_summarization.start import get_result_for_summarisation  # isort:skip
+from reference_lab_summarization.start import get_result_for_summarization  # isort:skip
 
 
 @dataclass
@@ -90,6 +92,8 @@ def get_task(model: str, main_params: MainParams, inference_params: InferencePar
         "EleutherAI/gpt-neo-125m",
     ]
 
+    ner_model = ["dslim/distilbert-NER", "Babelscape/wikineural-multilingual-ner"]
+
     if model in nmt_model:
         return get_result_for_nmt(inference_params, main_params)
     elif model in generation_model:
@@ -99,44 +103,62 @@ def get_task(model: str, main_params: MainParams, inference_params: InferencePar
     elif model in nli_model:
         return get_result_for_nli(inference_params, main_params)
     elif model in summarization_model:
-        return get_result_for_summarisation(inference_params, main_params)
+        return get_result_for_summarization(inference_params, main_params)
     elif model in open_generative_qa_model:
         return get_result_for_open_qa(inference_params, main_params)
+    elif model in ner_model:
+        return get_result_for_ner(inference_params, main_params)
+    else:
+        raise ValueError(f"Unknown model {model} ...")
 
 
 def main() -> None:
     """
     Run collected reference scores.
     """
-    references_path = Path(__file__).parent / "reference_scores.json"
-    dest = Path(__file__).parent / "reference_score_.json"
+    project_root = Path(__file__).parent.parent
+    references_path = project_root / "admin_utils" / "reference_scores.json"
+
+    dist_dir = project_root / "dist"
+    dist_dir.mkdir(exist_ok=True)
+
+    dest = dist_dir / "reference_scores.json"
 
     max_length = 120
     batch_size = 3
     num_samples = 100
-    device = "cpu"
+    device = "cuda"
 
     inference_params = InferenceParams(
-        num_samples, max_length, batch_size, Path("result.csv"), device
+        num_samples, max_length, batch_size, dist_dir / "result.csv", device
     )
 
     references = get_references(path=references_path)
-    result = {}
-    for model, datasets in references.items():
-        result[model] = {}
-        for dataset, metrics in datasets.items():
-            result[model][dataset] = {}
-            for metric in metrics:
-                result[model][dataset][metric] = {}
-                if "test_" in model:
-                    inference_params.num_samples = 10
 
-                print(model, dataset, metric)
-                main_params = MainParams(model, dataset, [Metrics(metric)])
-                inference_func = get_task(model, main_params, inference_params)
-                score = Decimal(inference_func[metric])
-                truncated_metric = score.quantize(Decimal("1.00000"), ROUND_FLOOR)
-                result[model][dataset][metric] = truncated_metric
+    combos = []
+    for model_name, datasets in sorted(references.items()):
+        for dataset_name, metrics in sorted(datasets.items()):
+            for metric in sorted(metrics):
+                combos.append((model_name, dataset_name, metric))
+
+    result = {}
+    for model_name, dataset_name, metric in tqdm(sorted(combos)):
+        print(model_name, dataset_name, metric)
+
+        if model_name not in result:
+            result[model_name] = {}
+        if dataset_name not in result[model_name]:
+            result[model_name][dataset_name] = {}
+        if metric not in result[model_name][dataset_name]:
+            result[model_name][dataset_name][metric] = {}
+        if "test_" in model_name:
+            inference_params.num_samples = 10
+
+        main_params = MainParams(model_name, dataset_name, [Metrics(metric)])
+        inference_func = get_task(model_name, main_params, inference_params)
+        score = Decimal(inference_func[metric])
+        truncated_metric = score.quantize(Decimal("1.00000"), ROUND_FLOOR)
+        result[model_name][dataset_name][metric] = truncated_metric
 
     save_reference(dest, result)
 
