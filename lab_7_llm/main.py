@@ -14,7 +14,7 @@ import torch
 from datasets import load_dataset
 from pandas import DataFrame
 from torchinfo import summary
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModelForSeq2SeqLM
 from torch.utils.data import Dataset
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -72,9 +72,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.replace('', pd.NA).dropna()
         self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET.value,
                                                     'toxic_comment': ColumnNames.SOURCE.value})
+        self._data.reset_index(drop=True, inplace=True)
 
         # data = pd.DataFrame
         # data.rename(columns={'reasons':'target', 'toxic_comment':'source'}, inplace=True)
