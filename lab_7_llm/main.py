@@ -193,7 +193,8 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         data_loader = DataLoader(batch_size=self._batch_size,
-                                 dataset=self._dataset)
+                                 dataset=self._dataset,
+                                 collate_fn=lambda x: x)
 
         predictions = []
         for batch in data_loader:
@@ -218,11 +219,12 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         inputs = self._tokenizer(list(sample_batch[0]),
                                  return_tensors="pt",
-                                 padding="max_length",
+                                 padding=True,
                                  truncation=True).to(self._device)
 
         outputs = self._model(inputs["input_ids"])
-        return [str(pred.item()) for pred in F.softmax(outputs["logits"], dim=1).argmax(axis=1)]
+        return [str(pred.item()) for pred in
+                F.softmax(outputs["logits"], dim=1).detach().argmax(axis=1)]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
