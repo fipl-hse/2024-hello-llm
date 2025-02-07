@@ -75,7 +75,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.replace("", pd.NA).dropna()
+        #self._data = self._raw_data.replace("", pd.NA).dropna()
         self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET.value,
                                                     'toxic_comment': ColumnNames.SOURCE.value})
         self._data.reset_index(drop=True, inplace=True)
