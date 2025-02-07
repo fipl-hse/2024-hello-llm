@@ -24,8 +24,6 @@ def main() -> None:
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    key_properties = preprocessor.analyze()
-    print(key_properties)
 
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
@@ -37,9 +35,14 @@ def main() -> None:
                            device="cpu")
 
     pipeline.analyze_model()
-    sample_inference = pipeline.infer_sample(dataset[0])
+    data_frame = pipeline.infer_dataset()
 
-    result = sample_inference
+    predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    data_frame.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
 
     assert result is not None, "Demo does not work correctly"
 

@@ -11,6 +11,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
@@ -199,7 +200,7 @@ class LLMPipeline(AbstractLLMPipeline):
             predictions.extend(sample_predictions)
 
         res = pd.DataFrame(self._dataset.data)
-        res[ColumnNames.PREDICTION.value] = predictions
+        res[ColumnNames.prediction.value] = predictions
 
         return res
 
@@ -236,6 +237,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -245,3 +248,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data_frame = pd.read_csv(self.data_path)
+
+        predictions = data_frame[ColumnNames.prediction.value]
+        references = data_frame[ColumnNames.target.value]
+
+        evaluation_res = {}
+        for metric in self._metrics:
+            scores = load(metric.value, seed=13).compute(predictions=predictions,
+                                                         references=references)
+            if metric.value == "f1":
+                evaluation_res[metric.value] = scores["f1"]
+            else:
+                evaluation_res[metric.value] = scores[metric.value]
+
+        return evaluation_res
