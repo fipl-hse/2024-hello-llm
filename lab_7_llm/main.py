@@ -218,7 +218,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         inputs = self._tokenizer(list(sample_batch[0]),
                                  return_tensors="pt",
-                                 padding=True,
+                                 padding="max_length",
                                  truncation=True).to(self._device)
 
         outputs = self._model(inputs["input_ids"])
