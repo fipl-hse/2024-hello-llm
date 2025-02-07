@@ -6,7 +6,7 @@ from pathlib import Path
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline
 
 SETTINGS_PATH = PROJECT_ROOT / 'lab_7_llm/settings.json'
 
@@ -21,7 +21,21 @@ def main() -> None:
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    result = preprocessor.analyze()
+    preprocessor.transform()
+
+    dataset = TaskDataset(preprocessor.data.head(100))
+
+    batch_size = 1
+    max_length = 120
+    device = 'cpu'
+
+    pipeline = LLMPipeline(model_name=settings.parameters.model,
+                           dataset=dataset,
+                           max_length=max_length,
+                           batch_size=batch_size,
+                           device=device)
+    print(pipeline.analyze_model())
+    result = pipeline.infer_sample('Я люблю есть кирпичи')
     assert result is not None, "Demo does not work correctly"
 
 

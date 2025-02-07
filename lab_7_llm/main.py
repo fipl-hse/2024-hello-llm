@@ -3,19 +3,23 @@ Laboratory work.
 
 Working with Large Language Models.
 """
+
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 import pandas as pd
 import torch
 
+from copy import deepcopy
 from datasets import load_dataset
 from pathlib import Path
+from torchinfo import summary
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from typing import Iterable, Sequence
 
 from torch.utils.data import Dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -35,7 +39,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         split = 'train'
         loaded = load_dataset(self._hf_name, split=split)
-        self._raw_data = pd.DataFrame(loaded)
+        self._raw_data = loaded.to_pandas()
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError("Downloaded dataset's type is not pd.DataFrame")
@@ -69,6 +73,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = deepcopy(self._raw_data)
+        self._data.rename(columns={'neutral': str(ColumnNames.SOURCE), 'toxic': ColumnNames.TARGET}, inplace=True)
+        self._data.drop_duplicates(inplace=True)
+        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(lambda x: 1 if x is True else 0)
+        self._data.reset_index(inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -92,6 +101,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -103,6 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.iloc[index])
 
     @property
     def data(self) -> pd.DataFrame:
@@ -133,11 +144,12 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        self.model_name = model_name
-        self.dataset = dataset
-        self.max_length = max_length
-        self.batch_size = batch_size
-        self.device = device
+
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        self._model.to(self._device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -146,6 +158,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        config = self._model.config
+        embeddings_length = config.max_position_embeddings
+        input_ids = torch.ones((1, embeddings_length), dtype=torch.long)
+        model_summary = summary(self._model,
+                                input_data={
+                                    'input_ids': input_ids,
+                                    'attention_mask': input_ids
+                                },
+                                verbose=0)
+        analysis = {
+            'input_shape': model_summary.summary_list[1].input_size,
+            'embedding_size': embeddings_length,
+            'output_shape': model_summary.summary_list[-1].output_size,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': config.vocab_size,
+            'size': model_summary.total_params,
+            'max_content_length': embeddings_length
+        }
+        return analysis
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -158,6 +189,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+
+        tokens = self._tokenizer(sample, return_tensors='pt')
+        self._model.eval()
+        with torch.no_grad():
+            output = self._model(**tokens)
+            preds = torch.argmax(output.logits).item()
+            labels = self._model.config.id2label
+            return labels[preds]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
