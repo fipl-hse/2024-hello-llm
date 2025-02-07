@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -17,6 +17,8 @@ import torch
 from torch.utils.data import Dataset
 import pandas as pd
 from pandas import DataFrame
+from torchinfo import summary
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -82,6 +84,38 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        label2id = {
+            "ar": 2,
+            "bg": 12,
+            "de": 4,
+            "el": 10,
+            "en": 13,
+            "es": 8,
+            "fr": 14,
+            "hi": 9,
+            "it": 5,
+            "ja": 0,
+            "nl": 1,
+            "pl": 3,
+            "pt": 6,
+            "ru": 16,
+            "sw": 18,
+            "th": 17,
+            "tr": 7,
+            "ur": 11,
+            "vi": 19,
+            "zh": 15
+        }
+
+        self._data = self._raw_data.rename(columns={
+            'labels': str(ColumnNames.TARGET),
+            'text': str(ColumnNames.SOURCE)
+        })
+
+        self._data[ColumnNames.TARGET] = self._data[str(ColumnNames.TARGET)].apply(
+            lambda lang: label2id[lang]
+        )
+        self._data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -105,6 +139,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -116,6 +151,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return self._data[str(ColumnNames.SOURCE)][index],
 
     @property
     def data(self) -> DataFrame:
@@ -146,6 +182,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -154,6 +193,32 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+
+        model_config = self._model.config
+
+        ids = torch.ones(1, model_config.max_position_embeddings, dtype=torch.long)
+        model_summary = summary(
+            self._model,
+            input_data={'input_ids': ids, 'attention_mask': ids}
+        )
+
+        input_shape = {input_type: list(shape) for input_type, shape in model_summary.input_size.items()}
+        embedding_size = model_config.max_position_embeddings
+        output_shape = model_summary.summary_list[-1].output_size
+        num_trainable_params = model_summary.trainable_params
+        vocab_size = model_config.vocab_size
+        size = model_summary.total_param_bytes
+        max_context_length = model_config.max_length
+
+        return {
+            'input_shape': input_shape,
+            'embedding_size': embedding_size,
+            'output_shape': output_shape,
+            'num_trainable_params': num_trainable_params,
+            'vocab_size': vocab_size,
+            'size': size,
+            'max_context_length': max_context_length
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -166,6 +231,23 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+
+        if not self._model:
+            return
+
+        tokens = self._tokenizer(*sample,
+                                 padding=True,
+                                 truncation=True,
+                                 return_tensors='pt')
+
+        self._model.eval()
+        self._model.to(self._device)
+
+        with torch.no_grad():
+            output = self._model(**tokens)
+
+        prediction = torch.argmax(output.logits).item()
+        return str(prediction)
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
