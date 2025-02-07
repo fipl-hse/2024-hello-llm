@@ -200,7 +200,7 @@ class LLMPipeline(AbstractLLMPipeline):
             predictions.extend(sample_predictions)
 
         res = pd.DataFrame(self._dataset.data)
-        res[ColumnNames.prediction.value] = predictions
+        res[ColumnNames.PREDICTION.value] = predictions
 
         return res
 
@@ -250,8 +250,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         data_frame = pd.read_csv(self.data_path)
 
-        predictions = data_frame[ColumnNames.prediction.value]
-        references = data_frame[ColumnNames.target.value]
+        predictions = data_frame[ColumnNames.PREDICTION.value]
+        references = data_frame[ColumnNames.TARGET.value]
 
         evaluation_res = {}
         for metric in self._metrics:
