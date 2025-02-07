@@ -15,7 +15,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
-from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, AutoModelForSequenceClassification
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -152,7 +152,7 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
