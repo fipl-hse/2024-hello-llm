@@ -22,6 +22,8 @@ def main() -> None:
     settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
+    if importer.raw_data is None:
+        return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
 
@@ -31,7 +33,7 @@ def main() -> None:
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length=120,
-                           batch_size=1,
+                           batch_size=64,
                            device="cpu")
 
     pipeline.analyze_model()
