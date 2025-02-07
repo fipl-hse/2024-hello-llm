@@ -5,6 +5,7 @@ Web service for model inference.
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+
 from lab_7_llm.main import LLMPipeline
 
 

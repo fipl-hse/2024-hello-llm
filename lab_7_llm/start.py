@@ -6,7 +6,13 @@ from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+)
 
 SETTINGS_PATH = PROJECT_ROOT / 'lab_7_llm/settings.json'
 
