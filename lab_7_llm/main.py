@@ -5,6 +5,7 @@ Working with Large Language Models.
 """
 
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+import numpy as np
 import pandas as pd
 import torch
 
@@ -62,7 +63,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_number_of_samples': len(self._raw_data),
             'dataset_columns': len(self._raw_data.columns),
             'dataset_duplicates': self._raw_data.duplicated().sum(),
-            'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
+            'dataset_empty_rows': len(self._raw_data) - len(self._raw_data.replace('', np.nan).dropna()),
             'dataset_sample_min_len': lens.min(),
             'dataset_sample_max_len': lens.max()
         }
@@ -74,7 +75,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = deepcopy(self._raw_data)
-        self._data.rename(columns={'neutral': str(ColumnNames.SOURCE), 'toxic': ColumnNames.TARGET}, inplace=True)
+        self._data.rename(columns={'neutral': ColumnNames.SOURCE, 'toxic': ColumnNames.TARGET}, inplace=True)
         self._data.drop_duplicates(inplace=True)
         self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(lambda x: 1 if x is True else 0)
         self._data.reset_index(inplace=True)
