@@ -4,10 +4,10 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
-import json
+from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
 from config.constants import PROJECT_ROOT
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline
 
 
 @report_time
@@ -15,10 +15,9 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    with open(PROJECT_ROOT/'lab_7_llm'/'settings.json', 'r', encoding='utf-8') as file:
-        settings = json.load(file)
+    settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
 
-    importer = RawDataImporter(settings['parameters']['dataset'])
+    importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
@@ -26,15 +25,13 @@ def main() -> None:
     print(analysis)
 
     preprocessor.transform()
-    dataset = TaskDataset(preprocessor.data.head(10))
+    dataset = TaskDataset(preprocessor.data.head(100))
 
-    # idx = 1
-    # item = dataset[idx]
-    #
-    # print(f"Item at index {idx}:")
-    # print(item)
+    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=64, device="cpu")
+    model_summary = pipeline.analyze_model()
+    print(model_summary)
 
-    result = dataset
+    result = model_summary
     assert result is not None, "Demo does not work correctly"
 
 

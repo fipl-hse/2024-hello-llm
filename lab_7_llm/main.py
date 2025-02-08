@@ -11,7 +11,9 @@ import datasets
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
+from torchinfo import summary
 from datasets import load_dataset
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline, DataFrame
 from core_utils.llm.metrics import Metrics
@@ -55,7 +57,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         data_no_empty_rows = self._raw_data.dropna(subset=["article_content"])
 
-        dataset_properties = {
+        return {
             'dataset_number_of_samples': self._raw_data.shape[0],
             'dataset_columns': self._raw_data.shape[1],
             'dataset_duplicates': self._raw_data.duplicated().sum(),
@@ -65,8 +67,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_sample_max_len': max(
                 len(sample) for sample in data_no_empty_rows["article_content"])
         }
-
-        return dataset_properties
 
 
     @report_time
@@ -144,6 +144,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=self._max_length)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -152,6 +155,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
+        inputs = {"input_ids": tensor, "attention_mask": tensor}
+        model_summary = summary(self._model, input_data=inputs, decoder_input_ids = tensor, verbose=0)
+
+        return {
+            "input_shape": list(tensor.size()),
+            "embedding_size": self._model.config.encoder.max_position_embeddings,
+            "output_shape": model_summary.summary_list[-1].output_size,
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": self._model.config.encoder.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self._model.config.max_length,
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -164,6 +180,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        encoded_batch = self._tokenizer.prepare_seq2seq_batch(
+            [sample],
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=512)
+
+        output_ids = self._model.generate(
+            input_ids=encoded_batch["input_ids"],
+            max_length=36,
+            no_repeat_ngram_size=3,
+            num_beams=5,
+            top_k=0
+        )
+
+        headline = self._tokenizer.decode(output_ids[0],
+                                    skip_special_tokens=True,
+                                    clean_up_tokenization_spaces=False)
+        return headline
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
