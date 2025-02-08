@@ -7,6 +7,19 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import pandas as pd
+import torch
+from datasets import load_dataset
+from pandas import DataFrame
+from torch.utils.data import Dataset
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,7 +34,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        pass
+        dataset = load_dataset(self._hf_name, split='validation')
+        self._raw_data = pd.DataFrame(dataset)
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError("downloaded data is not in DataFrame format")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -36,6 +53,19 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        data = self._raw_data
+        data_cleaned = data.dropna()
+
+        dataset_properties = {
+            "dataset_number_of_samples": len(data),
+            "dataset_columns": len(data.columns),
+            "dataset_duplicates": int(data.duplicated().sum()),
+            "dataset_empty_rows": len(data) - len(data_cleaned),
+            "dataset_sample_min_len": int(data['comment_text'].str.len().min()),
+            "dataset_sample_max_len": int(data['comment_text'].str.len().max()),
+        }
+
+        return dataset_properties
 
     @report_time
     def transform(self) -> None:
