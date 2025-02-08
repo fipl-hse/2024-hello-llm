@@ -12,6 +12,7 @@ from lab_7_llm.main import (
     TaskDataset
 )
 
+
 @report_time
 def main() -> None:
     """
