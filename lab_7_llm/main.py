@@ -6,21 +6,22 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
-import logging
+
 import datasets
+import pandas as pd
+import torch
 from datasets import load_dataset
 from pandas import DataFrame
-import torch
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-import pandas as pd
-from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoConfig
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -152,7 +153,6 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        # self._config = AutoConfig.from_pretrained(model_name)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length)
 
@@ -190,8 +190,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        if not self._model:
-            return None
         return self._infer_batch([sample])[0]
 
     @report_time
