@@ -10,6 +10,7 @@ from lab_7_llm.main import (
     RawDataPreprocessor,
     report_time,
     TaskDataset,
+    TaskEvaluator,
 )
 
 
@@ -31,15 +32,18 @@ def main() -> None:
     print("dataset properties after preprocessing:", analysis_after)
 
     task_dataset = TaskDataset(preprocessor.data.head(100))
-    print("TaskDataset length:", len(task_dataset))
 
-    pipeline = LLMPipeline(settings.parameters.model, task_dataset, max_length=120, batch_size=1, device="cpu")
-    model_props = pipeline.analyze_model()
-    print("model properties:", model_props)
+    pipeline = LLMPipeline(settings.parameters.model, task_dataset, max_length=120, batch_size=64, device="cpu")
+    pipeline.analyze_model()
+    predictions_df = pipeline.infer_dataset()
 
-    sample = task_dataset[0]
-    result = pipeline.infer_sample(sample)
-    print("inference result for first sample:", result)
+    predictions_file = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
+    predictions_file.parent.mkdir(exist_ok=True)
+    predictions_df.to_csv(predictions_file)
+
+    evaluator = TaskEvaluator(predictions_file, settings.parameters.metrics)
+    result = evaluator.run()
+    print("evaluation results:", result)
 
     assert result is not None, "Demo does not work correctly"
 
