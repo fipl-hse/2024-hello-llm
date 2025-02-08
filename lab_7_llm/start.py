@@ -22,15 +22,14 @@ def main() -> None:
     settings = LabSettings(PROJECT_ROOT / "lab_7_llm" / "settings.json")
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
+    if importer.raw_data is None:
+        return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis_before = preprocessor.analyze()
     print("dataset properties before preprocessing:", analysis_before)
 
     preprocessor.transform()
-    analysis_after = preprocessor.analyze()
-    print("dataset properties after preprocessing:", analysis_after)
-
     task_dataset = TaskDataset(preprocessor.data.head(100))
 
     pipeline = LLMPipeline(settings.parameters.model,
@@ -39,6 +38,7 @@ def main() -> None:
                            batch_size=64,
                            device="cpu")
     pipeline.analyze_model()
+
     predictions_df = pipeline.infer_dataset()
 
     predictions_file = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"

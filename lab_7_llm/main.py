@@ -166,17 +166,20 @@ class LLMPipeline(AbstractLLMPipeline):
                                   dtype=torch.long)
         input_data = {'input_ids': dummy_inputs, 'attention_mask': dummy_inputs}
 
-        model_summary = summary(self._model, input_data=input_data, verbose=0)
-        model_properties = {
-            'input_shape': {k: list(v.shape) for k, v in input_data.items()},
-            'embedding_size': self._model.config.max_position_embeddings,
-            'output_shape': model_summary.summary_list[-1].output_size,
-            'num_trainable_params': model_summary.trainable_params,
-            'vocab_size': self._model.config.vocab_size,
-            'size': model_summary.total_param_bytes,
-            'max_context_length': self._model.config.max_length
-        }
-        return model_properties
+        if isinstance(self._model, torch.nn.Module):
+            model_summary = summary(self._model, input_data=input_data, verbose=0)
+            model_properties = {
+                'input_shape': {k: list(v.shape) for k, v in input_data.items()},
+                'embedding_size': self._model.config.max_position_embeddings,
+                'output_shape': model_summary.summary_list[-1].output_size,
+                'num_trainable_params': model_summary.trainable_params,
+                'vocab_size': self._model.config.vocab_size,
+                'size': model_summary.total_param_bytes,
+                'max_context_length': self._model.config.max_length
+            }
+            return model_properties
+        else:
+            raise TypeError("model is not a valid torch.nn.Module")
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -223,6 +226,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if self._model is None:
+            raise ValueError("model has not been initialized")
+
         texts = [sample[0] for sample in sample_batch]
         inputs = self._tokenizer(
             texts,
@@ -272,7 +278,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         results = {}
         for metric_item in self._metrics:
             scores = load(metric_item.value, seed=58).compute(predictions=predictions,
-                                                                       references=targets)
+                                                              references=targets)
             results[metric_item.value] = scores[metric_item.value]
 
         return results
