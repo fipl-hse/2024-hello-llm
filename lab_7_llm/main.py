@@ -10,10 +10,11 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -21,8 +22,6 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-
-
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -37,7 +36,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(self._hf_name,  split='validation')
+        dataset = load_dataset(self._hf_name, split='validation')
         self._raw_data = dataset.to_pandas()
 
 
@@ -129,7 +128,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -143,7 +142,6 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-        #self._model = AutoModelForSequenceClassification.from_config(AutoConfig.from_pretrained(model_name)).to(device)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
     def analyze_model(self) -> dict:
@@ -177,11 +175,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        input_data = self._tokenizer(" ".join(sample), return_tensors="pt", truncation=True)
-        with torch.no_grad():
-            logits = self._model(**input_data).logits
-        predicted_label = torch.argmax(logits, dim=-1).item()
-        return str(predicted_label)
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -191,6 +185,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(batch_size=self._batch_size,
+                                 dataset=self._dataset)
+
+        predictions = []
+        for batch in data_loader:
+            sample_predictions = self._infer_batch(batch)
+            predictions.extend(sample_predictions)
+
+        res = pd.DataFrame(self._dataset.data)
+        res[ColumnNames.PREDICTION.value] = predictions
+
+        return res
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -203,6 +209,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        input_data = self._tokenizer(sample_batch[0],
+                                     return_tensors="pt",
+                                     padding=True,
+                                     truncation=True)
+
+        with torch.no_grad():
+            outputs = self._model(**input_data).logits
+        predicted_labels = [str(prediction.item()) for prediction in torch.argmax(outputs, dim=-1)]
+        return predicted_labels
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -218,6 +233,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self._data_path = data_path
+        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -227,3 +244,16 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data_frame = pd.read_csv(self._data_path)
+
+        predictions = data_frame[ColumnNames.PREDICTION.value]
+        target = data_frame[ColumnNames.TARGET.value]
+
+        evaluation_results = {}
+        for metric in self._metrics:
+            scores = load(metric.value, seed=0).compute(predictions=predictions,
+                                                        references=target,
+                                                        average="micro")
+            evaluation_results[metric.value] = scores[metric.value]
+
+        return evaluation_results

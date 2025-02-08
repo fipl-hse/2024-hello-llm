@@ -6,7 +6,7 @@ from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset
+from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset, TaskEvaluator
 
 
 @report_time
@@ -31,9 +31,18 @@ def main() -> None:
                            batch_size=1,
                            device="cpu")
 
-    model_summary = pipeline.analyze_model()
-    print(model_summary)
-    result = model_summary
+    pipeline.analyze_model()
+
+    dataframe = pipeline.infer_dataset()
+
+    predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    dataframe.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, lab_settings.parameters.metrics)
+    result = evaluator.run()
+    print(result)
+
     assert result is not None, "Demo does not work correctly"
 
 
