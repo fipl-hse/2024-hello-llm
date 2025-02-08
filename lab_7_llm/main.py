@@ -279,7 +279,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric_item in self._metrics:
             scores = load(metric_item.value, seed=58).compute(predictions=predictions,
                                                               references=targets,
-                                                              average="macro")
+                                                              average="micro")
             results[metric_item.value] = scores[metric_item.value]
 
         return results
