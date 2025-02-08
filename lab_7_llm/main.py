@@ -213,13 +213,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        input_data = self._tokenizer(sample_batch[0],
-                                     return_tensors="pt",
-                                     padding=True,
-                                     truncation=True)
-
+        input_data = (self._tokenizer(sample_batch[0],
+                                      return_tensors="pt",
+                                      padding=True,
+                                      truncation=True).to(self._device))
         outputs = self._model(**input_data)
-        predicted_labels = [str(prediction.item()) for prediction in torch.argmax(outputs["logits"], dim=-1)]
+        predicted_labels = [str(prediction.item()) for prediction
+                            in torch.argmax(outputs["logits"], dim=-1)]
         return predicted_labels
 
 
