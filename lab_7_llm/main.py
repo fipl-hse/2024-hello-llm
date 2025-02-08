@@ -3,20 +3,20 @@ Laboratory work.
 
 Working with Large Language Models.
 """
-
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+from copy import deepcopy
+from pathlib import Path
+from typing import Iterable, Sequence
+
 import numpy as np
 import pandas as pd
 import torch
 
-from copy import deepcopy
 from datasets import load_dataset
-from pathlib import Path
+from torch.utils.data import Dataset
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from typing import Iterable, Sequence
 
-from torch.utils.data import Dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
@@ -162,19 +162,20 @@ class LLMPipeline(AbstractLLMPipeline):
         config = self._model.config
         embeddings_length = config.max_position_embeddings
         input_ids = torch.ones((1, embeddings_length), dtype=torch.long)
+        input_data = {
+            'input_ids': input_ids,
+            'attention_mask': input_ids
+        }
         model_summary = summary(self._model,
-                                input_data={
-                                    'input_ids': input_ids,
-                                    'attention_mask': input_ids
-                                },
+                                input_data=input_data,
                                 verbose=0)
         analysis = {
-            'input_shape': model_summary.summary_list[1].input_size,
+            'input_shape': {k: list(v.shape) for k, v in input_data.items()},
             'embedding_size': embeddings_length,
             'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
             'vocab_size': config.vocab_size,
-            'size': model_summary.total_params,
+            'size': model_summary.total_param_bytes,
             'max_content_length': embeddings_length
         }
         return analysis
@@ -197,9 +198,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model.eval()
         with torch.no_grad():
             output = self._model(**tokens)
-            preds = torch.argmax(output.logits).item()
-            labels = self._model.config.id2label
-            return labels[preds]
+            return str(torch.argmax(output.logits).item())
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -228,9 +227,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model.eval()
         with torch.no_grad():
             output = self._model(**tokens)
-            preds = [torch.argmax(logit).item() for logit in output.logits]
-            labels = self._model.config.id2label
-            return list([labels[pred] for pred in preds])
+            return list([str(torch.argmax(logit).item()) for logit in output.logits])
 
 
 
