@@ -23,6 +23,8 @@ def main() -> None:
     dataset_properties = preprocessor.analyze()
     print("dataset properties:", dataset_properties)
 
+    assert dataset_properties is not None, "Demo does not work correctly"
+
 
 if __name__ == "__main__":
     main()
