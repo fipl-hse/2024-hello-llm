@@ -5,11 +5,11 @@ Starter for demonstration of laboratory work.
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_7_llm.main import (
+    LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     report_time,
-    TaskDataset,
-    LLMPipeline
+    TaskDataset
 )
 
 @report_time

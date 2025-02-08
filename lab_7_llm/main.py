@@ -164,24 +164,22 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        dummy_input = torch.randint(0, self._tokenizer.vocab_size, (self._batch_size, self._max_length)).to(
-            self._device)
-        model_stats = summary(self._model, input_data=(dummy_input,), verbose=0)
+        dummy_inputs = torch.ones((1, self._model.config.max_position_embeddings),
+                                  dtype=torch.long,
+                                  device=self._device)
+        input_data = {'input_ids': dummy_inputs, 'attention_mask': dummy_inputs}
 
-        with torch.no_grad():
-            outputs = self._model(dummy_input)
-            output_shape = list(outputs.logits.shape)
-
-        properties = {
-            "input_shape": [self._batch_size, self._max_length],
-            "embedding_size": getattr(self._model.config, "hidden_size", None),
-            "output_shape": output_shape,
-            "num_trainable_params": model_stats.trainable_params,
-            "vocab_size": self._tokenizer.vocab_size,
-            "size": model_stats.total_params if hasattr(model_stats, "total_params") else None,
-            "max_context_length": self._max_length,
+        model_summary = summary(self._model, input_data=input_data, verbose=0)
+        model_properties = {
+            'input_shape': {k: list(v.shape) for k, v in input_data.items()},
+            'embedding_size': self._model.config.max_position_embeddings,
+            'output_shape': model_summary.summary_list[-1].output_size,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': self._model.config.vocab_size,
+            'size': model_summary.total_param_bytes,
+            'max_context_length': self._model.config.max_length
         }
-        return properties
+        return model_properties
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
