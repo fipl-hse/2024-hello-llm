@@ -27,7 +27,13 @@ def main() -> None:
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=64, device="cpu")
+    pipeline = LLMPipeline(
+        settings.parameters.model,
+        dataset,
+        max_length=120,
+        batch_size=64,
+        device="cpu"
+    )
     model_summary = pipeline.analyze_model()
     print(model_summary)
 
