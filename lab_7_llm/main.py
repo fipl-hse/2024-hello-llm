@@ -220,12 +220,12 @@ class LLMPipeline(AbstractLLMPipeline):
                                       return_tensors="pt",
                                       padding=True,
                                       truncation=True))
-        if input_data:
+        if isinstance(self._model, torch.nn.Module):
             outputs = self._model(**input_data)
             predicted_labels = [str(prediction.item()) for prediction
                                 in torch.argmax(outputs["logits"], dim=-1)]
             return predicted_labels
-        return list()
+        return []
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
