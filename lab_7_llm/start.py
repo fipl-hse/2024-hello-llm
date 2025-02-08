@@ -1,12 +1,18 @@
 """
 Starter for demonstration of laboratory work.
 """
-# pylint: disable= too-many-locals, undefined-variable, unused-import
-from pathlib import Path
-
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset, TaskEvaluator
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+    TaskEvaluator,
+)
+
+# pylint: disable= too-many-locals, undefined-variable, unused-import
 
 
 @report_time
@@ -17,6 +23,9 @@ def main() -> None:
     lab_settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
     importer = RawDataImporter(lab_settings.parameters.dataset)
     importer.obtain()
+
+    if importer.raw_data is None:
+        return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     properties = preprocessor.analyze()

@@ -23,6 +23,7 @@ from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, Co
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
+
 class RawDataImporter(AbstractRawDataImporter):
     """
     A class that imports the HuggingFace dataset.
@@ -52,15 +53,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        dataset_no_empty_rows = self._raw_data["text"].dropna()
-
         properties_dict = {
             "dataset_number_of_samples": self._raw_data.shape[0],
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
             "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
-            "dataset_sample_min_len": dataset_no_empty_rows.map(len).min(),
-            "dataset_sample_max_len": dataset_no_empty_rows.map(len).max()
+            "dataset_sample_min_len": self._raw_data["text"].dropna().map(len).min(),
+            "dataset_sample_max_len": self._raw_data["text"].dropna().map(len).max()
         }
 
         return properties_dict
@@ -128,7 +127,8 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str, dataset: TaskDataset,
+            max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -151,18 +151,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        input_data = torch.ones((1, 512), dtype=torch.long)
-        model_summary = summary(self._model, input_data=input_data, verbose=0)
+        if isinstance(self._model, torch.nn.Module):
+            input_data = torch.ones((1, self._model.config.max_position_embeddings), dtype=torch.long)
+            model_summary = summary(self._model, input_data=input_data, verbose=0)
 
-        return {
-            "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
-            "input_shape": {'attention_mask': list(input_data.size()), 'input_ids': list(input_data.size())},
-            "max_context_length": self._model.config.max_length,
-            "num_trainable_params": model_summary.trainable_params,
-            "output_shape": model_summary.summary_list[-1].output_size,
-            "size": model_summary.total_param_bytes,
-            "vocab_size": self._model.config.vocab_size,
-        }
+            return {
+                "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
+                "input_shape": {'attention_mask': list(input_data.size()),
+                                'input_ids': list(input_data.size())},
+                "max_context_length": self._model.config.max_length,
+                "num_trainable_params": model_summary.trainable_params,
+                "output_shape": model_summary.summary_list[-1].output_size,
+                "size": model_summary.total_param_bytes,
+                "vocab_size": self._model.config.vocab_size,
+            }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
