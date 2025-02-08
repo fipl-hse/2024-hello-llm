@@ -213,13 +213,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if self._tokenizer is None:
+            raise ValueError("Tokenizer is not initialized.")
+
         input_data = self._tokenizer(sample_batch[0],
                                      return_tensors="pt",
                                      padding=True,
                                      truncation=True)
-        with torch.no_grad():
-            outputs = self._model(input_ids=input_data["input_ids"],
-                                  attention_mask=input_data['attention_mask']).logits
+
+        outputs = self._model(**input_data).logits
         predicted_labels = [str(prediction.item()) for prediction in torch.argmax(outputs, dim=-1)]
         return predicted_labels
 
