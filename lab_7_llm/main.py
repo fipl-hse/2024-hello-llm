@@ -178,8 +178,8 @@ class LLMPipeline(AbstractLLMPipeline):
                 'max_context_length': self._model.config.max_length
             }
             return model_properties
-        else:
-            raise TypeError("model is not a valid torch.nn.Module")
+
+        raise TypeError("model is not a valid torch.nn.Module")
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
