@@ -40,6 +40,9 @@ class RawDataImporter(AbstractRawDataImporter):
         dataset = load_dataset(self._hf_name, split='validation')
         self._raw_data = dataset.to_pandas()
 
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError(f"Expected a pd.DataFrame, but got {type(self._raw_data)}")
+
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
@@ -190,8 +193,7 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         data_loader = DataLoader(batch_size=self._batch_size,
-                                 dataset=self._dataset,
-                                 collate_fn=lambda x: x)
+                                 dataset=self._dataset)
 
         predictions = []
         for batch in data_loader:
@@ -214,14 +216,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        input_data = (self._tokenizer(list(list(zip(*sample_batch))[0]),
+        input_data = (self._tokenizer(sample_batch[0],
                                       return_tensors="pt",
                                       padding=True,
-                                      truncation=True).to(self._device))
-        outputs = self._model(**input_data)
-        predicted_labels = [str(prediction.item()) for prediction
-                            in torch.argmax(outputs["logits"], dim=-1)]
-        return predicted_labels
+                                      truncation=True))
+        if input_data:
+            outputs = self._model(**input_data)
+            predicted_labels = [str(prediction.item()) for prediction
+                                in torch.argmax(outputs["logits"], dim=-1)]
+            return predicted_labels
+        return list()
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
