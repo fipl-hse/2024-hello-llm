@@ -110,7 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.source.iloc[index])
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -196,12 +196,12 @@ class LLMPipeline(AbstractLLMPipeline):
                                  dataset=self._dataset,
                                  collate_fn=lambda x: x)
 
+        res = pd.DataFrame(self._dataset.data)
         predictions = []
         for batch in data_loader:
             sample_predictions = self._infer_batch(batch)
             predictions.extend(sample_predictions)
 
-        res = pd.DataFrame(self._dataset.data)
         res[ColumnNames.PREDICTION.value] = predictions
 
         return res
@@ -224,7 +224,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         outputs = self._model(inputs["input_ids"])
         return [str(pred.item()) for pred in
-                F.softmax(outputs["logits"], dim=1).detach().argmax(axis=1)]
+                torch.argmax(F.softmax(outputs["logits"], dim=1), dim=1)]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
