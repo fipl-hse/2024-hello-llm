@@ -9,11 +9,11 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import T5TokenizerFast, AutoModelForSeq2SeqLM
 from evaluate import load
-from datasets import load_dataset, Dataset
+from datasets import load_dataset
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -36,7 +36,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = load_dataset(self._hf_name, split="test", revision='v2.0').to_pandas()
+        self._raw_data = load_dataset(self._hf_name, split='test', revision='v2.0').to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -74,8 +74,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        mid = self._raw_data.drop(columns=['title', 'date', 'url'])
-        mid = mid.rename(columns={'text': 'source', 'summary': 'target'})
+        mid = self._raw_data.drop(columns=['title', 'date', 'url']).rename(columns={'text': 'source', 'summary': 'target'})
+        mid = mid.replace('', pd.NA).dropna().drop_duplicates()
         mid = mid.reset_index(drop=True)
         self._data = mid
 
@@ -113,7 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return self._data.source.iloc[index], self._data.target.iloc[index]
+        return self._data.iloc[index].source, self._data.iloc[index].target
 
 
     @property
@@ -146,10 +146,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         self._dataset = dataset
         self._device = device
-        self._device = device
-        self._model_name = model_name
-        self._tokenizer = T5TokenizerFast.from_pretrained(self._model_name, padding=True, truncation=True)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+        self._tokenizer = T5TokenizerFast.from_pretrained(model_name, padding=True, truncation=True)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._batch_size = batch_size
         self._max_length = max_length
 
@@ -168,10 +166,10 @@ class LLMPipeline(AbstractLLMPipeline):
         model_properties = {
             'input_shape': [batch_size, emb_size],
             'embedding_size': emb_size,
-            'output_shape': [self._batch_size, emb_size, vocab_size],
+            'output_shape': [batch_size, emb_size, vocab_size],
             'num_trainable_params': model_summary.trainable_params,
             'vocab_size': vocab_size,
-            'size': model_summary.total_params,
+            'size': model_summary.total_param_bytes,
             'max_context_length': self._model.config.max_length
         }
 
@@ -188,9 +186,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        text, summary = sample
-        for batch in DataLoader(text):
-            return self._infer_batch(batch)
+        return self._infer_batch([sample])[0]
 
 
     @report_time
@@ -202,16 +198,13 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         result = {'target': [], 'predictions': []}
-
+        print(self._dataset.data)
         dataloader = DataLoader(self._dataset, batch_size=self._batch_size)
         for batch in dataloader:
-            texts, summary = batch
-            print(texts)
-            print(summary)
-            output = self._infer_batch(texts)
+            output = self._infer_batch(batch)
 
-            result['target'] = summary
-            result['predictions'] = output
+            result['target'].extend(batch)
+            result['predictions'].extend(output)
 
         return pd.DataFrame(result)
 
@@ -227,7 +220,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        tokens = self._tokenizer(sample_batch, return_tensors="pt")
+        print(type(sample_batch))
+        print(sample_batch)
+        tokens = self._tokenizer(sample_batch[0], return_tensors="pt")
         output = self._model.generate(**tokens, max_length=self._max_length)
         results = self._tokenizer.batch_decode(output, skip_special_tokens=True)
 
@@ -262,7 +257,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metric: metric.compute()
             for metric in self._metrics
         }
-        result = {}
 
         result = rouge.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
         result.to_csv(self._data_path)

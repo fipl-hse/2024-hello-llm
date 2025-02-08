@@ -30,8 +30,11 @@ def main() -> None:
     # print(preprocessor.data.head())
 
     dataset = TaskDataset(preprocessor.data.head(100))
+    # item = dataset.__getitem__(3)
+    # print(type(item), item)
+    # print(type(item[0]), item[0])
 
-    batch_size = 2
+    batch_size = 1
     max_length = 120
     device = 'cpu'
 
@@ -39,12 +42,12 @@ def main() -> None:
     # model_summary = pipeline.analyze_model()
     # print(model_summary)
 
-    prediction = pipeline.infer_sample(dataset[0])
-    print(prediction)
-    # predictions = pipeline.infer_dataset()
-    # print(predictions.head(10))
+    # prediction = pipeline.infer_sample(dataset[0])
+    # print(prediction)
+    predictions = pipeline.infer_dataset()
+    print(predictions.head(10))
 
-    predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
+    # predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
     # evaluator = TaskEvaluator(predictions_path, parameters['metrics'])
 
     # result = None
