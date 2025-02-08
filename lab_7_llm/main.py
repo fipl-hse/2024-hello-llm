@@ -166,8 +166,7 @@ class LLMPipeline(AbstractLLMPipeline):
                 "size": model_summary.total_param_bytes,
                 "vocab_size": self._model.config.vocab_size,
             }
-        else:
-            return {}
+        return {}
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -219,7 +218,8 @@ class LLMPipeline(AbstractLLMPipeline):
                                      padding=True,
                                      truncation=True)
         with torch.no_grad():
-            outputs = self._model(**input_data).logits
+            outputs = self._model(input_ids=input_data["input_ids"],
+                                  attention_mask=input_data['attention_mask']).logits
         predicted_labels = [str(prediction.item()) for prediction in torch.argmax(outputs, dim=-1)]
         return predicted_labels
 
