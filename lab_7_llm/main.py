@@ -214,7 +214,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        input_data = (self._tokenizer(sample_batch[0],
+        input_data = (self._tokenizer(list(list(zip(*sample_batch))[0]),
                                       return_tensors="pt",
                                       padding=True,
                                       truncation=True).to(self._device))
@@ -255,9 +255,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         evaluation_results = {}
         for metric in self._metrics:
-            scores = load(metric.value, seed=0).compute(predictions=predictions,
-                                                        references=target,
-                                                        average="micro")
+            scores = load(metric.value, seed=10).compute(predictions=predictions,
+                                                         references=target,
+                                                         average="micro")
             evaluation_results[metric.value] = scores[metric.value]
 
         return evaluation_results
