@@ -11,7 +11,6 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 import torch
-
 from datasets import load_dataset
 from torch.utils.data import Dataset
 from torchinfo import summary
@@ -176,7 +175,7 @@ class LLMPipeline(AbstractLLMPipeline):
             'num_trainable_params': model_summary.trainable_params,
             'vocab_size': config.vocab_size,
             'size': model_summary.total_param_bytes,
-            'max_content_length': embeddings_length
+            'max_content_length': self._model.config.max_length
         }
         return analysis
 
