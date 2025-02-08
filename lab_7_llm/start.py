@@ -33,7 +33,11 @@ def main() -> None:
 
     task_dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model, task_dataset, max_length=120, batch_size=64, device="cpu")
+    pipeline = LLMPipeline(settings.parameters.model,
+                           task_dataset,
+                           max_length=120,
+                           batch_size=64,
+                           device="cpu")
     pipeline.analyze_model()
     predictions_df = pipeline.infer_dataset()
 

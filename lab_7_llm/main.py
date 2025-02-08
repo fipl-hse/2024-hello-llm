@@ -10,9 +10,9 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
-import evaluate
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -72,17 +72,17 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        df = self._raw_data.copy()
+        data_frame = self._raw_data.copy()
         drop_cols = ['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-        df.drop(columns=drop_cols, errors='ignore', inplace=True)
+        data_frame.drop(columns=drop_cols, errors='ignore', inplace=True)
 
-        df.rename(columns={
+        data_frame.rename(columns={
             'toxic': ColumnNames.TARGET.value,
             'comment_text': ColumnNames.SOURCE.value
         }, inplace=True)
 
-        df.reset_index(drop=True, inplace=True)
-        self._data = df
+        data_frame.reset_index(drop=True, inplace=True)
+        self._data = data_frame
 
 
 class TaskDataset(Dataset):
@@ -150,15 +150,10 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        self._model_name = model_name
-        self._dataset = dataset
-        self._max_length = max_length
-        self._batch_size = batch_size
-        self._device = device
+        super().__init__(model_name, dataset, max_length, batch_size, device)
 
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
-        self._model.to(device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
     def analyze_model(self) -> dict:
         """
@@ -168,8 +163,7 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         dummy_inputs = torch.ones((1, self._model.config.max_position_embeddings),
-                                  dtype=torch.long,
-                                  device=self._device)
+                                  dtype=torch.long)
         input_data = {'input_ids': dummy_inputs, 'attention_mask': dummy_inputs}
 
         model_summary = summary(self._model, input_data=input_data, verbose=0)
@@ -234,13 +228,15 @@ class LLMPipeline(AbstractLLMPipeline):
             texts,
             return_tensors="pt",
             truncation=True,
-            padding=True,
+            padding="max_length",
             max_length=self._max_length
         )
         inputs = {k: v.to(self._device) for k, v in inputs.items()}
+
         with torch.no_grad():
             outputs = self._model(**inputs)
             preds = torch.argmax(outputs.logits, dim=1)
+
         return [str(pred.item()) for pred in preds]
 
 
@@ -268,18 +264,15 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self._data_path)
+        data_frame = pd.read_csv(self._data_path)
 
-        targets = df[ColumnNames.TARGET.value]
-        predictions = df[ColumnNames.PREDICTION.value]
+        targets = data_frame[ColumnNames.TARGET.value]
+        predictions = data_frame[ColumnNames.PREDICTION.value]
 
         results = {}
         for metric_item in self._metrics:
-            metric_name = str(metric_item)
-            metric = evaluate.load(metric_name)
-            result = metric.compute(predictions=predictions, references=targets)
-
-            result_value = result.get(metric_name, result)
-            results[metric_name] = result_value
+            scores = load(metric_item.value, seed=58).compute(predictions=predictions,
+                                                                       references=targets)
+            results[metric_item.value] = scores[metric_item.value]
 
         return results
