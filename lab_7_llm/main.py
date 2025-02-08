@@ -7,15 +7,15 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import datasets
 import pandas as pd
 import torch
+from datasets import load_dataset
+from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
-from datasets import load_dataset
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-from core_utils.llm.llm_pipeline import AbstractLLMPipeline, DataFrame
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
@@ -181,18 +181,15 @@ class LLMPipeline(AbstractLLMPipeline):
             str | None: A prediction
         """
         encoded_batch = self._tokenizer.prepare_seq2seq_batch(
-            [sample],
+            [sample][0],
             return_tensors="pt",
-            padding="max_length",
+            padding=True,
             truncation=True,
-            max_length=512)
+            max_length=self._max_length)
 
         output_ids = self._model.generate(
             input_ids=encoded_batch["input_ids"],
-            max_length=36,
-            no_repeat_ngram_size=3,
-            num_beams=5,
-            top_k=0
+            max_length=self._max_length
         )
 
         headline = self._tokenizer.decode(output_ids[0],
