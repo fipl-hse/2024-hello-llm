@@ -20,10 +20,10 @@ def main() -> None:
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    dataset_properties = preprocessor.analyze()
-    print("dataset properties:", dataset_properties)
+    result = preprocessor.analyze()
+    print("dataset properties:", result)
 
-    assert dataset_properties is not None, "Demo does not work correctly"
+    assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":
