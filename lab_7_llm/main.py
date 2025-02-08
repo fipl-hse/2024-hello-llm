@@ -222,7 +222,8 @@ class LLMPipeline(AbstractLLMPipeline):
                                  padding=True,
                                  truncation=True).to(self._device)
 
-        outputs = self._model(input_ids=inputs["input_ids"], attention_mask=inputs['attention_mask'])
+        outputs = self._model(input_ids=inputs["input_ids"],
+                              attention_mask=inputs['attention_mask'])
         return [str(pred.item()) for pred in
                 torch.argmax(F.softmax(outputs["logits"], dim=1), dim=1)]
 
