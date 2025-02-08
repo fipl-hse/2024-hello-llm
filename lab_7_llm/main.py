@@ -142,7 +142,9 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=self._max_length)
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            model_name, model_max_length=self._max_length
+        )
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -152,9 +154,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
+        tensor = torch.ones(
+            (1, self._model.config.encoder.max_position_embeddings),
+            dtype=torch.long
+        )
         inputs = {"input_ids": tensor, "attention_mask": tensor}
-        model_summary = summary(self._model, input_data=inputs, decoder_input_ids = tensor, verbose=0)
+        model_summary = summary(
+            self._model,
+            input_data=inputs,
+            decoder_input_ids=tensor,
+            verbose=0
+        )
 
         return {
             "input_shape": list(tensor.size()),
@@ -202,6 +212,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
