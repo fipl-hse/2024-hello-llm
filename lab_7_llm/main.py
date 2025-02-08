@@ -221,6 +221,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if not self._model:
+            return None
+
+        tokens = self._tokenizer(sample_batch, return_tensors='tf')
+        self._model.eval()
+        with torch.no_grad():
+            output = self._model(**tokens)
+            preds = [torch.argmax(logit).item() for logit in output.logits]
+            labels = self._model.config.id2label
+            return list([labels[pred] for pred in preds])
+
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
