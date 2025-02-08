@@ -11,6 +11,7 @@ import datasets
 from datasets import load_dataset
 from pandas import DataFrame
 import torch
+from torchinfo import summary
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
@@ -19,6 +20,7 @@ from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoConfig
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -97,6 +99,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -105,6 +108,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -116,6 +120,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return self._data.iloc[index]
 
     @property
     def data(self) -> DataFrame:
@@ -125,6 +130,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -145,6 +151,10 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        # self._config = AutoConfig.from_pretrained(model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -153,6 +163,21 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        input_tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
+        inputs = {"input_ids": input_tensor, "attention_mask": input_tensor}
+        summary_model = summary(self._model, input_data=inputs, decoder_input_ids=input_tensor, verbose=0)
+        print(summary_model)
+        info = {
+            "input_shape": list(input_tensor.size()),
+            "embedding_size": list(input_tensor.shape)[1],
+            "output_shape": summary_model.summary_list[-1].output_size,
+            "num_trainable_params": summary_model.trainable_params,
+            "vocab_size": self._model.config.encoder.vocab_size,
+            "size": summary_model.total_param_bytes,
+            "max_context_length": self._model.config.max_length
+
+        }
+        return info
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -165,6 +190,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -174,6 +202,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        loader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
