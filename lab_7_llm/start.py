@@ -7,17 +7,20 @@ from pathlib import Path
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import LLMPipeline, TaskDataset, RawDataImporter, RawDataPreprocessor
+from lab_7_llm.main import (
+    LLMPipeline,
+    TaskDataset,
+    RawDataImporter,
+    RawDataPreprocessor
+)
 
-
-SETTINGS_PATH = PROJECT_ROOT / 'lab_7_llm/settings.json'
 
 @report_time
 def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(SETTINGS_PATH)
+    settings = LabSettings(PROJECT_ROOT / 'lab_7_llm/settings.json')
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
