@@ -152,7 +152,8 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         if isinstance(self._model, torch.nn.Module):
-            input_data = torch.ones((1, self._model.config.max_position_embeddings), dtype=torch.long)
+            input_data = torch.ones((1, self._model.config.max_position_embeddings),
+                                    dtype=torch.long)
             model_summary = summary(self._model, input_data=input_data, verbose=0)
 
             return {
@@ -165,6 +166,8 @@ class LLMPipeline(AbstractLLMPipeline):
                 "size": model_summary.total_param_bytes,
                 "vocab_size": self._model.config.vocab_size,
             }
+        else:
+            return {}
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -215,7 +218,6 @@ class LLMPipeline(AbstractLLMPipeline):
                                      return_tensors="pt",
                                      padding=True,
                                      truncation=True)
-
         with torch.no_grad():
             outputs = self._model(**input_data).logits
         predicted_labels = [str(prediction.item()) for prediction in torch.argmax(outputs, dim=-1)]
