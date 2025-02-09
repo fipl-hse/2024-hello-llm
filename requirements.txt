@@ -6,3 +6,6 @@ scikit-learn==1.6.1
 torch==2.5.1
 torchinfo==1.8.0
 transformers==4.48.0
+pydantic==2.10.6
+pytest==8.3.4
+tqdm==4.67.1
