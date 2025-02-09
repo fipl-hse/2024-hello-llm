@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import BertForSequenceClassification, BertTokenizer
 
@@ -201,16 +201,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        if not self._model:
-            return None
+        # mark 6
+        # if not self._model:
+        #     return None
+        #
+        # inputs = self._tokenizer(sample, return_tensors="pt", padding=True, truncation=True)
+        #
+        # with torch.no_grad():
+        #     logits = self._model(**inputs).logits
+        #
+        # return str(logits.argmax().item())
 
-        inputs = self._tokenizer(sample, return_tensors="pt", padding=True, truncation=True)
-
-        with torch.no_grad():
-            logits = self._model(**inputs).logits
-
-        return str(logits.argmax().item())
-
+        # mark8
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -220,6 +223,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(batch_size=self._batch_size, dataset=self._dataset)
+
+        predictions = []
+        targets = []
+
+        with torch.no_grad():
+            for batch in data_loader:
+                batch_texts, batch_labels = batch["text"], batch["label"]
+                batch_tuples = [(text,) for text in batch_texts]
+                preds = self._infer_batch(batch_tuples)
+                predictions.extend(preds)
+                targets.extend(batch_labels)
+
+        return pd.DataFrame({"target": targets, "predictions": predictions})
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -232,7 +249,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        texts = [sample[0] for sample in sample_batch]
+        inputs = self._tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            return_tensors="pt"
+        )
 
+        outputs = self._model(**inputs)
+        preds = torch.argmax(outputs.logits, dim=-1)
+
+        return [str(pred.item()) for pred in preds]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
