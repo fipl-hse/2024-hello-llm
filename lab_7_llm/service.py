@@ -27,11 +27,11 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     Returns:
         tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
     """
-    app = FastAPI()
+    model_app = FastAPI()
 
     settings = LabSettings(BASE_DIR / "settings.json")
     dataset = TaskDataset(pd.DataFrame())
-    pipeline = LLMPipeline(
+    model_pipeline = LLMPipeline(
         model_name=settings.parameters.model,
         dataset=dataset,
         max_length=120,
@@ -39,7 +39,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
         device="cpu"
     )
 
-    return app, pipeline
+    return model_app, model_pipeline
 
 
 app, pipeline = init_application()
@@ -48,7 +48,7 @@ templates = Jinja2Templates(directory=str(ASSETS_PATH))
 
 
 @app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
+async def root(request: Request) -> HTMLResponse:
     """
     root endpoint serving the main HTML page
     """
@@ -63,7 +63,7 @@ class Query(BaseModel):
 
 
 @app.post("/infer")
-async def infer(query: Query):
+async def infer(query: Query) -> JSONResponse:
     """
     main endpoint for model inference
     """
