@@ -44,7 +44,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
     """
-    _data: pd.DataFrame
+    def __init__(self, raw_data: DataFrame) -> None:
+        """
+        Initialize an instance of RawDataPreprocessor.
+
+        Args:
+            raw_data (DataFrame): The raw dataset
+        """
+        super().__init__(raw_data)
 
     def analyze(self) -> dict:
         """
