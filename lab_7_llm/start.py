@@ -5,7 +5,13 @@ Starter for demonstration of laboratory work.
 import json
 
 from config.constants import PROJECT_ROOT
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+)
 
 
 @report_time
