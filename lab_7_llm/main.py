@@ -180,7 +180,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_summary = summary(self._model, input_data=input_tensors, verbose=0)
         model_metadata = {
-            'input_dimensions': {key: list(value.shape) for key, value in input_tensors.items()},
+            'input_shape': {key: list(value.shape) for key, value in input_tensors.items()},
             'embedding_size': self._model.config.max_position_embeddings,
             'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
