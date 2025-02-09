@@ -154,6 +154,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        print("LLMPipeline: self._model =", self._model)  # Отладка
 
     def analyze_model(self) -> dict:
         """
@@ -189,6 +190,7 @@ class LLMPipeline(AbstractLLMPipeline):
             "size": model_summary.total_param_bytes,
             "max_context_length": max_context_length,
         }
+        print("LLMPipeline.analyze_model():", result)  # Отладка
 
         return result
 
