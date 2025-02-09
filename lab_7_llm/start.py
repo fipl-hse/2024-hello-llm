@@ -27,8 +27,7 @@ def main() -> None:
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    properties = preprocessor.analyze()
-    print(properties)
+    preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model,
@@ -37,11 +36,7 @@ def main() -> None:
                            batch_size=1,
                            device="cpu")
 
-    model_summary = pipeline.analyze_model()
-    print(model_summary)
-    result = model_summary
-
-    preprocessor = RawDataPreprocessor(importer.raw_data)
+    print(pipeline.analyze_model())
     result = preprocessor.analyze()
     assert result is not None, "Demo does not work correctly"
 

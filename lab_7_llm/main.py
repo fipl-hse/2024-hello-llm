@@ -5,9 +5,12 @@ Working with Large Language Models.
 """
 from __future__ import annotations
 
+from copy import deepcopy
+
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+from unittest.mock import inplace
 
 import pandas as pd
 import torch
@@ -15,10 +18,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-)
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -75,9 +75,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.replace("", pd.NA).dropna()
-        self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET.value,
-                                                    'toxic_comment': ColumnNames.SOURCE.value})
+        self._data = deepcopy(self._raw_data)
+        self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET,
+                                                    'toxic_comment': ColumnNames.SOURCE}, inplace=True)
+        self._data.drop_duplicates(inplace=True)
         self._data.reset_index(drop=True, inplace=True)
 
         # data = pd.DataFrame
