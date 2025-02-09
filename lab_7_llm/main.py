@@ -10,8 +10,9 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -187,22 +188,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        encoded_batch = self._tokenizer.prepare_seq2seq_batch(
-            [sample][0],
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=self._max_length)
-
-        output_ids = self._model.generate(
-            input_ids=encoded_batch["input_ids"],
-            max_length=self._max_length
-        )
-
-        headline = self._tokenizer.decode(output_ids[0],
-                                    skip_special_tokens=True,
-                                    clean_up_tokenization_spaces=False)
-        return headline
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -212,7 +198,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        predictions = []
 
+        with torch.no_grad():
+            for batch in data_loader:
+                batch_predictions = self._infer_batch(batch)
+                predictions.extend(batch_predictions)
+
+        result_df = pd.DataFrame(self._dataset.data)
+        result_df[ColumnNames.PREDICTION.value] = predictions
+
+        return result_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -225,6 +222,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        inputs = self._tokenizer(
+            list(sample_batch[0]),
+            padding=True,
+            truncation=True,
+            return_tensors="pt"
+        )
+
+        input_ids = inputs["input_ids"].to(self._device)
+        attention_mask = inputs["attention_mask"].to(self._device)
+
+        generated_ids = self._model.generate(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_length=self._max_length
+        )
+
+        decoded_predictions = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+
+        return [prediction.strip() for prediction in decoded_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -240,6 +256,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -249,3 +267,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        eval_data = pd.read_csv(self.data_path)
+
+        predictions = eval_data[ColumnNames.PREDICTION.value]
+        targets = eval_data[ColumnNames.TARGET.value]
+
+        eval_results = {}
+        for metric in self._metrics:
+            scores = load(metric.value, seed=77).compute(predictions=predictions,
+                                                         references=targets)
+            if metric.value == "rouge":
+                eval_results[metric.value] = scores["rougeL"]
+            else:
+                eval_results[metric.value] = scores[metric.value]
+
+        return eval_results
