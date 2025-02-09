@@ -9,12 +9,13 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+
 from datasets import load_dataset
 from evaluate import load
+
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import T5TokenizerFast, AutoModelForSeq2SeqLM
-
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -135,9 +136,8 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
-    ) -> None:
+    def __init__(self, model_name: str, dataset: TaskDataset,
+                 max_length: int, batch_size: int, device: str) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -148,6 +148,7 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
         self._dataset = dataset
         self._device = device
         self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
@@ -190,7 +191,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch((sample[0]))[0]
+        return self._infer_batch([sample[0]])[0]
 
 
     @report_time

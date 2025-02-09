@@ -1,7 +1,6 @@
 """
 Starter for demonstration of laboratory work.
 """
-from fastapi import FastAPI
 
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from config.constants import PROJECT_ROOT
@@ -30,7 +29,7 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
 
-    dataset = TaskDataset(preprocessor.data.head(10))
+    dataset = TaskDataset(preprocessor.data.head(100))
 
     batch_size = 64
     max_length = 120
@@ -48,9 +47,6 @@ def main() -> None:
 
     result = comparison
     assert result is not None, "Demo does not work correctly"
-
-
-    app = FastAPI()
 
 
 if __name__ == "__main__":
