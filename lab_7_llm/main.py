@@ -259,8 +259,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         evaluation_res = {}
         for metric in self._metrics:
-            scores = load(metric.value, seed=13).compute(predictions=predictions,
-                                                         references=references)
+            scores = load(metric.value).compute(predictions=predictions,
+                                                references=references, average='macro')
             if metric.value == "f1":
                 evaluation_res[metric.value] = scores["f1"]
             else:
