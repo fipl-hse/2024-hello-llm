@@ -9,11 +9,12 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+from datasets import load_dataset
+from evaluate import load
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import T5TokenizerFast, AutoModelForSeq2SeqLM
-from evaluate import load
-from datasets import load_dataset
+
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -36,7 +37,9 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = load_dataset(self._hf_name, split='test', revision='v2.0').to_pandas()
+        self._raw_data = load_dataset(self._hf_name,
+                                      split='test', revision='v2.0',
+                                      trust_remote_code=True).to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -74,7 +77,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        mid = self._raw_data.drop(columns=['title', 'date', 'url']).rename(columns={'text': 'source', 'summary': 'target'})
+        mid = self._raw_data.drop(columns=['title', 'date', 'url'])
+        mid = mid.rename(columns={'text': 'source', 'summary': 'target'})
         mid = mid.replace('', pd.NA).dropna().drop_duplicates()
         mid = mid.reset_index(drop=True)
         self._data = mid
@@ -186,7 +190,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch([sample[0]])[0]
+        return self._infer_batch((sample[0]))[0]
 
 
     @report_time
@@ -221,7 +225,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        tokens = self._tokenizer(sample_batch, return_tensors='pt', padding=True, truncation=True, max_length=self._max_length)
+        tokens = self._tokenizer(sample_batch, return_tensors='pt', max_length=self._max_length,
+                                 padding=True, truncation=True)
+
         output = self._model.generate(**tokens)
         results = self._tokenizer.batch_decode(output, skip_special_tokens=True)
 
@@ -258,7 +264,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
         comparison = {}
         for metric in self._metrics:
             calculated = load(metric.value).compute(predictions=predictions, references=target)
-            one_calculated = calculated['rougeL'] if metric.value == 'rouge' else calculated[metric.value]
-            comparison[metric.value] = one_calculated
+            if metric.value == 'rouge':
+                comparison[metric.value] = calculated['rougeL']
+            else:
+                comparison[metric.value] = calculated[metric.value]
 
         return comparison

@@ -1,6 +1,8 @@
 """
 Starter for demonstration of laboratory work.
 """
+from fastapi import FastAPI
+
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
@@ -46,6 +48,9 @@ def main() -> None:
 
     result = comparison
     assert result is not None, "Demo does not work correctly"
+
+
+    app = FastAPI()
 
 
 if __name__ == "__main__":
