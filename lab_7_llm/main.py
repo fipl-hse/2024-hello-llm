@@ -157,9 +157,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        input_ids = torch.ones((1, 768), dtype=torch.long, device=self._device)
+        input_ids = torch.ones((1, self._model.config.d_model),
+                               dtype=torch.long, device=self._device)
         input_data = {"input_ids": input_ids, "decoder_input_ids": input_ids}
-
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
         return {
