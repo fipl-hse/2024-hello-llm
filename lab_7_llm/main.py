@@ -39,9 +39,6 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         self._raw_data = load_dataset(path=self._hf_name, split='if_test').to_pandas()
 
-        if not isinstance(self._raw_data, pd.DataFrame):
-            raise TypeError
-
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
@@ -124,7 +121,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
-        return pd.DataFrame(self._data)
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -205,7 +202,7 @@ class LLMPipeline(AbstractLLMPipeline):
         predictions = []
         for batch in loader:
             predictions.extend(self._infer_batch(batch))
-        res = self._dataset.data
+        res = pd.DataFrame(self._dataset.data)
         res[ColumnNames.PREDICTION.value] = predictions
         return res[[ColumnNames.TARGET.value, ColumnNames.PREDICTION.value]]
 
