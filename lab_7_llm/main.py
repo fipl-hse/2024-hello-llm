@@ -79,7 +79,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET,
                                                     'toxic_comment': ColumnNames.SOURCE}, inplace=True)
         self._data.drop_duplicates(inplace=True)
-        self._data.reset_index(drop=True, inplace=True)
+        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(lambda x: 1 if x is True else 0)
+        self._data.reset_index(inplace=True)
 
         # data = pd.DataFrame
         # data.rename(columns={'reasons':'target', 'toxic_comment':'source'}, inplace=True)
