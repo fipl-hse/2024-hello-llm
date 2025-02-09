@@ -200,9 +200,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        if not self._model:
-            raise ValueError("Model is not initialized")
-        return self._infer_batch([sample])[0]
+        tokens = self._tokenizer(
+                sample,
+                max_length=self._max_length,
+                padding=True,
+                truncation=True,
+                return_tensors='pt'
+        )
+        output = self._model(**tokens)
+        return str(torch.argmax(output.logits).item())
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
