@@ -13,7 +13,7 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from evaluate import load
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -59,11 +59,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
         lens = self._raw_data['neutral'].map(len, na_action='ignore')
+        data_no_na = self._raw_data.replace('', np.nan).dropna()
         analysis = {
             'dataset_number_of_samples': len(self._raw_data),
             'dataset_columns': len(self._raw_data.columns),
             'dataset_duplicates': self._raw_data.duplicated().sum(),
-            'dataset_empty_rows': len(self._raw_data) - len(self._raw_data.replace('', np.nan).dropna()),
+            'dataset_empty_rows': len(self._raw_data) - len(data_no_na),
             'dataset_sample_min_len': lens.min(),
             'dataset_sample_max_len': lens.max()
         }
@@ -75,9 +76,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = deepcopy(self._raw_data)
-        self._data.rename(columns={'neutral': ColumnNames.SOURCE, 'toxic': ColumnNames.TARGET}, inplace=True)
+        self._data.rename(columns={'neutral': ColumnNames.SOURCE, 'toxic': ColumnNames.TARGET},
+                          inplace=True)
         self._data.drop_duplicates(inplace=True)
-        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(lambda x: 1 if x is True else 0)
+        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(
+            lambda x: 1 if x is True else 0)
         self._data.reset_index(inplace=True)
 
 
@@ -193,7 +196,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if self._model:
             return self._infer_batch([sample])[0]
-        return
+        return None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -204,8 +207,8 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         dataloader = DataLoader(self._dataset, self._batch_size)
-        targets = list()
-        preds = list()
+        targets = []
+        preds = []
         for batch in dataloader:
             targets += [tensor_.numpy() for tensor_ in batch[2]]
             preds += self._infer_batch(batch[1])
@@ -224,6 +227,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if not self._model:
+            return ['Model is not defined']
         tokens = self._tokenizer(sample_batch,
                                  return_tensors='pt',
                                  padding=True,
@@ -231,7 +236,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model.eval()
         with torch.no_grad():
             output = self._model(**tokens)
-            return list([str(torch.argmax(logit).item()) for logit in output.logits])
+            return [str(torch.argmax(logit).item()) for logit in output.logits]
 
 
 
@@ -259,12 +264,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self.data_path)
-        results = dict()
+        target2pred = pd.read_csv(self.data_path)
+        results = {}
         for metric in self.metrics:
-            metric = str(metric)
-            result = load(metric).compute(predictions=df[ColumnNames.TARGET.value],
-                                          references=df[ColumnNames.PREDICTION.value])
+            result = load(str(metric)).compute(predictions=target2pred[ColumnNames.TARGET.value],
+                                          references=target2pred[ColumnNames.PREDICTION.value])
             results.update(result)
         return results
-
