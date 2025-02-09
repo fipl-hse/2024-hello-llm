@@ -4,11 +4,16 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline, TaskEvaluator
-
-from core_utils.llm.time_decorator import report_time
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
+from core_utils.llm.time_decorator import report_time
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    TaskDataset,
+    TaskEvaluator,
+)
 
 
 @report_time
@@ -17,6 +22,7 @@ def main() -> None:
     Run the translation pipeline.
     """
     settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
+    predictions_path = PROJECT_ROOT / 'dist' / 'predictions.csv'
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
