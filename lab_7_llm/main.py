@@ -154,22 +154,23 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        if isinstance(self._model, torch.nn.Module):
-            input_data = torch.ones((1, self._model.config.max_position_embeddings),
-                                    dtype=torch.long)
-            model_summary = summary(self._model, input_data=input_data, verbose=0)
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
-            return {
-                "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
-                "input_shape": {'attention_mask': list(input_data.size()),
-                                'input_ids': list(input_data.size())},
-                "max_context_length": self._model.config.max_length,
-                "num_trainable_params": model_summary.trainable_params,
-                "output_shape": model_summary.summary_list[-1].output_size,
-                "size": model_summary.total_param_bytes,
-                "vocab_size": self._model.config.vocab_size,
-            }
-        return {}
+        input_data = torch.ones((1, self._model.config.max_position_embeddings),
+                                dtype=torch.long)
+        model_summary = summary(self._model, input_data=input_data, verbose=0)
+
+        return {
+            "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
+            "input_shape": {'attention_mask': list(input_data.size()),
+                            'input_ids': list(input_data.size())},
+            "max_context_length": self._model.config.max_length,
+            "num_trainable_params": model_summary.trainable_params,
+            "output_shape": model_summary.summary_list[-1].output_size,
+            "size": model_summary.total_param_bytes,
+            "vocab_size": self._model.config.vocab_size,
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -220,12 +221,13 @@ class LLMPipeline(AbstractLLMPipeline):
                                       return_tensors="pt",
                                       padding=True,
                                       truncation=True))
-        if isinstance(self._model, torch.nn.Module):
-            outputs = self._model(**input_data)
-            predicted_labels = [str(prediction.item()) for prediction
-                                in torch.argmax(outputs["logits"], dim=-1)]
-            return predicted_labels
-        return []
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
+
+        outputs = self._model(**input_data)
+        predicted_labels = [str(prediction.item()) for prediction
+                            in torch.argmax(outputs["logits"], dim=-1)]
+        return predicted_labels
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
