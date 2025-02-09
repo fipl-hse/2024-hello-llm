@@ -257,24 +257,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         comparison = {}
         for metric in self._metrics:
-            print(metric, print(metric.name))
-            metric = load(metric.name)
+            calculated = load(metric.value).compute(predictions=predictions, references=target)
+            one_calculated = calculated['rougeL'] if metric.value == 'rouge' else calculated[metric.value]
+            comparison[metric.value] = one_calculated
 
-            if metric == 'rouge':
-                rouge = load('rouge')
-                rouge_type = 'rougeL'
-                comparison[metric] = rouge.compute(predictions=predictions, references=target, use_stemmer=True)[rouge_type]
-
-            elif metric == 'bleu':
-                bleu = load('bleu')
-                comparison[metric] = bleu.compute(predictions=predictions, references=target, use_stemmer=True)
-
-
-        result = {
-            metric: metric.compute()
-            for metric in self._metrics
-        }
-
-        result = rouge.compute(predictions=predictions, references=target, use_stemmer=True)
-        result.to_csv(self._data_path)
-        return result
+        return comparison

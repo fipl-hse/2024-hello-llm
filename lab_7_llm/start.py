@@ -27,21 +27,22 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(10))
 
-    batch_size = 2
+    batch_size = 64
     max_length = 120
     device = 'cpu'
 
     pipeline = LLMPipeline(parameters.model, dataset, max_length, batch_size, device)
 
-    predictions = pipeline.infer_dataset()
-
     predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    predictions = pipeline.infer_dataset()
+    predictions.to_csv(predictions_path)
+
     evaluator = TaskEvaluator(predictions_path, parameters.metrics)
-    evaluator.run()
+    comparison = evaluator.run()
+    print(comparison)
 
-
-    # result = None
-    # assert result is not None, "Demo does not work correctly"
+    result = comparison
+    assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":
