@@ -9,6 +9,7 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+import re
 from pandas import DataFrame
 from datasets import load_dataset, Dataset
 from torchinfo import summary
@@ -151,7 +152,9 @@ class LLMPipeline(AbstractLLMPipeline):
                          device=device)
         self._model = AutoModelForCausalLM.from_pretrained(model_name)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
         self._config = AutoConfig.from_pretrained(model_name)
+        self._model.to(device)
 
     def analyze_model(self) -> dict:
         """
@@ -195,9 +198,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        inputs = self._tokenizer(sample[0], return_tensors="pt")
-        generate_ids = self._model.generate(inputs.input_ids, max_length=self._max_length)
-        return self._tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -207,6 +208,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        requests = tuple(self._dataset.data()['question'])
+        target = self._dataset.data()['target'].to_list()
+        answers = self._infer_batch(requests)
+        inference_df = pd.DataFrame({'target': target, 'predictions': answers})
+        return inference_df
+
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -219,7 +226,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-
+        inputs = self._tokenizer(sample_batch,
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True,
+                                 max_length=self._max_length)
+        generate_ids = self._model.generate(**inputs, max_length=self._max_length)
+        response = self._tokenizer.batch_decode(generate_ids)
+        return response
 
 
 class TaskEvaluator(AbstractTaskEvaluator):

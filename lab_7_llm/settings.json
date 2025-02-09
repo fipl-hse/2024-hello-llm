@@ -4,5 +4,5 @@
     "dataset": "jtatman/databricks-dolly-8k-qa-open-close",
     "metrics": []
   },
-  "target_score": 4
+  "target_score": 6
 }
