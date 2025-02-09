@@ -10,8 +10,9 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import MarianMTModel, MarianTokenizer
 
@@ -187,11 +188,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=sample,
-                                                       padding=True, truncation=True,
-                                                       return_tensors='pt')
-        outputs = self._model.generate(**inputs)
-        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -201,7 +198,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        pass
+        loader = DataLoader(self._dataset, self._batch_size)
+        predictions = []
+        for batch in loader:
+            predictions.extend(self._infer_batch(batch))
+        res = self._dataset.data
+        res[ColumnNames.PREDICTION.value] = predictions
+        return res[[ColumnNames.TARGET.value, ColumnNames.PREDICTION.value]]
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -214,7 +217,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        pass
+        samples = [text for el in sample_batch for text in el]
+        inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=samples,
+                                                       padding=True, truncation=True,
+                                                       return_tensors='pt')
+        outputs = self._model.generate(**inputs)
+        return list(self._tokenizer.batch_decode(outputs, skip_special_tokens=True))
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -230,7 +238,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        pass
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -240,4 +249,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        pass
+        data = pd.read_csv(self._data_path)
+        predictions = data[ColumnNames.PREDICTION.value]
+        references = data[ColumnNames.TARGET.value]
+        scores = {}
+        for metric in self._metrics:
+            scores[str(metric)] = load(str(metric)).compute(predictions=predictions,
+                                                            references=references)[str(metric)]
+        return scores
