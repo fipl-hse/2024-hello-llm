@@ -43,6 +43,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
 
 
 app, pipeline = init_application()
+
 app.mount("/static", StaticFiles(directory=ASSETS_PATH), name="static")
 templates = Jinja2Templates(directory=str(ASSETS_PATH))
 

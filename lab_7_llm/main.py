@@ -53,16 +53,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        data = self._raw_data
-        data_cleaned = data.dropna()
-
         dataset_properties = {
-            "dataset_number_of_samples": len(data),
-            "dataset_columns": len(data.columns),
-            "dataset_duplicates": int(data.duplicated().sum()),
-            "dataset_empty_rows": len(data) - len(data_cleaned),
-            "dataset_sample_min_len": int(data['comment_text'].str.len().min()),
-            "dataset_sample_max_len": int(data['comment_text'].str.len().max()),
+            "dataset_number_of_samples": self._raw_data.shape[0],
+            "dataset_columns": self._raw_data.shape[1],
+            "dataset_duplicates": self._raw_data.duplicated().sum(),
+            "dataset_empty_rows": self._raw_data.isnull().sum(axis=1).sum(),
+            "dataset_sample_min_len": self._raw_data['comment_text'].dropna().str.len().min(),
+            "dataset_sample_max_len": self._raw_data['comment_text'].dropna().str.len().max(),
         }
 
         return dataset_properties
@@ -72,17 +69,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        data_frame = self._raw_data.copy()
         drop_cols = ['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-        data_frame.drop(columns=drop_cols, errors='ignore', inplace=True)
+        self._raw_data.drop(columns=drop_cols, errors='ignore', inplace=True)
 
-        data_frame.rename(columns={
+        self._raw_data.rename(columns={
             'toxic': ColumnNames.TARGET.value,
             'comment_text': ColumnNames.SOURCE.value
         }, inplace=True)
 
-        data_frame.reset_index(drop=True, inplace=True)
-        self._data = data_frame
+        self._raw_data.reset_index(drop=True, inplace=True)
+        self._data = self._raw_data
 
 
 class TaskDataset(Dataset):
@@ -162,9 +158,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        dummy_inputs = torch.ones((1, self._model.config.max_position_embeddings),
+        dummy_inputs = torch.ones((1,
+                                  self._model.config.max_position_embeddings),
                                   dtype=torch.long)
-        input_data = {'input_ids': dummy_inputs, 'attention_mask': dummy_inputs}
+
+        input_data = {'input_ids': dummy_inputs,
+                      'attention_mask': dummy_inputs}
 
         if isinstance(self._model, torch.nn.Module):
             model_summary = summary(self._model, input_data=input_data, verbose=0)
@@ -213,7 +212,8 @@ class LLMPipeline(AbstractLLMPipeline):
             all_predictions.extend(preds)
             all_targets.extend(targets)
 
-        return pd.DataFrame({"target": all_targets, "predictions": all_predictions})
+        return pd.DataFrame({ColumnNames.TARGET: all_targets,
+                             ColumnNames.PREDICTION: all_predictions})
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -234,7 +234,7 @@ class LLMPipeline(AbstractLLMPipeline):
             texts,
             return_tensors="pt",
             truncation=True,
-            padding="max_length",
+            padding=True,
             max_length=self._max_length
         )
         inputs = {k: v.to(self._device) for k, v in inputs.items()}
@@ -277,9 +277,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         results = {}
         for metric_item in self._metrics:
-            scores = load(metric_item.value, seed=58).compute(predictions=predictions,
-                                                              references=targets,
-                                                              average="micro")
-            results[metric_item.value] = scores[metric_item.value]
+            metric = load(metric_item.value)
+            scores = metric.compute(predictions=predictions,
+                                    references=targets,
+                                    average="micro")
+
+            results[metric_item.value] = scores.get(metric_item.value)
 
         return results
