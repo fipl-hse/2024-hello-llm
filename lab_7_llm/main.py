@@ -140,7 +140,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -190,7 +190,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch([sample])[0]
+        if self._model is None or self._tokenizer is None:
+            return None
+
+        if len(sample) != 1:
+            return None
+
+        inputs = self._tokenizer.prepare_seq2seq_batch([sample][0], return_tensors="pt", padding=True, truncation=True, max_length=self._max_length)
+
+        with torch.no_grad():
+            output_ids = self._model.generate(input_ids=inputs["input_ids"], max_length=self._max_length)
+        prediction = self._tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        return prediction
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
