@@ -14,6 +14,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
+from transformers import BertForSequenceClassification, BertTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
