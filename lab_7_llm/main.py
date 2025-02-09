@@ -10,7 +10,6 @@ from copy import deepcopy
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
-from unittest.mock import inplace
 
 import pandas as pd
 import torch
@@ -75,12 +74,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET,
-                                                    'toxic_comment': ColumnNames.SOURCE}, inplace=True)
-        self._data['target'] = self._data['target'].replace({'{"toxic_content":true}': 1, '{"not_toxic":true}': 0})
-        self._data = self._data[self._data['target'].isin([0, 1])]
-        self._data.drop_duplicates(inplace=True)
-        self._data.reset_index(drop=True, inplace=True)
+        self._data = self._data.rename(columns={'reasons': ColumnNames.TARGET,
+                                                    'toxic_comment': ColumnNames.SOURCE})
+        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].replace({
+            '{"toxic_content":true}': 1,
+            '{"not_toxic":true}': 0})
+        self._data = self._data[self._data[ColumnNames.TARGET].isin([0, 1])]
+        self._data.drop_duplicates(subset=[ColumnNames.SOURCE, ColumnNames.TARGET])
+        self._data.reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
