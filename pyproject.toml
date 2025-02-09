@@ -8,6 +8,7 @@ markers = [
     "reference_lab_classification: tests for classification task",
     "reference_lab_summarization: tests for summarization task",
     "reference_lab_nli: tests for nli task",
+    "reference_lab_ner: tests for NER task",
     "reference_lab_generation: tests for generation task",
     "reference_lab_open_qa: tests for open generative Q&A task",
     "lab_7_llm: tests for lab 7",
@@ -87,7 +88,7 @@ src_paths = [
     "admin_utils",
     "config",
     "lab_7_llm",
-    "lab_8_llm"
+    "lab_8_finetuning"
 ]
 
 [tool.mypy]
