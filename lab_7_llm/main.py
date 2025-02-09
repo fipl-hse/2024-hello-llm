@@ -168,7 +168,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_properties['input_shape'] = [model_stats.input_size['input_ids'][0],
                                            model_stats.input_size['input_ids'][1]]
-        model_properties['num_trainable_params'] = model_stats.total_params
+        model_properties['num_trainable_params'] = model_stats.trainable_params
         model_properties['output_shape'] = model_stats.summary_list[-1].output_size
         model_properties['size'] = model_stats.total_param_bytes
 

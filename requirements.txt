@@ -2,7 +2,8 @@ datasets==3.2.0
 fastapi==0.115.6
 pandas==2.2.3
 sentencepiece==0.2.0
-torch==2.5.1
+sacremoses==0.1.1
+torch==2.1.2
 torchinfo==1.8.0
 transformers==4.48.1
 
