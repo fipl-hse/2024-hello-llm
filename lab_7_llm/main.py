@@ -75,19 +75,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = deepcopy(self._raw_data)
         self._data = self._raw_data.rename(columns={'reasons': ColumnNames.TARGET,
                                                     'toxic_comment': ColumnNames.SOURCE}, inplace=True)
-        #self._data.drop_duplicates(inplace=True)
-        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(lambda x: 1 if x is True else 0)
-        self._data.reset_index(inplace=True)
-
-        # data = pd.DataFrame
-        # data.rename(columns={'reasons':'target', 'toxic_comment':'source'}, inplace=True)
-        # data['target'] = data['target'].apply(lambda x: 1 if x == {'toxic_content':True} else 0)
-        # data = data[data['irrelevant_column']!= 2]
-        # data.drop_duplicates(inplace=True)
-        # data.reset_index(drop=True, inplace=True)
+        self._data['target'] = self._data['target'].replace({'{"toxic_content":true}': 1, '{"not_toxic":true}': 0})
+        self._data = self._data[self._data['target'].isin([0, 1])]
+        self._data.drop_duplicates(inplace=True)
+        self._data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
