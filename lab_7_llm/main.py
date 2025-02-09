@@ -12,7 +12,7 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -155,27 +155,30 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        tensor = torch.ones(
-            (1, self._model.config.encoder.max_position_embeddings),
-            dtype=torch.long
-        )
-        inputs = {"input_ids": tensor, "attention_mask": tensor}
-        model_summary = summary(
-            self._model,
-            input_data=inputs,
-            decoder_input_ids=tensor,
-            verbose=0
-        )
+        if isinstance(self._model, torch.nn.Module):
+            tensor = torch.ones(
+                (1, self._model.config.encoder.max_position_embeddings),
+                dtype=torch.long
+            )
+            inputs = {"input_ids": tensor, "attention_mask": tensor}
+            model_summary = summary(
+                self._model,
+                input_data=inputs,
+                decoder_input_ids=tensor,
+                verbose=0
+            )
 
-        return {
-            "input_shape": list(tensor.size()),
-            "embedding_size": self._model.config.encoder.max_position_embeddings,
-            "output_shape": model_summary.summary_list[-1].output_size,
-            "num_trainable_params": model_summary.trainable_params,
-            "vocab_size": self._model.config.encoder.vocab_size,
-            "size": model_summary.total_param_bytes,
-            "max_context_length": self._model.config.max_length,
-        }
+            return {
+                "input_shape": list(tensor.size()),
+                "embedding_size": self._model.config.encoder.max_position_embeddings,
+                "output_shape": model_summary.summary_list[-1].output_size,
+                "num_trainable_params": model_summary.trainable_params,
+                "vocab_size": self._model.config.encoder.vocab_size,
+                "size": model_summary.total_param_bytes,
+                "max_context_length": self._model.config.max_length,
+            }
+
+        raise ValueError("Model is of incorrect type")
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
