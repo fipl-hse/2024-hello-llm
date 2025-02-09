@@ -5,7 +5,6 @@ Starter for demonstration of laboratory work.
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-
 from lab_7_llm.main import (
     LLMPipeline,
     RawDataImporter,
@@ -13,6 +12,7 @@ from lab_7_llm.main import (
     report_time,
     TaskDataset,
 )
+
 
 @report_time
 def main() -> None:
