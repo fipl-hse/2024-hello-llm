@@ -79,7 +79,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'toxic_comment': ColumnNames.SOURCE.value
         })
         self._raw_data[ColumnNames.TARGET.value] = self._raw_data[ColumnNames.TARGET.value].map(
-            lambda x: 1 if x == {"toxic_comment": True} else (0 if x == {"not_toxic": True} else None)
+            lambda x: 1 if x == {"toxic_content": True} else (0 if x == {"not_toxic": True} else None)
         )
         self._raw_data = self._raw_data.dropna(subset=[ColumnNames.TARGET.value])
         self._raw_data = self._raw_data.drop_duplicates(subset=[ColumnNames.SOURCE.value, ColumnNames.TARGET.value])
@@ -155,9 +155,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-        print("LLMPipeline: self._model =", self._model)  # Отладка
 
     def analyze_model(self) -> dict:
         """
@@ -166,36 +165,27 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        model_summary = summary(
-            self._model,
-            input_size=(self._batch_size, self._max_length),
-            dtypes=[torch.long],
-            device=self._device,
-            verbose=0,
-        )
+        dummy_inputs = torch.ones((1,
+                                  self._model.config.max_position_embeddings),
+                                  dtype=torch.long)
 
-        # Extract properties from the model and tokenizer
-        vocab_size = self._tokenizer.vocab_size
-        embedding_size = self._model.config.hidden_size
-        max_context_length = self._model.config.max_position_embeddings
+        input_data = {'input_ids': dummy_inputs,
+                      'attention_mask': dummy_inputs}
 
-        # Prepare the result dictionary
-        result = {
-            "input_shape": [self._batch_size, self._max_length],
-            "embedding_size": embedding_size,
-            "output_shape": [
-                self._batch_size,
-                self._max_length,
-                vocab_size,
-            ],
-            "num_trainable_params": model_summary.trainable_params,
-            "vocab_size": vocab_size,
-            "size": model_summary.total_param_bytes,
-            "max_context_length": max_context_length,
-        }
-        print("LLMPipeline.analyze_model():", result)  # Отладка
+        if isinstance(self._model, torch.nn.Module):
+            model_summary = summary(self._model, input_data=input_data, verbose=0)
+            model_properties = {
+                'input_shape': {k: list(v.shape) for k, v in input_data.items()},
+                'embedding_size': self._model.config.max_position_embeddings,
+                'output_shape': model_summary.summary_list[-1].output_size,
+                'num_trainable_params': model_summary.trainable_params,
+                'vocab_size': self._model.config.vocab_size,
+                'size': model_summary.total_param_bytes,
+                'max_context_length': self._model.config.max_length
+            }
+            return model_properties
 
-        return result
+        raise TypeError("model is not a valid torch.nn.Module")
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
