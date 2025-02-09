@@ -37,7 +37,7 @@ class RawDataImporter(AbstractRawDataImporter):
             self._raw_data = qa_dataset.to_pandas()
         if isinstance(self._raw_data, pd.DataFrame):
             return self._raw_data
-        raise TypeError
+        raise TypeError('Error. Downloaded dataset is not pd.DataFrame.')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -52,14 +52,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        dataset_number_of_samples, dataset_columns = self._raw_data.shape
+        dataset_number_of_samples = len(self._raw_data)
+        dataset_columns = self._raw_data.columns.size
         dataset_duplicates = self._raw_data.duplicated().sum()
-        # it is written in readme "Number of empty rows in dataset". Did you mean..
-        # ..any empty cell or when the row is totally empty?
         dataset_empty_rows = self._raw_data.isna().sum().sum()
         self._raw_data.dropna(inplace=True)
-        dataset_sample_min_len = len(min(self._raw_data['question']))
-        dataset_sample_max_len = len(max(self._raw_data['question']))
+        dataset_sample_min_len = min(self._raw_data['instruction'].apply(len))
+        dataset_sample_max_len = max(self._raw_data['instruction'].apply(len))
 
         df_analysis = {
             'dataset_number_of_samples': dataset_number_of_samples,
@@ -76,9 +75,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.drop(['context', 'category', 'text'], axis=1)
-        self._data = self._raw_data.rename(columns={'instruction': ColumnNames.QUESTION,
-                                                    'response': ColumnNames.TARGET})
+        self._data = self._raw_data.drop(['index', 'context', 'category', 'text'], axis=1)
+        self._data = self._data.rename(columns={'instruction': ColumnNames.QUESTION,
+                                                'response': ColumnNames.TARGET})
 
 
 class TaskDataset(Dataset):
@@ -93,6 +92,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -101,6 +101,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -112,6 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.loc[index].values)
 
     @property
     def data(self) -> DataFrame:
@@ -121,6 +123,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):

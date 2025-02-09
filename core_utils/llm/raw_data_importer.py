@@ -6,7 +6,6 @@ Module with description of abstract data importer.
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-
 try:
     from pandas import DataFrame
 except ImportError:
