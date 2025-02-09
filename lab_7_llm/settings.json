@@ -2,7 +2,7 @@
   "parameters": {
     "model": "s-nlp/russian_toxicity_classifier",
     "dataset": "s-nlp/ru_non_detoxified",
-    "metrics": [f1]
+    "metrics": ["f1"]
   },
   "target_score": 6
 }
