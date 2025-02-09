@@ -67,10 +67,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                                             + len(empty[empty == 0]))
         if properties['dataset_empty_rows'] > 0:
             self._raw_data = self._raw_data.dropna()
-        properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(lambda x:
-                                                                          len(x)).max().tolist()
-        properties['dataset_sample_min_len'] = self._raw_data['ru'].apply(lambda x:
-                                                                          len(x)).min().tolist()
+        properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(len).max().tolist()
+        properties['dataset_sample_min_len'] = self._raw_data['ru'].apply(len).min().tolist()
         return properties
 
     @report_time
@@ -96,7 +94,7 @@ class TaskDataset(Dataset):
             data (pandas.DataFrame): Original data
         """
         self._data = data
-    
+
     def __len__(self) -> int:
         """
         Return the number of items in the dataset.
@@ -105,7 +103,7 @@ class TaskDataset(Dataset):
             int: The number of items in the dataset
         """
         return len(self._data)
-    
+
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
         Retrieve an item from the dataset by index.
@@ -207,7 +205,7 @@ class LLMPipeline(AbstractLLMPipeline):
         predictions = []
         for batch in loader:
             predictions.extend(self._infer_batch(batch))
-        res = self._dataset.data()
+        res = self._dataset.data
         res[ColumnNames.PREDICTION.value] = predictions
         return res[[ColumnNames.TARGET.value, ColumnNames.PREDICTION.value]]
 
