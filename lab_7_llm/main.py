@@ -55,16 +55,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        data = self._raw_data
         properties = {}
         properties['dataset_number_of_samples'] = self._raw_data.shape[0]
         properties['dataset_columns'] = self._raw_data.shape[1]
         properties['dataset_duplicates'] = self._raw_data.duplicated().sum().tolist()
-        empty = self._raw_data[['ru', 'en', 'ru_annotated']].apply(lambda row:
-                                                                   sum(len(x) for x in row),
-                                                                   axis=1)
-        properties['dataset_empty_rows'] = (self._raw_data.drop(empty[empty == 0],
-                                                                axis=0).isna().sum().sum().tolist()
-                                            + len(empty[empty == 0]))
+        data['empty'] = data[['ru', 'en', 'ru_annotated']].apply(lambda row:
+                                                                 sum(len(x) for x in row),
+                                                                 axis=1)
+        properties['dataset_empty_rows'] = (data[data['empty'] > 0].isna().sum().sum().tolist()
+                                            + len(data[data['empty'] == 0]))
         if properties['dataset_empty_rows'] > 0:
             self._raw_data = self._raw_data.dropna()
         properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(len).max().tolist()
@@ -124,7 +124,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
-        return self._data
+        return pd.DataFrame(self._data)
 
 
 class LLMPipeline(AbstractLLMPipeline):
