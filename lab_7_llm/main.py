@@ -17,7 +17,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import BertForSequenceClassification, BertTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -74,17 +74,19 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._raw_data = self._raw_data.rename(columns={
-            'reasons': ColumnNames.TARGET.value,
-            'toxic_comment': ColumnNames.SOURCE.value
-        })
-        self._raw_data[ColumnNames.TARGET.value] = self._raw_data[ColumnNames.TARGET.value].map(
-            lambda x: 1 if x == {"toxic_content": True} else (0 if x == {"not_toxic": True} else None)
+        self._data = (
+            self._raw_data.drop_duplicates()
+            .rename(columns={'toxic_comment': ColumnNames.SOURCE.value,
+                             'reasons': ColumnNames.TARGET.value})
         )
-        self._raw_data = self._raw_data.dropna(subset=[ColumnNames.TARGET.value])
-        self._raw_data = self._raw_data.drop_duplicates(subset=[ColumnNames.SOURCE.value, ColumnNames.TARGET.value])
-        self._raw_data = self._raw_data.reset_index(drop=True)
-        self._data = self._raw_data
+        self._data[ColumnNames.TARGET.value] = (
+            self._data[ColumnNames.TARGET.value]
+            .replace({'{"not_toxic":true}': '0', '{"toxic_content":true}': '1'})
+        )
+        self._data = (
+            self._data[self._data[ColumnNames.TARGET.value].isin(['0', '1'])]
+            .reset_index(drop=True)
+        )
 
 
 class TaskDataset(Dataset):
@@ -155,8 +157,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._model = BertForSequenceClassification.from_pretrained(model_name).to(device)
+        self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
