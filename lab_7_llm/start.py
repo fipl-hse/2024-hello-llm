@@ -18,17 +18,21 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
+    print(analysis)
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
+    print(dataset[0])
 
     pipeline = LLMPipeline("JackFram/llama-68m", dataset, 120, 1, 'cpu')
     model_analysis = pipeline.analyze_model()
     print(model_analysis)
 
-    sample = pipeline.infer_sample(('what is natural language processing'))
+    sample = pipeline.infer_sample(dataset[0])
     print(sample)
-    #assert result is not None, "Demo does not work correctly"
+    result = sample
+
+    assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":

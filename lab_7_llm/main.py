@@ -92,7 +92,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
-        self._data = Dataset.from_pandas(data)
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -101,7 +101,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
-        return self._data.num_rows
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -113,7 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.select([index]))
+        return tuple(self._data.iloc[index])
 
     @property
     def data(self) -> DataFrame:
@@ -123,7 +123,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
-        return self._data.to_pandas()
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -144,15 +144,14 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        self._model_name = model_name
+        super().__init__(model_name=model_name,
+                         dataset=dataset,
+                         max_length=max_length,
+                         batch_size=batch_size,
+                         device=device)
         self._model = AutoModelForCausalLM.from_pretrained(model_name)
-        self._dataset = dataset
-        self._device = device
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self._batch_size = batch_size
-        self._max_length = max_length
         self._config = AutoConfig.from_pretrained(model_name)
-        #print(config)
 
     def analyze_model(self) -> dict:
         """
@@ -161,21 +160,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        #config = self._model.config
         vocab_size = self._config.vocab_size
         embeddings_length = self._config.max_position_embeddings
-        print(self._config)
         ids = torch.ones((1, embeddings_length), dtype=torch.long)
         input_data = {"input_ids": ids, "attention_mask": ids}
 
         statistics = summary(self._model, input_data=input_data, verbose=0)
-        print(statistics)
-        print(statistics.summary_list)
         input_shape = {'attention_mask': list(statistics.input_size['attention_mask']),
                        'input_ids': list(statistics.input_size['input_ids'])}
         output_shape = statistics.summary_list[-1].output_size
 
-        #max context length should be 20???????
         max_context_length = self._config.max_length
         trainable_params = statistics.trainable_params
         total_param_bytes = statistics.total_param_bytes
@@ -201,8 +195,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-
-        inputs = self._tokenizer(sample, return_tensors="pt")
+        inputs = self._tokenizer(sample[0], return_tensors="pt")
         generate_ids = self._model.generate(inputs.input_ids, max_length=self._max_length)
         return self._tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
@@ -226,6 +219,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
