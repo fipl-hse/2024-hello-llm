@@ -5,11 +5,11 @@ Web service for model inference.
 from pathlib import Path
 
 import pandas as pd
-from pydantic import BaseModel
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
