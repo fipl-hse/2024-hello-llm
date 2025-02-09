@@ -12,7 +12,7 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import MarianMTModel, MarianTokenizer
 
@@ -55,17 +55,22 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        properties = dict()
+        properties = {}
         properties['dataset_number_of_samples'] = self._raw_data.shape[0]
         properties['dataset_columns'] = self._raw_data.shape[1]
         properties['dataset_duplicates'] = self._raw_data.duplicated().sum().tolist()
-        empty = self._raw_data[['ru', 'en', 'ru_annotated']].apply(lambda row: sum(len(x) for x in row), axis=1)
-        properties['dataset_empty_rows'] = (self._raw_data.drop(empty[empty == 0], axis=0).isna().sum().sum().tolist()
+        empty = self._raw_data[['ru', 'en', 'ru_annotated']].apply(lambda row:
+                                                                   sum(len(x) for x in row),
+                                                                   axis=1)
+        properties['dataset_empty_rows'] = (self._raw_data.drop(empty[empty == 0],
+                                                                axis=0).isna().sum().sum().tolist()
                                             + len(empty[empty == 0]))
         if properties['dataset_empty_rows'] > 0:
             self._raw_data = self._raw_data.dropna()
-        properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(lambda x: len(x)).max().tolist()
-        properties['dataset_sample_min_len'] = self._raw_data['ru'].apply(lambda x: len(x)).min().tolist()
+        properties['dataset_sample_max_len'] = self._raw_data['ru'].apply(lambda x:
+                                                                          len(x)).max().tolist()
+        properties['dataset_sample_min_len'] = self._raw_data['ru'].apply(lambda x:
+                                                                          len(x)).min().tolist()
         return properties
 
     @report_time
@@ -156,7 +161,7 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         model_config = self._model.config
-        model_properties = dict()
+        model_properties = {}
 
         model_properties['max_context_length'] = model_config.max_length
         model_properties['vocab_size'] = model_config.vocab_size
@@ -202,7 +207,7 @@ class LLMPipeline(AbstractLLMPipeline):
         predictions = []
         for batch in loader:
             predictions.extend(self._infer_batch(batch))
-        res = self._dataset.data
+        res = self._dataset.data()
         res[ColumnNames.PREDICTION.value] = predictions
         return res[[ColumnNames.TARGET.value, ColumnNames.PREDICTION.value]]
 

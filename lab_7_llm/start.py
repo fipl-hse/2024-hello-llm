@@ -7,7 +7,13 @@ from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset, TaskEvaluator
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    TaskDataset,
+    TaskEvaluator,
+)
 
 
 @report_time
@@ -26,7 +32,8 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(config_file['parameters']['model'], dataset, max_length=120, batch_size=64, device='cpu')
+    pipeline = LLMPipeline(config_file['parameters']['model'], dataset, max_length=120,
+                           batch_size=64, device='cpu')
     print(pipeline.analyze_model())
 
     predictions_path = Path(PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv')
