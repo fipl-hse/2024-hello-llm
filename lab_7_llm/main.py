@@ -6,23 +6,21 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
+from torchinfo import summary
+from transformers import BertForSequenceClassification, BertTokenizer
+from datasets import load_dataset
+
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
-from core_utils.llm.time_decorator import report_time
-from pandas.core.frame import DataFrame
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.metrics import Metrics
-
-
-
-
-from datasets import load_dataset
-
-
+from core_utils.llm.time_decorator import report_time
+from pandas.core.frame import DataFrame
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -44,7 +42,6 @@ class RawDataImporter(AbstractRawDataImporter):
             raise TypeError("Downloaded dataset is not a pandas DataFrame.")
 
         self._raw_data = dataset
-
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -85,6 +82,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
 
+        self._data = self._raw_data.copy()
+        self._data.rename(columns={'text': ColumnNames.SOURCE.value,
+                                   'toxic': ColumnNames.TARGET.value},
+                                    inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -99,6 +100,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -107,6 +109,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -118,6 +121,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        row = self._data.iloc[index]
+        return row[ColumnNames.SOURCE.value], str(row[ColumnNames.TARGET.value])
 
     @property
     def data(self) -> DataFrame:
@@ -127,6 +132,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -147,6 +153,16 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        self._model_name = model_name
+        self._dataset = dataset
+        self._device = device
+        self._max_length = max_length
+        self._batch_size = batch_size
+
+        self._model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
+        self._model.to(self._device)
+
+        self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -155,6 +171,24 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        sample_input = torch.ones((1, self._model.config.max_position_embeddings),
+                                  dtype=torch.long,
+                                  device=self._device)
+        input_tensors = {'input_ids': sample_input,
+                         'attention_mask': sample_input}
+
+        model_summary = summary(self._model, input_data=input_tensors, verbose=0)
+        model_metadata = {
+            'input_dimensions': {key: list(value.shape) for key, value in input_tensors.items()},
+            'embedding_size': self._model.config.max_position_embeddings,
+            'output_shape': model_summary.summary_list[-1].output_size,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': self._model.config.vocab_size,
+            'size': model_summary.total_param_bytes,
+            'max_context_length': self._model.config.max_length
+        }
+        return model_metadata
+
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -167,6 +201,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+
+        inputs = self._tokenizer(
+            sample[0],
+            truncation=True,
+            padding="max_length",
+            max_length=self._max_length,
+            return_tensors="pt"
+        )
+
+        inputs = {key: value.to(self._device) for key, value in inputs.items()}
+
+        self._model.eval()
+        with torch.no_grad():
+            outputs = self._model(**inputs)
+
+        predicted_class = torch.argmax(outputs.logits, dim=1).item()
+        return str(predicted_class)
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:

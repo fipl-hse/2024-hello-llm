@@ -3,5 +3,6 @@ fastapi==0.115.6
 pandas==2.2.3
 torch==2.5.1
 torchinfo==1.8.0
+transformers==4.48.2
 
 --extra-index-url https://download.pytorch.org/whl/cpu
