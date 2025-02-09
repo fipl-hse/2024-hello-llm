@@ -42,8 +42,8 @@ def main() -> None:
         device="cpu"
     )
 
-    model_properties = pipeline.analyze_model()
-    print("Model properties:", model_properties)
+    model_metadata = pipeline.analyze_model()
+    print("Model properties:", model_metadata)
 
     sample = task_dataset[0]
     result = pipeline.infer_sample(sample)
