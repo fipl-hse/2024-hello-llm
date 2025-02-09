@@ -76,12 +76,15 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._raw_data = self._raw_data.rename(columns={
             'reasons': ColumnNames.TARGET.value,
-            'toxic_comment': ColumnNames.SOURCE.value})
+            'toxic_comment': ColumnNames.SOURCE.value
+        })
         self._raw_data[ColumnNames.TARGET.value] = self._raw_data[ColumnNames.TARGET.value].map(
-            lambda x: 1 if x == {"toxic_content": True} else (0 if x == {"not_toxic": True} else None))
+            lambda x: 1 if x == {"toxic_content": True} else (0 if x == {"not_toxic": True} else None)
+        )
         self._raw_data = self._raw_data.dropna(subset=[ColumnNames.TARGET.value])
-        self._raw_data.drop_duplicates(subset=[ColumnNames.SOURCE.value, ColumnNames.TARGET.value])
+        self._raw_data = self._raw_data.drop_duplicates(subset=[ColumnNames.SOURCE.value, ColumnNames.TARGET.value])
         self._raw_data = self._raw_data.reset_index(drop=True)
+        self._data = self._raw_data
 
 
 class TaskDataset(Dataset):
