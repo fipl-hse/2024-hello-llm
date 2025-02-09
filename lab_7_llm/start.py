@@ -12,6 +12,7 @@ from lab_7_llm.main import (
     RawDataPreprocessor,
     report_time,
     TaskDataset,
+    TaskEvaluator
 )
 
 
@@ -30,17 +31,20 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    batch_size = 1
+    batch_size = 64
     max_length = 120
     device = 'cpu'
-
     pipeline = LLMPipeline(model_name=settings.parameters.model,
                            dataset=dataset,
                            max_length=max_length,
                            batch_size=batch_size,
                            device=device)
-    print(pipeline.analyze_model())
-    result = pipeline.infer_sample('Я люблю есть кирпичи')
+    predictions_path = PROJECT_ROOT / 'lab_7_llm/dist/predictions.csv'
+    predictions_path.parent.mkdir(exist_ok=True)
+    pipeline.infer_dataset().to_csv(predictions_path, index=False)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
     assert result is not None, "Demo does not work correctly"
 
 

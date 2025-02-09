@@ -12,7 +12,8 @@ import numpy as np
 import pandas as pd
 import torch
 from datasets import load_dataset
-from torch.utils.data import Dataset
+from evaluate import load
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -190,14 +191,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        if not self._model:
-            return None
-
-        tokens = self._tokenizer(sample, return_tensors='pt')
-        self._model.eval()
-        with torch.no_grad():
-            output = self._model(**tokens)
-            return str(torch.argmax(output.logits).item())
+        if self._model:
+            return self._infer_batch([sample])[0]
+        return
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -207,6 +203,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(self._dataset, self._batch_size)
+        targets = list()
+        preds = list()
+        for batch in dataloader:
+            targets += [tensor_.numpy() for tensor_ in batch[2]]
+            preds += self._infer_batch(batch[1])
+        return pd.DataFrame({ColumnNames.TARGET.value: targets,
+                             ColumnNames.PREDICTION.value: preds})
+
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -219,10 +224,10 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        if not self._model:
-            return None
-
-        tokens = self._tokenizer(sample_batch, return_tensors='tf')
+        tokens = self._tokenizer(sample_batch,
+                                 return_tensors='pt',
+                                 padding=True,
+                                 truncation=True)
         self._model.eval()
         with torch.no_grad():
             output = self._model(**tokens)
@@ -254,3 +259,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        df = pd.read_csv(self.data_path)
+        results = dict()
+        for metric in self.metrics:
+            metric = str(metric)
+            result = load(metric).compute(predictions=df[ColumnNames.TARGET.value],
+                                          references=df[ColumnNames.PREDICTION.value])
+            results.update(result)
+        return results
+
