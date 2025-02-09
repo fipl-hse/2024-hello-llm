@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LLM Web Service</title>
     <link rel="stylesheet" href="/static/styles.css">
     <script src="/static/main.js" defer></script>
@@ -9,10 +10,10 @@
 <body>
     <div class="container">
         <h2>Ask the AI</h2>
-        <input type="text" id="queryInput" placeholder="Enter your question...">
-        <button id="sendButton">Send Query</button>
+        <input type="text" id="queryInput" placeholder="Enter your comment...">
+        <button id="sendButton">Check toxicity</button>
         <div class="loader" id="loadingSpinner"></div>
-        <p id="output">Your answer will appear here...</p>
+        <p id="output">Answer will appear here...</p>
     </div>
 </body>
 </html>
