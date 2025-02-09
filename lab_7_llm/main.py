@@ -41,7 +41,7 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
         dataset = load_dataset(self._hf_name, split='train')
-        self._raw_data=pd.DataFrame(dataset)
+        self._raw_data=pd.DataFrame(dataset.to_pandas())
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError("Downloaded dataset's type is not pd.DataFrame")
@@ -74,7 +74,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._data.rename(columns={
+        self._raw_data_data = self._data.rename(columns={
             'reasons': ColumnNames.TARGET.value,
             'toxic_comment': ColumnNames.SOURCE.value})
         self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(
@@ -119,7 +119,7 @@ class TaskDataset(Dataset):
             tuple[str, ...]: The item to be received
         """
         row = self._data.iloc[index]
-        return tuple(row)
+        return row[ColumnNames.SOURCE.value], row[ColumnNames.TARGET.value]
 
     @property
     def data(self) -> DataFrame:
@@ -204,7 +204,7 @@ class LLMPipeline(AbstractLLMPipeline):
             str | None: A prediction
         """
         if not self._model:
-            return None
+            raise ValueError("Model is not initialized")
         return self._infer_batch([sample])[0]
 
     @report_time
