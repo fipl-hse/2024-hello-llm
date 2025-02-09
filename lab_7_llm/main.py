@@ -74,14 +74,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._data.rename(columns={'reasons': ColumnNames.TARGET,
-                                                    'toxic_comment': ColumnNames.SOURCE})
-        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].replace({
-            '{"toxic_content":true}': 1,
-            '{"not_toxic":true}': 0})
-        self._data = self._data[self._data[ColumnNames.TARGET].isin([0, 1])]
-        self._data.drop_duplicates(subset=[ColumnNames.SOURCE, ColumnNames.TARGET])
-        self._data.reset_index(drop=True)
+        self._data = self._data.rename(columns={
+            'reasons': ColumnNames.TARGET.value,
+            'toxic_comment': ColumnNames.SOURCE.value})
+        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(
+            lambda x: 1 if x == {"toxic_content": True} else (0 if x == {"not_toxic": True} else None))
+        self._data = self._data.dropna(subset=[ColumnNames.TARGET.value])
+        self._data.drop_duplicates(subset=[ColumnNames.SOURCE.value, ColumnNames.TARGET.value])
+        self._data = self._data.reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
