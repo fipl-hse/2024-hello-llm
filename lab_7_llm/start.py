@@ -5,7 +5,8 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 import json
 
-
+from config.constants import PROJECT_ROOT
+from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
 from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline, TaskEvaluator
 
@@ -15,40 +16,29 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings_path = Path(__file__).parent / 'settings.json'
+    settings_path = PROJECT_ROOT / 'lab_7_llm' / 'settings.json'
+    parameters = LabSettings(settings_path).parameters
 
-    with open(settings_path, 'r', encoding='utf-8') as f:
-        parameters = json.load(f)['parameters']
-
-    importer = RawDataImporter(parameters['dataset'])
+    importer = RawDataImporter(parameters.dataset)
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    # properties = preprocessor.analyze()
-    # print(properties)
     preprocessor.transform()
-    # print(preprocessor.data.head())
 
-    dataset = TaskDataset(preprocessor.data.head(100))
-    # item = dataset.__getitem__(3)
-    # print(type(item), item)
-    # print(type(item[0]), item[0])
+    dataset = TaskDataset(preprocessor.data.head(10))
 
-    batch_size = 1
+    batch_size = 2
     max_length = 120
     device = 'cpu'
 
-    pipeline = LLMPipeline(parameters['model'], dataset, max_length, batch_size, device)
-    # model_summary = pipeline.analyze_model()
-    # print(model_summary)
+    pipeline = LLMPipeline(parameters.model, dataset, max_length, batch_size, device)
 
-    # prediction = pipeline.infer_sample(dataset[0])
-    # print(prediction)
     predictions = pipeline.infer_dataset()
-    print(predictions.head(10))
 
-    # predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
-    # evaluator = TaskEvaluator(predictions_path, parameters['metrics'])
+    predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    evaluator = TaskEvaluator(predictions_path, parameters.metrics)
+    evaluator.run()
+
 
     # result = None
     # assert result is not None, "Demo does not work correctly"

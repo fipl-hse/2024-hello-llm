@@ -146,7 +146,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         self._dataset = dataset
         self._device = device
-        self._tokenizer = T5TokenizerFast.from_pretrained(model_name, padding=True, truncation=True)
+        self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._batch_size = batch_size
         self._max_length = max_length
@@ -186,7 +186,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch([sample])[0]
+        return self._infer_batch([sample[0]])[0]
 
 
     @report_time
@@ -198,12 +198,13 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         result = {'target': [], 'predictions': []}
-        print(self._dataset.data)
+
         dataloader = DataLoader(self._dataset, batch_size=self._batch_size)
         for batch in dataloader:
-            output = self._infer_batch(batch)
+            texts, summaries = batch
+            output = self._infer_batch(texts)
 
-            result['target'].extend(batch)
+            result['target'].extend(summaries)
             result['predictions'].extend(output)
 
         return pd.DataFrame(result)
@@ -220,10 +221,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        print(type(sample_batch))
-        print(sample_batch)
-        tokens = self._tokenizer(sample_batch[0], return_tensors="pt")
-        output = self._model.generate(**tokens, max_length=self._max_length)
+        tokens = self._tokenizer(sample_batch, return_tensors='pt', padding=True, truncation=True, max_length=self._max_length)
+        output = self._model.generate(**tokens)
         results = self._tokenizer.batch_decode(output, skip_special_tokens=True)
 
         return results
@@ -253,11 +252,29 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        results_df = pd.read_csv(self._data_path)
+        predictions, target = results_df.predictions, results_df.target
+
+        comparison = {}
+        for metric in self._metrics:
+            print(metric, print(metric.name))
+            metric = load(metric.name)
+
+            if metric == 'rouge':
+                rouge = load('rouge')
+                rouge_type = 'rougeL'
+                comparison[metric] = rouge.compute(predictions=predictions, references=target, use_stemmer=True)[rouge_type]
+
+            elif metric == 'bleu':
+                bleu = load('bleu')
+                comparison[metric] = bleu.compute(predictions=predictions, references=target, use_stemmer=True)
+
+
         result = {
             metric: metric.compute()
             for metric in self._metrics
         }
 
-        result = rouge.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+        result = rouge.compute(predictions=predictions, references=target, use_stemmer=True)
         result.to_csv(self._data_path)
         return result
