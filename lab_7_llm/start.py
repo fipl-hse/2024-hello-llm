@@ -33,6 +33,8 @@ def main() -> None:
     print(dataset[1])
     pipeline = LLMPipeline(settings['parameters']['model'], dataset, max_length=120, batch_size=1, device='cpu')
     print(pipeline.analyze_model())
+    infer_data = pipeline.infer_dataset()
+    print(infer_data)
     result = pipeline
     assert result is not None, "Demo does not work correctly"
 
