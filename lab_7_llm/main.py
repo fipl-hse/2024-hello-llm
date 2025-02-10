@@ -3,23 +3,22 @@ Laboratory work.
 
 Working with Large Language Models.
 """
+from http.client import responses
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
-
 import pandas as pd
-import torch
 import re
+import torch
 from pandas import DataFrame
 from datasets import load_dataset, Dataset
 from torchinfo import summary
-from transformers import LlamaConfig, LlamaTokenizer, AutoModelForCausalLM, AutoTokenizer, AutoConfig
-
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -114,7 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.iloc[index])
+        return tuple(self._data.iloc[index][ColumnNames.QUESTION.value])
 
     @property
     def data(self) -> DataFrame:
@@ -208,12 +207,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        requests = tuple(self._dataset.data()['question'])
-        target = self._dataset.data()['target'].to_list()
-        answers = self._infer_batch(requests)
-        inference_df = pd.DataFrame({'target': target, 'predictions': answers})
-        return inference_df
-
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -226,14 +219,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        inputs = self._tokenizer(sample_batch,
+        input_batch = []
+        for sample in sample_batch:
+            for string in sample:
+                input_batch.append(string)
+        inputs = self._tokenizer(input_batch,
                                  return_tensors="pt",
                                  padding=True,
                                  truncation=True,
                                  max_length=self._max_length)
         generate_ids = self._model.generate(**inputs, max_length=self._max_length)
-        response = self._tokenizer.batch_decode(generate_ids)
-        return response
+        output = self._tokenizer.batch_decode(generate_ids, skip_special_tokens=True)
+        return [re.sub(r"^.*?\n", "", response) for response in output]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
