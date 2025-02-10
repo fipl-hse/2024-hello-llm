@@ -17,6 +17,8 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
+from torchinfo import summary
+from transformers import AutoModelForTokenClassification, AutoTokenizer
 import torch
 import fastapi
 
@@ -43,6 +45,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
     """
+
+    def __init__(self, raw_data: pd.DataFrame):
+        super().__init__(raw_data)
 
     def analyze(self) -> dict:
         """
@@ -76,7 +81,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        pass
+        self._data = self._raw_data.rename(
+            columns={"ner_tags": "target", "tokens": "source"}
+        ).reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
@@ -91,6 +98,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -99,6 +107,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return self._data.shape[0]
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -110,6 +119,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.iloc[index].array)
 
     @property
     def data(self) -> pd.DataFrame:
@@ -119,7 +129,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
-        pass
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -140,6 +150,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = AutoModelForTokenClassification.from_pretrained(self._model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(self._model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -148,6 +161,21 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        model_config = self._model.config
+
+        input_size = [self._batch_size, self._max_length]
+        output_size = [self._batch_size, self._max_length, model_config.dim]
+        info = summary(self._model, input_size=input_size, verbose=0)
+
+        return {
+            "input_shape": info.input_size,
+            "num_trainable_params": info.trainable_params,
+            "size": info.total_param_bytes,
+            "vocab_size": model_config.vocab_size,
+            "max_context_length": self._max_length,
+            "output_shape": output_size,
+            "embedding_size": model_config.dim,
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -160,6 +188,26 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if self._model:
+            input_data = self.tokenizer(
+                sample,
+                truncation=True,
+                add_special_tokens=True,
+                is_split_into_words=True,
+                return_tensors="pt",
+            )
+
+            with torch.no_grad():
+                logits = self._model(**input_data).logits
+
+            pred = torch.argmax(logits, dim=2)
+            # predicted_ token_class = [self._model.config.id2label[t.item()] for t in pred[0]]
+
+            # pred_labels = pred[0][1:-1]
+
+            return [int(t) for t in pred[0]]
+
+        return
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
