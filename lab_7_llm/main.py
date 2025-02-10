@@ -154,7 +154,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForCausalLM.from_pretrained(model_name)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-        self._model.to(device)
+        self._model.to(self._device)
 
     def analyze_model(self) -> dict:
         """
