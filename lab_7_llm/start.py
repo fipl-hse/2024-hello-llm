@@ -26,7 +26,7 @@ def main() -> None:
     batch_size = 64
     max_length = 120
     pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
-    # model_an = pipeline.analyze_model
+    model_an = pipeline.analyze_model
     result = pipeline
     # print(result)
     # assert result is not None, "Demo does not work correctly"
