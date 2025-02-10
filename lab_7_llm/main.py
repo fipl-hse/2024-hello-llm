@@ -190,8 +190,9 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
+
+        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name, device_map=self._device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name, device_map=self._device)
 
     def analyze_model(self) -> dict:
         """
@@ -245,13 +246,11 @@ class LLMPipeline(AbstractLLMPipeline):
         tokens = self._tokenizer(*sample,
                                  padding=True,
                                  truncation=True,
-                                 return_tensors='pt')
+                                 return_tensors='pt').to(self._device)
 
         self._model.eval()
-        self._model.to(self._device)
-
         with torch.no_grad():
-            output = self._model(**tokens)
+            output = self._model(**tokens).to(self._device)
 
         prediction = torch.argmax(output.logits).item()
         return str(prediction)
