@@ -33,7 +33,7 @@ def main() -> None:
 
     batch_size = 64
     max_length = 120
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = 'cpu'
 
 
     pipeline = LLMPipeline(parameters.model, dataset, max_length, batch_size, device)
