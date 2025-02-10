@@ -16,6 +16,7 @@ from torchinfo import summary
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 from torch.utils.data import Dataset
 
@@ -235,26 +236,27 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
 
-#
-# class TaskEvaluator(AbstractTaskEvaluator):
-#     """
-#     A class that compares prediction quality using the specified metric.
-#     """
-#
-#     def __init__(self, data_path: Path, metrics: Iterable[Metrics]) -> None:
-#         """
-#         Initialize an instance of Evaluator.
-#
-#         Args:
-#             data_path (pathlib.Path): Path to predictions
-#             metrics (Iterable[Metrics]): List of metrics to check
-#         """
-#
-#     @report_time
-#     def run(self) -> dict | None:
-#         """
-#         Evaluate the predictions against the references using the specified metric.
-#
-#         Returns:
-#             dict | None: A dictionary containing information about the calculated metric
-#         """
+
+class TaskEvaluator(AbstractTaskEvaluator):
+    """
+    A class that compares prediction quality using the specified metric.
+    """
+
+    def __init__(self, data_path: Path, metrics: Iterable[Metrics]) -> None:
+        """
+        Initialize an instance of Evaluator.
+
+        Args:
+            data_path (pathlib.Path): Path to predictions
+            metrics (Iterable[Metrics]): List of metrics to check
+        """
+        super().__init__(metrics)
+
+    @report_time
+    def run(self) -> dict | None:
+        """
+        Evaluate the predictions against the references using the specified metric.
+
+        Returns:
+            dict | None: A dictionary containing information about the calculated metric
+        """
