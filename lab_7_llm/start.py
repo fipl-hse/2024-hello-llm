@@ -5,7 +5,7 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline
+from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset
 
 
 @report_time
