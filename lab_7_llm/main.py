@@ -9,14 +9,11 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
-
 from datasets import load_dataset
 from evaluate import load
-
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import T5TokenizerFast, AutoModelForSeq2SeqLM
-
+from transformers import AutoModelForSeq2SeqLM, T5TokenizerFast
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
@@ -226,13 +223,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        model_input = self._tokenizer(sample_batch, return_tensors='pt', max_length=self._max_length,
-                                 padding=True, truncation=True)
+        model_input = self._tokenizer(sample_batch, return_tensors='pt',
+                                      max_length=self._max_length, padding=True, truncation=True)
 
         input_ids = model_input['input_ids'].to(self._device)
         attention_mask = model_input['attention_mask'].to(self._device)
 
-        output = self._model.generate(input_ids=input_ids, attention_mask=attention_mask)
+        output = self._model.generate(input_ids=input_ids,
+                                      attention_mask=attention_mask)
         decoded = self._tokenizer.batch_decode(output, skip_special_tokens=True)
 
         return decoded

@@ -13,7 +13,6 @@ from lab_7_llm.main import (
     TaskDataset,
     TaskEvaluator
 )
-import torch
 
 @report_time
 def main() -> None:
