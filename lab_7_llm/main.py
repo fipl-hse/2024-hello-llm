@@ -149,19 +149,20 @@ class LLMPipeline(AbstractLLMPipeline):
         tensor = torch.ones((1, self._model.config.n_positions),
                             dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
-        if isinstance(self._model, torch.nn.Module):
-            summary_m = summary(self._model, input_data=inputs,
-                                decoder_input_ids=tensor, verbose=False)
 
-            return {'input_shape': list(tensor.shape),
-                    'embedding_size': self._model.config.n_positions,
-                    'output_shape': summary_m.summary_list[-1].output_size,
-                    'num_trainable_params': summary_m.trainable_params,
-                    'vocab_size': self._model.config.vocab_size,
-                    'size': summary_m.total_param_bytes,
-                    'max_context_length': self._model.config.max_length}
-        else:
+        if not isinstance(self._model, torch.nn.Module):
             raise TypeError('The model is not a Module model')
+
+        summary_m = summary(self._model, input_data=inputs,
+                            decoder_input_ids=tensor, verbose=False)
+
+        return {'input_shape': list(tensor.shape),
+                'embedding_size': self._model.config.n_positions,
+                'output_shape': summary_m.summary_list[-1].output_size,
+                'num_trainable_params': summary_m.trainable_params,
+                'vocab_size': self._model.config.vocab_size,
+                'size': summary_m.total_param_bytes,
+                'max_context_length': self._model.config.max_length}
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
