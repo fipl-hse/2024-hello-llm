@@ -7,18 +7,19 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from lab_7_llm.main import LLMPipeline, TaskDataset
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 
 @dataclass
-class TextToSummarize:
+class Query:
     """Class representing an input text to be summarized."""
-    summary: str
+    question: str
 
 
 def init_application() -> tuple[FastAPI, LLMPipeline]:
@@ -46,16 +47,16 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
 
     service_path = PROJECT_ROOT / 'lab_7_llm' / 'assets'
     summ_app.mount('/assets', StaticFiles(directory=service_path), name='assets')
+    templates = Jinja2Templates(directory=service_path)
 
     @summ_app.get('/', response_class=HTMLResponse)
-    async def read_root():
-        with open(service_path / 'index.html', 'r') as f:
-            return HTMLResponse(content=f.read())
+    async def read_root(request: Request):
+        return templates.TemplateResponse('index.html', {'request': request})
 
 
-    @summ_app.post('/summarize')
-    async def summarize(request: TextToSummarize):
-        result = service_pipeline.infer_sample((request))
+    @summ_app.post('/infer')
+    async def infer(request: Query):
+        result = service_pipeline.infer_sample((Query.question))
         return {'result': result}
 
     return summ_app, service_pipeline
