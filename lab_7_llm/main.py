@@ -3,9 +3,7 @@ Laboratory work.
 
 Working with Large Language Models.
 """
-from http.client import responses
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
-
 from pathlib import Path
 from typing import Iterable, Sequence
 
