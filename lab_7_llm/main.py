@@ -14,7 +14,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -153,7 +153,6 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForCausalLM.from_pretrained(model_name)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-        self._config = AutoConfig.from_pretrained(model_name)
         self._model.to(device)
 
     def analyze_model(self) -> dict:
@@ -163,8 +162,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        vocab_size = self._config.vocab_size
-        embeddings_length = self._config.max_position_embeddings
+        vocab_size = self._model.config.vocab_size
+        embeddings_length = self._model.config.max_position_embeddings
         ids = torch.ones((1, embeddings_length), dtype=torch.long)
         input_data = {"input_ids": ids, "attention_mask": ids}
 
@@ -173,7 +172,7 @@ class LLMPipeline(AbstractLLMPipeline):
                        'input_ids': list(statistics.input_size['input_ids'])}
         output_shape = statistics.summary_list[-1].output_size
 
-        max_context_length = self._config.max_length
+        max_context_length = self._model.config.max_length
         trainable_params = statistics.trainable_params
         total_param_bytes = statistics.total_param_bytes
 
