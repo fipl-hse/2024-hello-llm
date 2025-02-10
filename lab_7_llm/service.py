@@ -6,6 +6,7 @@ Web service for model inference.
 from dataclasses import dataclass
 
 import pandas as pd
+import uvicorn
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -47,18 +48,20 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
 
     service_path = PROJECT_ROOT / 'lab_7_llm' / 'assets'
     summ_app.mount('/assets', StaticFiles(directory=service_path), name='assets')
-    templates = Jinja2Templates(directory=service_path)
+
+    return summ_app, service_pipeline
+
 
     @summ_app.get('/', response_class=HTMLResponse)
     async def read_root(request: Request):
+        templates = Jinja2Templates(directory=service_path)
         return templates.TemplateResponse('index.html', {'request': request})
 
 
     @summ_app.post('/infer')
     async def infer(request: Query):
-        result = service_pipeline.infer_sample((Query.question))
+        result = service_pipeline.infer_sample((Query.question, ))
         return {'result': result}
 
-    return summ_app, service_pipeline
 
 app, pipeline = init_application()

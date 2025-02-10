@@ -14,6 +14,7 @@ from evaluate import load
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, T5TokenizerFast
+
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
@@ -75,11 +76,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        mid = self._raw_data.drop(columns=['title', 'date', 'url'])
-        mid = mid.rename(columns={'text': 'source', 'summary': 'target'})
-        mid = mid.replace('', pd.NA).dropna().drop_duplicates()
-        mid = mid.reset_index(drop=True)
-        self._data = mid
+        self._data = self._raw_data.drop(columns=['title', 'date', 'url'])
+        self._data = self._data.rename(columns={'text': 'source', 'summary': 'target'})
+        self._data = self._data.replace('', pd.NA).dropna().drop_duplicates()
+        self._data = self._data.reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
@@ -188,7 +188,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch([sample[0]])[0]
+        return self._infer_batch([sample])[0]
 
 
     @report_time
@@ -203,10 +203,9 @@ class LLMPipeline(AbstractLLMPipeline):
 
         dataloader = DataLoader(self._dataset, batch_size=self._batch_size)
         for batch in dataloader:
-            texts, summaries = batch
-            output = self._infer_batch(texts)
+            output = self._infer_batch(batch)
 
-            result['target'].extend(summaries)
+            result['target'].extend(batch[1])
             result['predictions'].extend(output)
 
         return pd.DataFrame(result)
@@ -223,7 +222,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        model_input = self._tokenizer(sample_batch, return_tensors='pt',
+        model_input = self._tokenizer(sample_batch[0], return_tensors='pt',
                                       max_length=self._max_length, padding=True, truncation=True)
 
         input_ids = model_input['input_ids'].to(self._device)
