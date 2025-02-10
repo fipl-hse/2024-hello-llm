@@ -152,7 +152,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._dataset = dataset
         self._device = device
         self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
         self._batch_size = batch_size
         self._max_length = max_length
 
@@ -226,13 +226,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        tokens = self._tokenizer(sample_batch, return_tensors='pt', max_length=self._max_length,
+        model_input = self._tokenizer(sample_batch, return_tensors='pt', max_length=self._max_length,
                                  padding=True, truncation=True)
 
-        output = self._model.generate(**tokens)
-        results = self._tokenizer.batch_decode(output, skip_special_tokens=True)
+        input_ids = model_input['input_ids'].to(self._device)
+        attention_mask = model_input['attention_mask'].to(self._device)
 
-        return results
+        output = self._model.generate(input_ids=input_ids, attention_mask=attention_mask)
+        decoded = self._tokenizer.batch_decode(output, skip_special_tokens=True)
+
+        return decoded
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -248,6 +251,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
         self._data_path = data_path
         self._metrics = metrics
 

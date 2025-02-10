@@ -13,7 +13,7 @@ from lab_7_llm.main import (
     TaskDataset,
     TaskEvaluator
 )
-
+import torch
 
 @report_time
 def main() -> None:
@@ -33,7 +33,8 @@ def main() -> None:
 
     batch_size = 64
     max_length = 120
-    device = 'cpu'
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
     pipeline = LLMPipeline(parameters.model, dataset, max_length, batch_size, device)
 
