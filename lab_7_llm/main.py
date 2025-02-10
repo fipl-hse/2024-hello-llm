@@ -8,10 +8,17 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 from datasets import load_dataset
-from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
-from core_utils.llm.time_decorator import report_time
 import pandas as pd
+import torch
+from transformers import AutoTokenizer, BertForSequenceClassification
+from torchinfo import summary
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.time_decorator import report_time
+from torch.utils.data import Dataset
+
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -27,7 +34,8 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = load_dataset(self._hf_name, subset='simplified', split= 'validation').to_pandas()
+        dataset = load_dataset(self._hf_name, name='simplified', split='validation')
+        self._raw_data = pd.DataFrame.from_dict(dataset)
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError('The downloaded dataset is not pd.DataFrame')
@@ -45,19 +53,59 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        strings_count = self._raw_data.shape()
-        empty = self._raw_data[self._raw_data.isna().any(axis=1)]
-        duplicates = self._raw_data[self._raw_data.duplicated()]
-        # dataset_columns = self._raw_data.columns
-        # columns_count = ''s
-        # cleaned = raw_data_df.dropna().drop_duplicates()
-        print(strings_count[0], len(empty), len(duplicates))
+        raw_data = self._raw_data.copy()
+        raw_data['labels'] = self._raw_data['labels'].apply(lambda x: tuple(x))
+
+        data_properties = {
+            'dataset_number_of_samples': self._raw_data.shape[0],
+            'dataset_columns': self._raw_data.shape[1],
+            'dataset_duplicates': len(raw_data[raw_data.duplicated()]),
+            'dataset_empty_rows': int(self._raw_data.isna().all(axis=1).sum()),
+            'dataset_sample_min_len': int(
+                self._raw_data
+                .dropna()
+                .drop_duplicates(subset='ru_text')['ru_text']
+                .str.len().min()
+            ),
+            'dataset_sample_max_len': int(
+                self._raw_data
+                .dropna()
+                .drop_duplicates(subset='ru_text')['ru_text']
+                .str.len().max()
+            )
+        }
+
+        return data_properties
+
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        unwanted_labels = [0, 4, 5, 6, 7, 8, 10, 12, 15, 18, 21, 22, 23]
+        class_rules = {
+            1: [1, 13, 17, 20],
+            2: [9, 16, 24, 25],
+            3: [14, 19],
+            4: [2, 3],
+            6: [26],
+            7: [27]
+        }
+
+        self._data = self._raw_data.drop(['id', 'text'], axis=1)
+        self._data['labels'] = self._data['labels'].apply(lambda x: tuple(x))
+        self._data.rename(
+            columns={"labels": ColumnNames.TARGET.value, "ru_text": ColumnNames.SOURCE.value},
+            inplace=False
+        )
+        self._data = self._data[self._data['target'].apply(lambda x: not any(label in unwanted_labels for label in x))]
+        print(self._data)
+        self._data['target'] = self._data['target'].apply(
+            lambda x: next((class_num for class_num, emotions in class_rules.items() if x[0] in emotions), 8)
+        )
+        self._data = self._data.dropna().drop_duplicates(subset='source')
+        self._data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -72,6 +120,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -80,6 +129,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -91,25 +141,25 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.loc[index])
+
 
     @property
-    def data(self) -> DataFrame:
+    def data(self) -> pd.DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
-
+        return self._data
 
 class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
-    ) -> None:
+    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -121,6 +171,10 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
 
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = BertForSequenceClassification.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+
     def analyze_model(self) -> dict:
         """
         Analyze model computing properties.
@@ -128,6 +182,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        ids = torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long)
+        tokens = {"input_ids": ids, "attention_mask": ids}
+        result = summary(self._model, input_data=tokens, device="cpu", verbose=0)
+
+        model_properties = {
+            'input_shape': {
+                'input_ids': list(result.input_size['input_ids']),
+                'attention_mask': list(result.input_size['attention_mask'])
+            },
+            'embedding_size': self._model.config.max_position_embeddings,
+            'output_shape': result.summary_list[-1].output_size,
+            'vocab_size': self._model.config.vocab_size,
+            'num_trainable_params': result.trainable_params,
+            'size': result.total_param_bytes,
+            'max_context_length': self._model.config.max_length
+        }
+
+        return model_properties
+
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -162,26 +235,26 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
 
-
-class TaskEvaluator(AbstractTaskEvaluator):
-    """
-    A class that compares prediction quality using the specified metric.
-    """
-
-    def __init__(self, data_path: Path, metrics: Iterable[Metrics]) -> None:
-        """
-        Initialize an instance of Evaluator.
-
-        Args:
-            data_path (pathlib.Path): Path to predictions
-            metrics (Iterable[Metrics]): List of metrics to check
-        """
-
-    @report_time
-    def run(self) -> dict | None:
-        """
-        Evaluate the predictions against the references using the specified metric.
-
-        Returns:
-            dict | None: A dictionary containing information about the calculated metric
-        """
+#
+# class TaskEvaluator(AbstractTaskEvaluator):
+#     """
+#     A class that compares prediction quality using the specified metric.
+#     """
+#
+#     def __init__(self, data_path: Path, metrics: Iterable[Metrics]) -> None:
+#         """
+#         Initialize an instance of Evaluator.
+#
+#         Args:
+#             data_path (pathlib.Path): Path to predictions
+#             metrics (Iterable[Metrics]): List of metrics to check
+#         """
+#
+#     @report_time
+#     def run(self) -> dict | None:
+#         """
+#         Evaluate the predictions against the references using the specified metric.
+#
+#         Returns:
+#             dict | None: A dictionary containing information about the calculated metric
+#         """
