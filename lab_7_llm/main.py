@@ -4,6 +4,7 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+import re
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -59,15 +60,19 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
 
-        dataset_shape = self._raw_data.shape
-        dataset_number_of_samples = dataset_shape[0]
-        dataset_columns = dataset_shape[1]
+        dataset_number_of_samples = len(self._raw_data)
+        dataset_columns = len(self._raw_data.columns)
 
         dataset_duplicates = self._raw_data.duplicated().sum()
 
-        dataset_empty_rows = self._raw_data.isnull().T.any().sum() # True if any value in a row is NaN
+        num_nans = self._raw_data.isnull().any().sum()
+        num_empty_lines_text = len(self._raw_data[self._raw_data['text'] == ''])
+        num_empty_lines_labels = len(self._raw_data[self._raw_data['labels'] == ''])
+
+        dataset_empty_rows = num_nans + num_empty_lines_text + num_empty_lines_labels
 
         raw_data_no_nans = self._raw_data.dropna()
+
         len_counts = raw_data_no_nans['text'].apply(len)
         dataset_sample_min_len = len_counts.min()
         dataset_sample_max_len = len_counts.max()
@@ -114,7 +119,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'text': str(ColumnNames.SOURCE)
         })
 
-        self._data[ColumnNames.TARGET] = self._data[str(ColumnNames.TARGET)].apply(
+        self._data[str(ColumnNames.TARGET)] = self._data[str(ColumnNames.TARGET)].apply(
             lambda lang: label2id[lang]
         )
         self._data.reset_index(drop=True, inplace=True)
