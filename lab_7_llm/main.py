@@ -12,6 +12,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 import pandas as pd
 import torch
+from transformers import GPTNeoXForCausalLM, AutoTokenizer
 
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
@@ -145,6 +146,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
 
     def analyze_model(self) -> dict:
         """
