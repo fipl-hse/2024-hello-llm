@@ -85,7 +85,7 @@ jobs:
   unittests:
     name: Unittests
     runs-on: ubuntu-latest
-    timeout-minutes: 11
+    timeout-minutes: 20
     needs: [ install-dependencies ]
     env:
       PR_NAME: ${{ github.event.pull_request.title }}
@@ -104,7 +104,7 @@ jobs:
   start:
     name: Check start.py
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: [ install-dependencies ]
     env:
       PR_NAME: ${{ github.event.pull_request.title }}

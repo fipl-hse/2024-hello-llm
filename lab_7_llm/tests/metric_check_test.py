@@ -15,7 +15,10 @@ from lab_7_llm.start import main
 
 
 def run_metrics_check(
-    lab_path: Path, pipeline_main: Callable, task_evaluator: Type[TaskEvaluator] = TaskEvaluator
+    lab_path: Path,
+    pipeline_main: Callable,
+    reference_file_name: str = "reference_scores.json",
+    task_evaluator: Type[TaskEvaluator] = TaskEvaluator,
 ) -> None:
     """
     Evaluate metrics from a lab.
@@ -34,7 +37,7 @@ def run_metrics_check(
     task_evaluator = task_evaluator(data_path=predictions_path, metrics=settings.parameters.metrics)
     result = task_evaluator.run()
 
-    references = ReferenceScores()
+    references = ReferenceScores(reference_file_name)
 
     res = {}
     for metric in settings.parameters.metrics:
