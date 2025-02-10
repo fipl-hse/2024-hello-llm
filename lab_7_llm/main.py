@@ -7,7 +7,8 @@ Working with Large Language Models.
 
 from pathlib import Path
 from typing import Iterable, Sequence
-from datasets import Dataset, load_dataset
+from torch.utils.data import Dataset
+from datasets import load_dataset
 from pandas import DataFrame
 import pandas as pd
 import torch
@@ -36,9 +37,8 @@ class RawDataImporter(AbstractRawDataImporter):
         qa_dataset = load_dataset(self._hf_name, split='test')
         if qa_dataset:
             self._raw_data = qa_dataset.to_pandas()
-        if isinstance(self._raw_data, pd.DataFrame):
-            return self._raw_data
-        raise TypeError('Error. Downloaded dataset is not pd.DataFrame.')
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError('Error. Downloaded dataset is not pd.DataFrame.')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
