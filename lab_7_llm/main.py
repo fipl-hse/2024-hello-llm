@@ -18,7 +18,7 @@ from torch.utils.data import Dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -61,7 +61,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         dataset_duplicates = self._raw_data.duplicated().sum()
         dataset_empty_rows = self._raw_data.isnull().any(axis=1).sum()
         dataset_sample_min_len = self._raw_data["content"].dropna().map(len).min()
-        dataset_sample_max_len = self._raw_data["content"].map(len).max()
+        dataset_sample_max_len = self._raw_data["content"].dropna().map(len).max()
 
         return {
             "dataset_number_of_samples": dataset_number_of_samples,
@@ -81,6 +81,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = self._raw_data.copy()
+        self._data.drop(["part", "movie_name", "review_id", "author", "date", "title", "grade10"], axis=1, inplace=True)
+        self._data.rename(columns={"grade3": ColumnNames.TARGET.value, "content": ColumnNames.SOURCE.value}, inplace=True)
+        #delete the rows with NaNs or to delete rows which contain NaNs only?
+        self._data.dropna(inplace=True) #self._data.dropna(how="all", inplace=True)
+        #labels for the model: 0: neutral, 1: positive, 2: negative
+        self._data["target"] = self._data['target'].map({"Good": 1, "Bad": 2, "Neutral": 0})
+        self._data.reset_index(inplace=True, drop=True)
+
+
 
 
 class TaskDataset(Dataset):
