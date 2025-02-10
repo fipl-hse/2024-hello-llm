@@ -138,7 +138,6 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-        # model_max_length=self._max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -150,16 +149,16 @@ class LLMPipeline(AbstractLLMPipeline):
         tensor = torch.ones((1, self._model.config.n_positions),
                             dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
+        if isinstance(self._model, torch.nn.Module):
+            summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
 
-        summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
-
-        return {'input_shape': list(tensor.shape),
-                'embedding_size': self._model.config.n_positions,
-                'output_shape': summary_m.summary_list[-1].output_size,
-                'num_trainable_params': summary_m.trainable_params,
-                'vocab_size': self._model.config.vocab_size,
-                'size': summary_m.total_param_bytes,
-                'max_context_length': self._model.config.max_length}
+            return {'input_shape': list(tensor.shape),
+                    'embedding_size': self._model.config.n_positions,
+                    'output_shape': summary_m.summary_list[-1].output_size,
+                    'num_trainable_params': summary_m.trainable_params,
+                    'vocab_size': self._model.config.vocab_size,
+                    'size': summary_m.total_param_bytes,
+                    'max_context_length': self._model.config.max_length}
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -212,9 +211,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  padding=True,
                                  truncation=True,
                                  max_length=self._max_length)
-        # return_token_type_ids=False)
-        # input_ids = inputs["input_ids"].to(self._device)
-        # attention_mask = inputs["attention_mask"].to(self._device)
+
         outputs = self._model.generate(**inputs, max_length=self._max_length)
         summarized_texts = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
@@ -253,7 +250,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
         string_metrics = [format(item) for item in self._metrics]
 
         for metr in string_metrics:
-            # metr = str(metr)
             metric = load(metr, seed=77).compute(predictions=summaries, references=targets)
             if metr == 'rouge':
                 evaluation[metr] = metric['rougeL']
