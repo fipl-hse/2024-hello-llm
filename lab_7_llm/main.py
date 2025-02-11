@@ -199,14 +199,14 @@ class LLMPipeline(AbstractLLMPipeline):
             return
         text = [i for i in sample]
 
-        tokens = self._tokenizer(text,  padding=True, truncation=True, return_tensors='pt')
+        tokens = self._tokenizer(text, max_length=self._max_length, padding=True, truncation=True, return_tensors='pt')
         self._model.eval()
 
         with torch.no_grad():
             output = self._model(**tokens)
 
         predictions = torch.argmax(output.logits).item()
-        return predictions
+        return str(predictions)
 
 
 

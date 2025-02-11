@@ -37,6 +37,7 @@ def main() -> None:
 
     model_properties = pipeline.analyze_model()
     prediction = pipeline.infer_sample(dataset.__getitem__(0))
+    print(prediction)
     result = prediction
 
 
