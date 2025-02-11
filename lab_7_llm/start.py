@@ -32,7 +32,7 @@ def main() -> None:
     if isinstance(importer.raw_data, pd.DataFrame):
         preprocessor = RawDataPreprocessor(importer.raw_data)
 
-        # print(preprocessor.analyze())
+        print(preprocessor.analyze())
         preprocessor.transform()
         dataset = TaskDataset(preprocessor.data.head(100))
 
@@ -43,8 +43,8 @@ def main() -> None:
                                device='cpu')
         print(pipeline.analyze_model())
 
-        # sample = pipeline.infer_sample(dataset[0])
-        # print(sample)
+        sample = pipeline.infer_sample(dataset[0])
+        print(sample)
 
         infered_df = pipeline.infer_dataset()
 
