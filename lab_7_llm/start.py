@@ -9,7 +9,7 @@ from pathlib import Path
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset
+from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset, TaskEvaluator
 
 
 @report_time
@@ -23,20 +23,26 @@ def main() -> None:
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    analysis = preprocessor.analyze()
-
     preprocessor.transform()
+
     dataset = TaskDataset(preprocessor.data.head(100))
 
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length=120,
-                           batch_size=1,
+                           batch_size=64,
                            device="cpu")
-    summary = pipeline.analyze_model()
-    sample = pipeline.infer_sample(dataset[1])
+    df = pipeline.infer_dataset()
 
-    result = sample
+    predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    df.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+
+    print(evaluator.run())
+
+    result = evaluator.run()
     assert result is not None, "Demo does not work correctly"
 
 

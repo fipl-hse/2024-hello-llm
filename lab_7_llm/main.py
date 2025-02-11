@@ -9,10 +9,10 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
-import torch.nn.functional as F
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -110,10 +110,10 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.source.iloc[index])
+        return tuple(self._data.iloc[index])
 
     @property
-    def data(self) -> pd.DataFrame:
+    def data(self) -> DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
@@ -190,6 +190,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(batch_size=self._batch_size,
+                                 dataset=self._dataset,
+                                 collate_fn=lambda x: x)
+        predictions = []
+        for batch in data_loader:
+            sample = self._infer_batch(batch)
+            predictions.extend(sample)
+        res = pd.DataFrame(self._dataset.data)
+        res['prediction'] = predictions
+        return res
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -202,10 +212,10 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        inputs = self._tokenizer(list(sample_batch[0]), return_tensors="pt", padding=True,
+        inputs = self._tokenizer(list(list(zip(*sample_batch))[0]), return_tensors="pt", padding=True,
                                  truncation=True)
         outputs = self._model(**inputs)
-        return [str(pred.item()) for pred in F.softmax(outputs.logits, dim=1).argmax(dim=1)]
+        return [str(pred.item()) for pred in outputs.logits.argmax(dim=1)]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -221,6 +231,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -230,3 +242,16 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        df = pd.read_csv(self.data_path)
+
+        predictions = df['prediction']
+        targets = df['target']
+        res = {}
+        for metric in self._metrics:
+            scores = load(str(metric.value)).compute(predictions=predictions,
+                                                     references=targets, average='micro')
+            if metric.value == "f1":
+                res[metric.value] = scores["f1"]
+            else:
+                res[metric.value] = scores[metric.value]
+        return res
