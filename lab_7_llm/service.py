@@ -7,7 +7,7 @@ from pathlib import Path
 from lab_7_llm.main import LLMPipeline
 
 
-def init_application() -> tuple[FastAPI, LLMPipeline]:
+def init_application() -> tuple[LLMPipeline]:
     """
     Initialize core application.
 

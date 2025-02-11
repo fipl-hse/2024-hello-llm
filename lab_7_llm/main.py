@@ -158,7 +158,8 @@ class LLMPipeline(AbstractLLMPipeline):
         input_data = {"input_ids": tensor, "attention_mask": tensor}
         model_summary = summary(self._model, input_data=input_data, verbose=False)
         return {
-            "input_shape": {"input_ids": list(tensor.size()), "attention_mask": list(tensor.size())},
+            "input_shape": {"input_ids": list(tensor.size()),
+                            "attention_mask": list(tensor.size())},
             "embedding_size": max_position_embeddings,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
@@ -212,7 +213,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        inputs = self._tokenizer(list(list(zip(*sample_batch))[0]), return_tensors="pt", padding=True,
+        inputs = self._tokenizer(list(list(zip(*sample_batch))[0]),
+                                 return_tensors="pt", padding=True,
                                  truncation=True)
         outputs = self._model(**inputs)
         return [str(pred.item()) for pred in outputs.logits.argmax(dim=1)]
@@ -242,10 +244,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self.data_path)
+        data_frame = pd.read_csv(self.data_path)
 
-        predictions = df['prediction']
-        targets = df['target']
+        predictions = data_frame['prediction']
+        targets = data_frame['target']
         res = {}
         for metric in self._metrics:
             scores = load(str(metric.value)).compute(predictions=predictions,
