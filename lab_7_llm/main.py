@@ -114,7 +114,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return str(self._data.loc[index, ColumnNames.SOURCE.value]),
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -159,13 +159,15 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         config = self._model.config
-
         dummy_inputs = torch.ones((1,
                                   config.max_position_embeddings),
                                   dtype=torch.long)
 
         input_data = {'input_ids': dummy_inputs,
                       'attention_mask': dummy_inputs}
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise ValueError("model is not properly initialized")
 
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
@@ -203,7 +205,7 @@ class LLMPipeline(AbstractLLMPipeline):
         dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
         all_predictions = [pred for batch in dataloader for pred in self._infer_batch(batch)]
 
-        infered_dataset = self._dataset.data.copy()
+        infered_dataset = pd.DataFrame(self._dataset.data)
         infered_dataset[ColumnNames.PREDICTION.value] = all_predictions
 
         return infered_dataset
