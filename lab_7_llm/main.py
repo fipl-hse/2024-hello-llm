@@ -54,10 +54,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        return {'dataset_number_of_samples': self._raw_data.shape[0],
-                'dataset_columns': self._raw_data.shape[1],
+        return {'dataset_number_of_samples': len(self._raw_data),
+                'dataset_columns': len(self._raw_data.columns),
                 'dataset_duplicates': self._raw_data.duplicated().sum().item(),
-                'dataset_empty_rows': self._raw_data.isna().sum().sum().item(),
+                'dataset_empty_rows': (self._raw_data.eq('').all(axis=1) |
+                                       self._raw_data.isna().all(axis=1)).sum().item(),
                 'dataset_sample_min_len': min(len(sample) for sample in self._raw_data["article"]),
                 'dataset_sample_max_len': max(len(sample) for sample in self._raw_data["article"])}
 
@@ -156,7 +157,7 @@ class LLMPipeline(AbstractLLMPipeline):
         summary_m = summary(self._model, input_data=inputs,
                             decoder_input_ids=tensor, verbose=False)
 
-        return {'input_shape': list(tensor.shape),
+        return {'input_shape': list(summary_m.input_size['input_ids']),
                 'embedding_size': self._model.config.n_positions,
                 'output_shape': summary_m.summary_list[-1].output_size,
                 'num_trainable_params': summary_m.trainable_params,
@@ -214,7 +215,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  return_tensors="pt",
                                  padding=True,
                                  truncation=True,
-                                 max_length=self._max_length)
+                                 max_length=self._max_length).to(self._device)
 
         outputs = self._model.generate(**inputs, max_length=self._max_length)
         summarized_texts = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
@@ -247,10 +248,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         outputs_df = pd.read_csv(self.data_path)
-        summaries, targets = outputs_df[ColumnNames.PREDICTION.value], \
-                             outputs_df[ColumnNames.TARGET.value]
+        summaries = outputs_df[ColumnNames.PREDICTION.value]
+        targets = outputs_df[ColumnNames.TARGET.value]
 
         evaluation = {}
+
         string_metrics = [format(item) for item in self._metrics]
 
         for metr in string_metrics:
