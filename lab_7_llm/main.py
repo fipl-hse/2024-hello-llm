@@ -7,13 +7,13 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import evaluate
 import pandas as pd
 import torch
-from torch.nn import Module
 from datasets import load_dataset
-import evaluate
 from pandas import DataFrame
-from torch.utils.data import Dataset, DataLoader
+from torch.nn import Module
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import BertForSequenceClassification, BertTokenizer
 
@@ -75,8 +75,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         renamed_dataset = self._raw_data.rename(columns={
-            'label': 'target',
-            'text': 'source'
+            'label': ColumnNames.TARGET.value,
+            'text': ColumnNames.SOURCE.value
         }, inplace=False)
 
         label_map = {'tat': '0',
@@ -90,7 +90,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                      'chv': '8'
                      }
 
-        renamed_dataset['target'] = renamed_dataset['target'].map(label_map)
+        renamed_dataset[ColumnNames.TARGET.value] = (renamed_dataset[ColumnNames.TARGET.value]
+                                                     .map(label_map))
 
         self._data = renamed_dataset
 
@@ -128,7 +129,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (self._data.iloc[index]['source'], self._data.iloc[index]['target'])
+        return (self._data.iloc[index][ColumnNames.SOURCE.value],
+                self._data.iloc[index][ColumnNames.TARGET.value])
 
     @property
     def data(self) -> DataFrame:
@@ -145,7 +147,6 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
-    # _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -162,7 +163,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._model: Module = BertForSequenceClassification.from_pretrained(model_name).to(self._device)
+        self._model: Module = (BertForSequenceClassification.from_pretrained(model_name)
+                               .to(self._device))
         self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -180,7 +182,9 @@ class LLMPipeline(AbstractLLMPipeline):
         model_summary = summary(self._model, input_data=tokens, device=self._device, verbose=0)
 
         model_properties = {
-            "input_shape": {"attention_mask": list(model_summary.input_size['attention_mask']), "input_ids": list(model_summary.input_size['input_ids'])},
+            "input_shape": {
+                "attention_mask": list(model_summary.input_size['attention_mask']),
+                "input_ids": list(model_summary.input_size['input_ids'])},
             "embedding_size": model_config.max_position_embeddings,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
@@ -235,7 +239,8 @@ class LLMPipeline(AbstractLLMPipeline):
             predictions.extend(preds)
             targets.extend(batch_labels)
 
-        return DataFrame({"target": targets, "predictions": predictions})
+        return DataFrame({ColumnNames.TARGET.value: targets,
+                          ColumnNames.PREDICTION.value: predictions})
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -288,16 +293,14 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         data = pd.read_csv(self._data_path)
 
-        predictions = data["predictions"].tolist()
-        references = data["target"].tolist()
-
+        predictions = data[ColumnNames.PREDICTION.value].tolist()
+        references = data[ColumnNames.TARGET.value].tolist()
         metric_name = str(list(self._metrics)[0])
-
         metric_evaluator = evaluate.load(metric_name)
-
-        score = metric_evaluator.compute(predictions=predictions, references=references, average='micro')
+        score = metric_evaluator.compute(predictions=predictions,
+                                         references=references,
+                                         average='micro')
         if not isinstance(score, dict):
             raise TypeError(f"Expected dict, but got {type(score)}: {score}")
 
         return score
-
