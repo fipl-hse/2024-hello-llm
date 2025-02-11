@@ -9,7 +9,9 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+from torch.nn import Module
 from datasets import load_dataset
+import evaluate
 from pandas import DataFrame
 from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
@@ -18,7 +20,7 @@ from transformers import BertForSequenceClassification, BertTokenizer
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -126,7 +128,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.loc[index, ['source', 'target']])
+        return (self._data.iloc[index]['source'], self._data.iloc[index]['target'])
 
     @property
     def data(self) -> DataFrame:
@@ -143,7 +145,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
-    _model: torch.nn.Module
+    # _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -160,8 +162,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._model = BertForSequenceClassification.from_pretrained(model_name)
-        self._model.to(self._device)
+        self._model: Module = BertForSequenceClassification.from_pretrained(model_name).to(self._device)
         self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -201,7 +202,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        # mark 6
         # if not self._model:
         #     return None
         #
@@ -228,15 +228,14 @@ class LLMPipeline(AbstractLLMPipeline):
         predictions = []
         targets = []
 
-        with torch.no_grad():
-            for batch in data_loader:
-                batch_texts, batch_labels = batch["text"], batch["label"]
-                batch_tuples = [(text,) for text in batch_texts]
-                preds = self._infer_batch(batch_tuples)
-                predictions.extend(preds)
-                targets.extend(batch_labels)
+        for batch in data_loader:
+            batch_texts, batch_labels = batch
+            batch_tuples = [(text,) for text in batch_texts]
+            preds = self._infer_batch(batch_tuples)
+            predictions.extend(preds)
+            targets.extend(batch_labels)
 
-        return pd.DataFrame({"target": targets, "predictions": predictions})
+        return DataFrame({"target": targets, "predictions": predictions})
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -276,6 +275,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -285,3 +286,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data = pd.read_csv(self._data_path)
+
+        predictions = data["predictions"].tolist()
+        references = data["target"].tolist()
+
+        metric_name = str(list(self._metrics)[0])
+
+        metric_evaluator = evaluate.load(metric_name)
+
+        score = metric_evaluator.compute(predictions=predictions, references=references, average='micro')
+        if not isinstance(score, dict):
+            raise TypeError(f"Expected dict, but got {type(score)}: {score}")
+
+        return score
+
