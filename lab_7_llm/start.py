@@ -4,7 +4,14 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 import json
 from pathlib import Path
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, report_time, TaskDataset
+
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+)
 
 
 @report_time
