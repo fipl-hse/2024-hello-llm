@@ -114,8 +114,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        row = self._data.iloc[index]
-        return row[ColumnNames.SOURCE.value], str(row[ColumnNames.TARGET.value])
+        return str(self._data.loc[index, ColumnNames.SOURCE.value]),
 
     @property
     def data(self) -> DataFrame:
@@ -150,6 +149,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+        self._model.eval()
 
     def analyze_model(self) -> dict:
         """
@@ -158,8 +158,10 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        config = self._model.config
+
         dummy_inputs = torch.ones((1,
-                                  self._model.config.max_position_embeddings),
+                                  config.max_position_embeddings),
                                   dtype=torch.long)
 
         input_data = {'input_ids': dummy_inputs,
@@ -169,12 +171,12 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return {
             'input_shape': {k: list(v.shape) for k, v in input_data.items()},
-            'embedding_size': self._model.config.max_position_embeddings,
+            'embedding_size': config.max_position_embeddings,
             'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
-            'vocab_size': self._model.config.vocab_size,
+            'vocab_size': config.vocab_size,
             'size': model_summary.total_param_bytes,
-            'max_context_length': self._model.config.max_length
+            'max_context_length': config.max_length
         }
 
     @report_time
@@ -199,18 +201,12 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        all_predictions = [pred for batch in dataloader for pred in self._infer_batch(batch)]
 
-        all_targets = []
-        all_predictions = []
-        for batch in dataloader:
-            sources, targets = batch
-            sample_batch = list(zip(sources, targets))
-            preds = self._infer_batch(sample_batch)
-            all_predictions.extend(preds)
-            all_targets.extend(targets)
+        infered_dataset = self._dataset.data.copy()
+        infered_dataset[ColumnNames.PREDICTION.value] = all_predictions
 
-        return pd.DataFrame({ColumnNames.TARGET: all_targets,
-                             ColumnNames.PREDICTION: all_predictions})
+        return infered_dataset
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -226,21 +222,16 @@ class LLMPipeline(AbstractLLMPipeline):
         if self._model is None:
             raise ValueError("model has not been initialized")
 
-        texts = [sample[0] for sample in sample_batch]
-        inputs = self._tokenizer(
-            texts,
+        inputs = {k: v.to(self._device) for k, v in self._tokenizer(
+            list(sample_batch[0]),
             return_tensors="pt",
             truncation=True,
-            padding=True,
+            padding="max_length",
             max_length=self._max_length
-        )
-        inputs = {k: v.to(self._device) for k, v in inputs.items()}
+        ).items()}
 
-        with torch.no_grad():
-            outputs = self._model(**inputs)
-            preds = torch.argmax(outputs.logits, dim=1)
-
-        return [str(pred.item()) for pred in preds]
+        preds = torch.argmax(self._model(**inputs).logits, dim=1)
+        return list(map(lambda p: str(p.item()), preds))
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
