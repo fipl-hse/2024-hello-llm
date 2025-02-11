@@ -20,6 +20,7 @@ class ColumnNames(Enum):
     """
 
     SOURCE = "source"
+    LABELS = "labels"
     TARGET = "target"
     PREDICTION = "predictions"
     QUESTION = "question"
