@@ -53,7 +53,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        dataset_properties = {
+        return {
             "dataset_number_of_samples": self._raw_data.shape[0],
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
@@ -62,23 +62,23 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_sample_max_len": self._raw_data['comment_text'].dropna().str.len().max(),
         }
 
-        return dataset_properties
-
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        drop_cols = ['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-        self._raw_data.drop(columns=drop_cols, errors='ignore', inplace=True)
+        transformed_data = self._raw_data.copy()
 
-        self._raw_data.rename(columns={
+        drop_cols = ['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
+        transformed_data.drop(columns=drop_cols, errors='ignore', inplace=True)
+
+        transformed_data.rename(columns={
             'toxic': ColumnNames.TARGET.value,
             'comment_text': ColumnNames.SOURCE.value
         }, inplace=True)
 
-        self._raw_data.reset_index(drop=True, inplace=True)
-        self._data = self._raw_data
+        transformed_data.reset_index(drop=True, inplace=True)
+        self._data = transformed_data
 
 
 class TaskDataset(Dataset):
@@ -165,20 +165,17 @@ class LLMPipeline(AbstractLLMPipeline):
         input_data = {'input_ids': dummy_inputs,
                       'attention_mask': dummy_inputs}
 
-        if isinstance(self._model, torch.nn.Module):
-            model_summary = summary(self._model, input_data=input_data, verbose=0)
-            model_properties = {
-                'input_shape': {k: list(v.shape) for k, v in input_data.items()},
-                'embedding_size': self._model.config.max_position_embeddings,
-                'output_shape': model_summary.summary_list[-1].output_size,
-                'num_trainable_params': model_summary.trainable_params,
-                'vocab_size': self._model.config.vocab_size,
-                'size': model_summary.total_param_bytes,
-                'max_context_length': self._model.config.max_length
-            }
-            return model_properties
+        model_summary = summary(self._model, input_data=input_data, verbose=0)
 
-        raise TypeError("model is not a valid torch.nn.Module")
+        return {
+            'input_shape': {k: list(v.shape) for k, v in input_data.items()},
+            'embedding_size': self._model.config.max_position_embeddings,
+            'output_shape': model_summary.summary_list[-1].output_size,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': self._model.config.vocab_size,
+            'size': model_summary.total_param_bytes,
+            'max_context_length': self._model.config.max_length
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:

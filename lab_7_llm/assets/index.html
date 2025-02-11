@@ -7,13 +7,18 @@
     <link rel="stylesheet" href="/static/styles.css">
     <script src="/static/main.js" defer></script>
 </head>
-<body>
+<body class="body-layout">
     <div class="container">
         <h2>Ask the AI</h2>
-        <input type="text" id="queryInput" placeholder="Enter your comment...">
-        <button id="sendButton">Check toxicity</button>
+        <input
+          type="text"
+          id="queryInput"
+          class="input-field"
+          placeholder="Enter your comment..."
+        />
+        <button id="sendButton" class="submit-button">Check toxicity</button>
         <div class="loader" id="loadingSpinner"></div>
-        <p id="output">Answer will appear here...</p>
+        <p id="output" class="output">Answer will appear here...</p>
     </div>
 </body>
 </html>

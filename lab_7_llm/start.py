@@ -39,6 +39,9 @@ def main() -> None:
                            device="cpu")
     pipeline.analyze_model()
 
+    sample = pipeline.infer_sample(task_dataset[0])
+    print("sample inference result:", sample)
+
     predictions_df = pipeline.infer_dataset()
 
     predictions_file = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"

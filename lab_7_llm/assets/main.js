@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
             const result = await response.json();
-            outputField.textContent = "AI says: " + result.infer;
+            outputField.textContent = `AI says: ${result.infer}`;
         } catch (error) {
             outputField.textContent = "Error fetching response!";
             outputField.style.color = "red";

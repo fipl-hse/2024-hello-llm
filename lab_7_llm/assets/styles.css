@@ -1,4 +1,4 @@
-body {
+.body-layout {
     font-family: 'Arial', sans-serif;
     background: linear-gradient(to right, #ffb6c1, #ff80bf);
     display: flex;
@@ -17,7 +17,7 @@ body {
     width: 400px;
 }
 
-input {
+.input-field {
     width: calc(100% - 20px);
     padding: 10px;
     margin-bottom: 15px;
@@ -28,11 +28,11 @@ input {
     transition: border-color 0.3s ease-in-out;
 }
 
-input:focus {
+.input-field:focus {
     border-color: #ff80bf;
 }
 
-button {
+.submit-button {
     background: #ffb6c1;
     color: white;
     border: none;
@@ -43,11 +43,11 @@ button {
     transition: background 0.3s ease-in-out;
 }
 
-button:hover {
+.submit-button:hover {
     background: #ff80bf;
 }
 
-#output {
+.output {
     margin-top: 15px;
     padding: 10px;
     border-radius: 5px;
