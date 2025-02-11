@@ -63,12 +63,23 @@ Datasets
       1. Select ``simplified`` subset.
       2. Drop columns ``id`` and ``text``.
       3. Convert column ``labels`` to tuple.
-      4. Rename columns ``labels`` to ``target``.
-      5. Rename column ``ru_text`` to ``source``.
-      6. Group emotions and change numbers to words.
-      7. Delete duplicates in ``target``.
-      8. Clean column ``source``.
-      9. Reset indexes.
+      4. Remove from ``labels`` values ``0``, ``4``, ``5``, ``6``, ``7``, ``8``,
+         ``10``, ``12``, ``15``, ``18``, ``21``, ``22``, ``23``.
+      5. Rename column ``labels`` to ``target``.
+      6. Rename column ``ru_text`` to ``source``.
+      7. Group emotions and change numbers to words:
+
+         1. Labels ``1``, ``13``, ``17``, ``20`` change to label ``1``.
+         2. Labels ``9``, ``16``, ``24``, ``25`` change to label ``2``.
+         3. Labels ``14``, ``19`` change to label ``3``.
+         4. Labels ``2``, ``3`` change to label ``4``.
+         5. Labels ``27`` change to label ``7``.
+         6. Labels ``26`` change to label ``6``.
+         7. Other labels to label ``8``.
+
+      8. Delete duplicates in ``target``.
+      9. Clean column ``source``.
+      10. Reset indexes.
 
 3. `papluca/language-identification <https://huggingface.co/datasets/papluca/language-identification>`__
 
