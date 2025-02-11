@@ -11,7 +11,6 @@ import datasets
 import pandas as pd
 import torch
 from datasets import load_dataset
-from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
@@ -167,8 +166,7 @@ class LLMPipeline(AbstractLLMPipeline):
         input_tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
         inputs = {"input_ids": input_tensor, "attention_mask": input_tensor}
         summary_model = summary(self._model, input_data=inputs, decoder_input_ids=input_tensor, verbose=0)
-        print(summary_model)
-        info = {
+        return {
             "input_shape": list(input_tensor.size()),
             "embedding_size": list(input_tensor.shape)[1],
             "output_shape": summary_model.summary_list[-1].output_size,
@@ -178,7 +176,6 @@ class LLMPipeline(AbstractLLMPipeline):
             "max_context_length": self._model.config.max_length
 
         }
-        return info
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -222,12 +219,26 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        inputs = self._tokenizer.prepare_seq2seq_batch(list(sample_batch[0]), return_tensors="pt", padding=True, truncation=True,
-                                                       max_length=self._max_length)
+        inputs = self._tokenizer.prepare_seq2seq_batch(
+            list(sample_batch[0]),
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=self._max_length
+        )
+
         attention_mask = inputs["attention_mask"].to(self._device)
-        output_ids = self._model.generate(input_ids=inputs["input_ids"], attention_mask=attention_mask,
-                                          max_length=self._max_length)
-        return [prediction.strip() for prediction in self._tokenizer.batch_decode(output_ids, skip_special_tokens=True)]
+
+        output_ids = self._model.generate(
+            input_ids=inputs["input_ids"],
+            attention_mask=attention_mask,
+            max_length=self._max_length
+        )
+
+        return [
+            prediction.strip()
+            for prediction in self._tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+        ]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
