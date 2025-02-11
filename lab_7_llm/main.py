@@ -60,12 +60,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_columns': self._raw_data.shape[1],
             'dataset_duplicates': self._raw_data.duplicated().sum(),
             "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
-            'dataset_sample_min_len': min(
-                len(sample) for sample in data_no_empty_rows["article_content"]),
-            'dataset_sample_max_len': max(
-                len(sample) for sample in data_no_empty_rows["article_content"])
+            'dataset_sample_min_len': data_no_empty_rows["article_content"].str.len().min(),
+            'dataset_sample_max_len': data_no_empty_rows["article_content"].str.len().max(),
         }
-
 
     @report_time
     def transform(self) -> None:
@@ -155,30 +152,30 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        if isinstance(self._model, torch.nn.Module):
-            tensor = torch.ones(
-                (1, self._model.config.encoder.max_position_embeddings),
-                dtype=torch.long
-            )
-            inputs = {"input_ids": tensor, "attention_mask": tensor}
-            model_summary = summary(
-                self._model,
-                input_data=inputs,
-                decoder_input_ids=tensor,
-                verbose=0
-            )
+        if not isinstance(self._model, torch.nn.Module):
+            raise ValueError("Model is of incorrect type")
+        tensor = torch.ones(
+            (1, self._model.config.encoder.max_position_embeddings),
+            dtype=torch.long
+        )
+        inputs = {"input_ids": tensor, "attention_mask": tensor}
+        model_summary = summary(
+            self._model,
+            input_data=inputs,
+            decoder_input_ids=tensor,
+            verbose=0
+        )
 
-            return {
-                "input_shape": list(tensor.size()),
-                "embedding_size": self._model.config.encoder.max_position_embeddings,
-                "output_shape": model_summary.summary_list[-1].output_size,
-                "num_trainable_params": model_summary.trainable_params,
-                "vocab_size": self._model.config.encoder.vocab_size,
-                "size": model_summary.total_param_bytes,
-                "max_context_length": self._model.config.max_length,
-            }
+        return {
+            "input_shape": list(tensor.size()),
+            "embedding_size": self._model.config.encoder.max_position_embeddings,
+            "output_shape": model_summary.summary_list[-1].output_size,
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": self._model.config.encoder.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self._model.config.max_length,
+        }
 
-        raise ValueError("Model is of incorrect type")
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -230,14 +227,12 @@ class LLMPipeline(AbstractLLMPipeline):
             padding=True,
             truncation=True,
             return_tensors="pt"
-        )
+        ).to(self._device)
 
-        input_ids = inputs["input_ids"].to(self._device)
-        attention_mask = inputs["attention_mask"].to(self._device)
 
         generated_ids = self._model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
+            input_ids=inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
             max_length=self._max_length
         )
 
