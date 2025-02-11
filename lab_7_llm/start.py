@@ -29,36 +29,39 @@ def main() -> None:
 
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
-    if isinstance(importer.raw_data, pd.DataFrame):
-        preprocessor = RawDataPreprocessor(importer.raw_data)
 
-        print(preprocessor.analyze())
-        preprocessor.transform()
-        dataset = TaskDataset(preprocessor.data.head(100))
+    if not isinstance(importer.raw_data, pd.DataFrame):
+        raise TypeError('Obtained dataset is not pd.DataFrame')
 
-        pipeline = LLMPipeline(settings['parameters']['model'],
-                               dataset,
-                               max_length=120,
-                               batch_size=64,
-                               device='cpu')
-        print(pipeline.analyze_model())
+    preprocessor = RawDataPreprocessor(importer.raw_data)
 
-        sample = pipeline.infer_sample(dataset[0])
-        print(sample)
+    print(preprocessor.analyze())
+    preprocessor.transform()
+    dataset = TaskDataset(preprocessor.data.head(100))
 
-        infered_df = pipeline.infer_dataset()
+    pipeline = LLMPipeline(settings['parameters']['model'],
+                           dataset,
+                           max_length=120,
+                           batch_size=64,
+                           device='cpu')
+    print(pipeline.analyze_model())
 
-        path_to_outputs = PROJECT_ROOT/'lab_7_llm'/'dist'/'predictions.csv'
-        path_to_outputs.parent.mkdir(exist_ok=True)
-        infered_df.to_csv(path_to_outputs, index=False)
+    sample = pipeline.infer_sample(dataset[0])
+    print(sample)
 
-        evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
-        results = evaluation.run()
-        # print(results)
+    infered_df = pipeline.infer_dataset()
 
-        result = results
+    path_to_outputs = PROJECT_ROOT/'lab_7_llm'/'dist'/'predictions.csv'
+    path_to_outputs.parent.mkdir(exist_ok=True)
+    infered_df.to_csv(path_to_outputs, index=False)
 
-        assert result is not None, "Demo does not work correctly"
+    evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
+    results = evaluation.run()
+    print(results)
+
+    result = results
+
+    assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":

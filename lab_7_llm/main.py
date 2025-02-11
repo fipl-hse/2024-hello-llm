@@ -138,6 +138,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+        self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -257,8 +258,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         for metr in string_metrics:
             metric = load(metr, seed=77).compute(predictions=summaries, references=targets)
-            if metr == 'rouge':
-                evaluation[metr] = metric['rougeL']
+            if metr == Metrics.ROUGE.value:
+                evaluation[metr] = metric[Metrics.ROUGE.value + 'L']
             else:
                 evaluation[metr] = metric[metr]
         return evaluation
