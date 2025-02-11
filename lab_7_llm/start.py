@@ -41,11 +41,11 @@ def main() -> None:
                            max_length=120,
                            batch_size=64,
                            device="cpu")
-    df = pipeline.infer_dataset()
+    data_frame = pipeline.infer_dataset()
 
     predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
-    df.to_csv(predictions_path)
+    data_frame.to_csv(predictions_path)
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
 
