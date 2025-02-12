@@ -31,7 +31,7 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
-    print(analysis)
+    print(f'Dataset analysis: {analysis}')
 
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
@@ -44,7 +44,13 @@ def main() -> None:
         device="cpu"
     )
     model_summary = pipeline.analyze_model()
-    print(model_summary)
+    print(f'Model analysis: {model_summary}')
+
+    sample_text = dataset[0]
+    print(f'Single sample input: {sample_text}')
+
+    single_prediction = pipeline.infer_sample(sample_text)
+    print(f'Single sample prediction: {single_prediction}')
 
     infer_data = pipeline.infer_dataset()
 
