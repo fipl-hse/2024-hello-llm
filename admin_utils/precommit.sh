@@ -12,6 +12,7 @@ DIRS_TO_CHECK=(
   "reference_lab_classification"
   "reference_lab_generation"
   "reference_lab_nli"
+  "reference_lab_8_nli"
   "reference_lab_nmt"
   "reference_lab_ner"
   "reference_lab_open_qa"
