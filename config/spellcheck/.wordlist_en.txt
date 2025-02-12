@@ -288,6 +288,7 @@ docstrings
 doctest
 documentation
 done
+dots
 download
 downloaded
 downloading
@@ -554,6 +555,7 @@ js
 json
 jtatman
 juice
+just
 kashchikhin
 ke
 key
@@ -596,6 +598,7 @@ limit
 lionelchg
 list
 listener
+listing
 little
 llm
 llmpipeline
@@ -608,6 +611,7 @@ locations
 log
 logic
 look
+lora
 love
 lutz
 mac
@@ -875,6 +879,7 @@ remains
 remember
 remotebranches
 renders
+replace
 repo
 report
 repository
@@ -932,6 +937,7 @@ see
 select
 selecting
 self
+seminar
 sending
 sentence
 sentences
@@ -953,6 +959,7 @@ significantly
 since
 single
 size
+slashes
 snow
 snowman
 so
@@ -1131,6 +1138,7 @@ ve
 vec
 venv
 vernon
+version
 very
 vmware
 vocab
