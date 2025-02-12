@@ -164,6 +164,7 @@ clicks
 clone
 closed
 closely
+cls
 cn
 code
 coding
@@ -238,6 +239,7 @@ dataloader
 dataset
 dataset's
 datasets
+datasettypes
 de
 deberta
 decode
@@ -286,6 +288,7 @@ docstrings
 doctest
 documentation
 done
+dots
 download
 downloaded
 downloading
@@ -308,6 +311,7 @@ edition
 efficiency
 efficient
 efficiently
+ei
 eleutherai
 elif
 eliminate
@@ -479,6 +483,7 @@ huge
 huggingface
 huggingfaceh
 hundreds
+ic
 id
 identify
 idf
@@ -550,7 +555,9 @@ js
 json
 jtatman
 juice
+just
 kashchikhin
+ke
 key
 kinopoisk
 knn
@@ -574,6 +581,7 @@ learns
 lectures
 lectures-content-label
 legb
+leicestershire
 len
 length
 lengths
@@ -590,6 +598,7 @@ limit
 lionelchg
 list
 listener
+listing
 little
 llm
 llmpipeline
@@ -602,6 +611,7 @@ locations
 log
 logic
 look
+lora
 love
 lutz
 mac
@@ -869,6 +879,7 @@ remains
 remember
 remotebranches
 renders
+replace
 repo
 report
 repository
@@ -926,6 +937,7 @@ see
 select
 selecting
 self
+seminar
 sending
 sentence
 sentences
@@ -947,6 +959,7 @@ significantly
 since
 single
 size
+slashes
 snow
 snowman
 so
@@ -1121,9 +1134,11 @@ variety
 various
 vary
 varying
+ve
 vec
 venv
 vernon
+version
 very
 vmware
 vocab
