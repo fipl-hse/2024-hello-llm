@@ -21,6 +21,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        pass
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
