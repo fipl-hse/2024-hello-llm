@@ -168,6 +168,10 @@ class LLMPipeline(AbstractLLMPipeline):
             'input_ids': input_ids,
             'attention_mask': input_ids
         }
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise ValueError('Model must have type torch.nn.Module')
+
         model_summary = summary(self._model,
                                 input_data=input_data,
                                 verbose=0)
