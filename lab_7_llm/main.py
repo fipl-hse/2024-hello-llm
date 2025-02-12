@@ -66,10 +66,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         dataset_duplicates = self._raw_data.duplicated().sum()
 
         num_nans = self._raw_data.isnull().any().sum()
-        num_empty_lines_text = len(self._raw_data[self._raw_data['text'] == ''])
-        num_empty_lines_labels = len(self._raw_data[self._raw_data['labels'] == ''])
-
-        dataset_empty_rows = num_nans + num_empty_lines_text + num_empty_lines_labels
+        num_empty_lines = len(
+            self._raw_data[
+                (self._raw_data['text'] == '') | (self._raw_data['labels'] == '')
+            ]
+        )
+        dataset_empty_rows = num_nans + num_empty_lines
 
         raw_data_no_nans = self._raw_data.dropna()
 
@@ -122,6 +124,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         self._data[str(ColumnNames.TARGET)] = self._data[str(ColumnNames.TARGET)].apply(
             lambda lang: label2id[lang]
         )
+
+        self._data.drop_duplicates(inplace=True)
         self._data.reset_index(drop=True, inplace=True)
 
 
@@ -193,7 +197,9 @@ class LLMPipeline(AbstractLLMPipeline):
 
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
+
         self._model.to(self._device)
+        self._model.eval()
 
     def analyze_model(self) -> dict:
         """
@@ -249,7 +255,6 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True,
                                  return_tensors='pt').to(self._device)
 
-        self._model.eval()
         with torch.no_grad():
             output = self._model(**tokens)
 
