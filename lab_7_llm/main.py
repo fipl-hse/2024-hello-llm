@@ -4,7 +4,6 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
-from copy import deepcopy
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -75,7 +74,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = deepcopy(self._raw_data)
+        self._data = self._raw_data.copy()
         self._data.rename(columns={'neutral': ColumnNames.SOURCE, 'toxic': ColumnNames.TARGET},
                           inplace=True)
         self._data.drop_duplicates(inplace=True)
@@ -210,8 +209,8 @@ class LLMPipeline(AbstractLLMPipeline):
         targets = []
         preds = []
         for batch in dataloader:
-            targets += [tensor_.numpy() for tensor_ in batch[2]]
-            preds += self._infer_batch(batch[1])
+            targets.extend([tensor_.item() for tensor_ in batch[2]])
+            preds.extend(self._infer_batch(batch[1]))
         return pd.DataFrame({ColumnNames.TARGET.value: targets,
                              ColumnNames.PREDICTION.value: preds})
 
