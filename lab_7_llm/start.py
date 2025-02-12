@@ -20,10 +20,10 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    with open(PROJECT_ROOT / 'lab_7_llm' / 'settings.json', 'r', encoding='utf-8') as file:
+    with open(PROJECT_ROOT / "lab_7_llm" / "settings.json", "r", encoding="utf-8") as file:
         settings = json.load(file)
 
-    importer = RawDataImporter(settings['parameters']['dataset'])
+    importer = RawDataImporter(settings["parameters"]["dataset"])
     importer.obtain()
 
     if importer.raw_data is None:
@@ -39,7 +39,9 @@ def main() -> None:
     print(len(dataset))
     print(dataset[1])
 
-    pipeline = LLMPipeline(settings['parameters']['model'], dataset, max_length=120, batch_size=1, device='cpu')
+    pipeline = LLMPipeline(
+        settings["parameters"]["model"], dataset, max_length=120, batch_size=1, device="cpu"
+    )
     print(pipeline.analyze_model())
 
     infer_sample = pipeline.infer_sample(dataset[1])
@@ -47,11 +49,11 @@ def main() -> None:
 
     infer_df = pipeline.infer_dataset()
 
-    path_to_outputs = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    path_to_outputs = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
     path_to_outputs.parent.mkdir(exist_ok=True)
     infer_df.to_csv(path_to_outputs, index=False)
 
-    evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
+    evaluation = TaskEvaluator(path_to_outputs, settings["parameters"]["metrics"])
     eval_res = evaluation.run()
     print(eval_res)
     result = eval_res

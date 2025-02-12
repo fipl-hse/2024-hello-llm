@@ -38,11 +38,16 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(path=self._hf_name, revision="v2.0", split='test', trust_remote_code=True)
+        dataset = load_dataset(
+            path=self._hf_name, revision="v2.0", split="test", trust_remote_code=True
+        )
+
         self._raw_data = dataset.to_pandas() if isinstance(dataset, datasets.Dataset) else None
 
         if self._raw_data is None:
-            raise TypeError(f"Failed to convert dataset to DataFrame. Expected 'Dataset', got {type(dataset)} instead.")
+            raise TypeError(
+                f"Failed to convert dataset to DataFrame. Expected 'Dataset', got {type(dataset)} instead."
+            )
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -67,10 +72,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_columns": len(non_empty_data.columns),
             "dataset_duplicates": non_empty_data.duplicated().sum(),
             "dataset_empty_rows": len(self._raw_data) - len(non_empty_data),
-            'dataset_sample_min_len': min(
-                len(sample) for sample in non_empty_data["text"]),
-            'dataset_sample_max_len': max(
-                len(sample) for sample in non_empty_data["text"])
+            "dataset_sample_min_len": min(len(sample) for sample in non_empty_data["text"]),
+            "dataset_sample_max_len": max(len(sample) for sample in non_empty_data["text"]),
         }
 
         return dataset_properties
@@ -83,10 +86,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         if self._raw_data is None:
             raise ValueError("Raw data is not set. Cannot transform an empty dataset.")
 
-        self._data = (self._raw_data.drop(columns=['title', 'date', 'url'])
-                      .rename(columns={'text': ColumnNames.SOURCE.value,
-                                       'summary': ColumnNames.TARGET.value})
-                      .reset_index(drop=True))
+        self._data = (
+            self._raw_data.drop(columns=["title", "date", "url"])
+            .rename(columns={"text": ColumnNames.SOURCE.value, "summary": ColumnNames.TARGET.value})
+            .reset_index(drop=True)
+        )
 
 
 class TaskDataset(Dataset):
@@ -167,9 +171,13 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
-        input_tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
+        input_tensor = torch.ones(
+            (1, self._model.config.encoder.max_position_embeddings), dtype=torch.long
+        )
         inputs = {"input_ids": input_tensor, "attention_mask": input_tensor}
-        summary_model = summary(self._model, input_data=inputs, decoder_input_ids=input_tensor, verbose=0)
+        summary_model = summary(
+            self._model, input_data=inputs, decoder_input_ids=input_tensor, verbose=0
+        )
         return {
             "input_shape": list(input_tensor.size()),
             "embedding_size": list(input_tensor.shape)[1],
@@ -177,8 +185,7 @@ class LLMPipeline(AbstractLLMPipeline):
             "num_trainable_params": summary_model.trainable_params,
             "vocab_size": self._model.config.encoder.vocab_size,
             "size": summary_model.total_param_bytes,
-            "max_context_length": self._model.config.max_length
-
+            "max_context_length": self._model.config.max_length,
         }
 
     @report_time
@@ -204,7 +211,9 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         loader = DataLoader(batch_size=self._batch_size, dataset=self._dataset)
 
-        all_predictions = [prediction for batch in loader for prediction in self._infer_batch(batch)]
+        all_predictions = [
+            prediction for batch in loader for prediction in self._infer_batch(batch)
+        ]
 
         results_df = pd.DataFrame(self._dataset.data)
         results_df[ColumnNames.PREDICTION.value] = all_predictions
@@ -226,7 +235,7 @@ class LLMPipeline(AbstractLLMPipeline):
             return_tensors="pt",
             padding=True,
             truncation=True,
-            max_length=self._max_length
+            max_length=self._max_length,
         ).to(self._device)
 
         if not isinstance(self._model, torch.nn.Module):
@@ -235,7 +244,7 @@ class LLMPipeline(AbstractLLMPipeline):
         output_ids = self._model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_length=self._max_length
+            max_length=self._max_length,
         )
 
         return [
@@ -248,6 +257,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
     """
     A class that compares prediction quality using the specified metric.
     """
+
     def __init__(self, data_path: Path, metrics: Iterable[Metrics]) -> None:
         """
         Initialize an instance of Evaluator.
@@ -277,7 +287,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metr in string_metrics:
             metric = load(metr, seed=77).compute(predictions=texts, references=targets)
             if metr == Metrics.ROUGE.value:
-                evaluation[metr] = metric[Metrics.ROUGE.value + 'L']
+                evaluation[metr] = metric[Metrics.ROUGE.value + "L"]
             else:
                 evaluation[metr] = metric[metr]
 
