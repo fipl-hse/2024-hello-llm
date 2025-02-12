@@ -152,6 +152,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self._model.to(self._device)
+        self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -230,16 +231,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        if not self._model:
-            return ['Model is not defined']
         tokens = self._tokenizer(sample_batch,
                                  return_tensors='pt',
                                  padding=True,
                                  truncation=True)
-        self._model.eval()
         with torch.no_grad():
-            output = self._model(**tokens)
-            return [str(torch.argmax(logit).item()) for logit in output.logits]
+            output = self._model(**tokens).logits
+            return [str(torch.argmax(logit).item()) for logit in output]
 
 
 
@@ -271,6 +269,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         results = {}
         for metric in self.metrics:
             result = load(str(metric)).compute(predictions=target2pred[ColumnNames.TARGET.value],
-                                          references=target2pred[ColumnNames.PREDICTION.value])
+                                          references=target2pred[ColumnNames.PREDICTION.value],
+                                          average='micro')
             results.update(result)
         return results
