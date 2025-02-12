@@ -41,9 +41,9 @@ def main() -> None:
     path_to_outputs.parent.mkdir(exist_ok=True)
     infer_df.to_csv(path_to_outputs, index=False)
     evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
-    eval = evaluation.run()
-    print(eval)
-    result = eval
+    eval_res = evaluation.run()
+    print(eval_res)
+    result = eval_res
     assert result is not None, "Demo does not work correctly"
 
 
