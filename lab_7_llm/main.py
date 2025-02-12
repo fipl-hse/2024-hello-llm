@@ -18,7 +18,7 @@ from transformers import AutoModelForSeq2SeqLM, T5TokenizerFast
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -36,9 +36,8 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = load_dataset(self._hf_name,
-                                      split='test', revision='v2.0',
-                                      trust_remote_code=True).to_pandas()
+        self._raw_data = load_dataset(self._hf_name, split='test',
+                                      revision='v2.0', trust_remote_code=True).to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -53,20 +52,17 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        null_rows =  self._raw_data[ self._raw_data.isna().any(axis=1)]
-        empty_rows = self._raw_data[(self._raw_data == '').any(axis=1)]
-        n_null_empty = len(set(null_rows.index) | set(empty_rows.index))
+        n_empty_rows = len(self._raw_data) - len(self._raw_data.replace('', pd.NA).dropna())
 
         ds_lens = self._raw_data.text.apply(len)
-        min_len, max_len = ds_lens.min(), ds_lens.max()
 
         ds_properties = {
-            'dataset_number_of_samples': self._raw_data.shape[0],
-            'dataset_columns': self._raw_data.shape[1],
-            'dataset_duplicates': int(self._raw_data.duplicated().sum()),
-            'dataset_empty_rows': n_null_empty,
-            'dataset_sample_min_len': int(min_len),
-            'dataset_sample_max_len': int(max_len)
+            'dataset_number_of_samples': len(self._raw_data),
+            'dataset_columns': len(self._raw_data.columns),
+            'dataset_duplicates': self._raw_data.duplicated().sum().item(),
+            'dataset_empty_rows': n_empty_rows,
+            'dataset_sample_min_len': ds_lens.min().item(),
+            'dataset_sample_max_len': ds_lens.max().item()
         }
 
         return ds_properties
@@ -77,7 +73,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = self._raw_data.drop(columns=['title', 'date', 'url'])
-        self._data = self._data.rename(columns={'text': 'source', 'summary': 'target'})
+        self._data = self._data.rename(columns={'text': ColumnNames.SOURCE.name, 'summary': ColumnNames.TARGET.name})
         self._data = self._data.replace('', pd.NA).dropna().drop_duplicates()
         self._data = self._data.reset_index(drop=True)
 
@@ -115,7 +111,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return self._data.iloc[index].source, self._data.iloc[index].target
+        return (self._data.iloc[index][ColumnNames.SOURCE.name], )
 
 
     @property
@@ -160,10 +156,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        model_summary = summary(self._model)
         batch_size = self._batch_size
         emb_size = self._model.config.hidden_size
         vocab_size = self._model.config.vocab_size
+
+        input_ids = torch.randint(0, vocab_size, (batch_size, self._max_length))
+        attention_mask = torch.ones((batch_size, self._max_length), dtype=torch.long)
+
+        model_summary = summary(self._model, input_ids=input_ids, attention_mask=attention_mask)
 
         model_properties = {
             'input_shape': [batch_size, emb_size],
@@ -199,16 +199,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        result = {'target': [], 'predictions': []}
+        predictions = []
 
         dataloader = DataLoader(self._dataset, batch_size=self._batch_size)
         for batch in dataloader:
             output = self._infer_batch(batch)
 
-            result['target'].extend(batch[1])
-            result['predictions'].extend(output)
+            predictions.extend(output)
 
-        return pd.DataFrame(result)
+        res = pd.DataFrame(
+            {ColumnNames.TARGET.name: self._dataset.data[ColumnNames.TARGET.name].to_list(),
+             ColumnNames.PREDICTION.name: predictions}
+        )
+        return res
 
 
     @torch.no_grad()
@@ -261,7 +264,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         results_df = pd.read_csv(self._data_path)
-        predictions, target = results_df.predictions, results_df.target
+        predictions = results_df[ColumnNames.PREDICTION.name]
+        target = results_df[ColumnNames.TARGET.name]
 
         comparison = {}
         for metric in self._metrics:

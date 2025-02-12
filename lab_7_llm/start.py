@@ -26,6 +26,7 @@ def main() -> None:
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
+    print(preprocessor.analyze())
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
@@ -34,8 +35,9 @@ def main() -> None:
     max_length = 120
     device = 'cpu'
 
-
     pipeline = LLMPipeline(parameters.model, dataset, max_length, batch_size, device)
+    print(pipeline.analyze_model())
+    print(pipeline.infer_sample(dataset[22]))
 
     predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
     predictions = pipeline.infer_dataset()
