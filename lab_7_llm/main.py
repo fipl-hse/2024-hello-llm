@@ -165,6 +165,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
         input_tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
         inputs = {"input_ids": input_tensor, "attention_mask": input_tensor}
         summary_model = summary(self._model, input_data=inputs, decoder_input_ids=input_tensor, verbose=0)
@@ -226,6 +228,9 @@ class LLMPipeline(AbstractLLMPipeline):
             truncation=True,
             max_length=self._max_length
         ).to(self._device)
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
         output_ids = self._model.generate(
             input_ids=inputs["input_ids"],
