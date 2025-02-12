@@ -21,8 +21,13 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
-    predictions_path = PROJECT_ROOT / 'dist' / 'predictions.csv'
+    lab_path = PROJECT_ROOT / 'lab_7_llm'
+
+    settings = LabSettings(lab_path / 'settings.json')
+
+    dist_path = lab_path / 'dist'
+    dist_path.mkdir(exist_ok=True)
+    predictions_path = dist_path / 'predictions.csv'
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
@@ -33,11 +38,17 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=1, device='cpu')
+    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=64, device='cpu')
     model_properties = pipeline.analyze_model()
     sample_inference = pipeline.infer_sample(dataset[0])
 
-    result = model_properties, sample_inference
+    dataset_inference = pipeline.infer_dataset()
+    dataset_inference.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    metrics = evaluator.run()
+
+    result = metrics
     assert result is not None, "Demo does not work correctly"
 
 

@@ -113,7 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(str(self._data.loc[index, ColumnNames.SOURCE.value]))
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> pd.DataFrame:
@@ -211,7 +211,7 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         inputs = self._tokenizer(
-            list(sample_batch[0]),
+            [j for i in sample_batch for j in i],
             max_length=self._max_length,
             padding=True,
             truncation=True,
@@ -236,6 +236,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -245,3 +247,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        df = pd.read_csv(self._data_path)
+        metrics_scores = {}
+        for metric in self._metrics:
+            evaluator = evaluate.load(metric.value)
+            score = evaluator.compute(
+                references=df[ColumnNames.TARGET.value],
+                predictions=df[ColumnNames.PREDICTION.value]
+            )
+            metrics_scores[metric.value] = score[metric.value]
+        return metrics_scores
