@@ -199,7 +199,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
 
         self._model.to(self._device)
-        self._model.eval()
+        # self._model.eval()
 
     def analyze_model(self) -> dict:
         """
@@ -255,6 +255,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True,
                                  return_tensors='pt').to(self._device)
 
+        self._model.eval()
         with torch.no_grad():
             output = self._model(**tokens)
 
