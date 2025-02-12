@@ -52,19 +52,19 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
 
 app, pipeline = init_application()
 
-service_path = PROJECT_ROOT / 'lab_7_llm' / 'assets'
-app.mount('/assets', StaticFiles(directory=service_path), name='assets')
+app_path = PROJECT_ROOT / 'lab_7_llm' / 'assets'
+app.mount('/assets', StaticFiles(directory=app_path), name='assets')
 
 
 @app.get('/', response_class=HTMLResponse)
 async def read_root(request: Request):
-    templates = Jinja2Templates(directory=service_path)
+    templates = Jinja2Templates(directory=app_path)
     return templates.TemplateResponse('index.html', {'request': request})
 
 
 @app.post('/infer')
 async def infer(request: Query):
-    result = pipeline.infer_sample((Query.question, ))
+    result = pipeline.infer_sample((request.question, ))
     return {'result': result}
 
 

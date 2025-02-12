@@ -270,7 +270,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         comparison = {}
         for metric in self._metrics:
             calculated = load(metric.value).compute(predictions=predictions, references=target)
-            if metric.value == 'rouge':
+            if metric.value == Metrics.ROUGE:
                 comparison[metric.value] = calculated['rougeL']
             else:
                 comparison[metric.value] = calculated[metric.value]
