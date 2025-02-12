@@ -11,8 +11,9 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -200,7 +201,6 @@ class LLMPipeline(AbstractLLMPipeline):
 
         self._model.eval()
         self._model.to(self._device)
-        # self._model.eval()
 
     def analyze_model(self) -> dict:
         """
@@ -251,16 +251,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return
 
-        tokens = self._tokenizer(*sample,
-                                 padding=True,
-                                 truncation=True,
-                                 return_tensors='pt').to(self._device)
-
-        with torch.no_grad():
-            output = self._model(**tokens)
-
-        prediction = torch.argmax(output.logits).item()
-        return str(prediction)
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -270,6 +261,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+
+        data_loader = DataLoader(self._dataset,
+                                 batch_size=self._batch_size)
+
+        dataset_predictions = []
+        for batch in data_loader:
+            dataset_predictions.extend(self._infer_batch(batch))
+
+        return pd.DataFrame(
+            {
+                str(ColumnNames.TARGET): self._dataset.data[str(ColumnNames.TARGET)],
+                str(ColumnNames.PREDICTION): dataset_predictions
+            }
+        )
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -282,6 +287,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+
+        batch_list = list(sample_batch[0])
+        tokens = self._tokenizer(batch_list,
+                                 padding=True,
+                                 truncation=True,
+                                 return_tensors='pt').to(self._device)
+
+        output = self._model(**tokens)
+
+        batch_predictions = torch.argmax(output.logits, dim=1).tolist()
+        return [str(pred) for pred in batch_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -297,6 +313,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -306,3 +324,17 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        predictions_df = pd.read_csv(self._data_path)
+
+        metrics_dict = {}
+        for metric in self._metrics:
+            metric_computer = load(str(metric))
+
+            score = metric_computer.compute(
+                references=predictions_df[str(ColumnNames.TARGET)],
+                predictions=predictions_df[str(ColumnNames.PREDICTION)],
+                average='micro'
+            )
+            metrics_dict[list(score.keys())[0]] = list(score.values())[0]
+
+        return metrics_dict if metrics_dict else None

@@ -2,7 +2,7 @@
   "parameters": {
     "model": "papluca/xlm-roberta-base-language-detection",
     "dataset": "papluca/language-identification",
-    "metrics": []
+    "metrics": ["f1"]
   },
-  "target_score": 6
+  "target_score": 8
 }
