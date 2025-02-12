@@ -4,5 +4,6 @@
     "dataset": "d0rj/curation-corpus-ru",
     "metrics": ["bleu", "rouge"]
   },
-  "target_score": 8
+  "target_score": 10
 }
+
