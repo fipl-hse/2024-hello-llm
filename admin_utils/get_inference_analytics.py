@@ -1,17 +1,20 @@
 """
 Collect and store inference analytics.
 """
-# pylint: disable=import-error, duplicate-code, too-many-branches, no-else-return, inconsistent-return-statements, too-many-locals, too-many-statements, wrong-import-order
+# pylint: disable=import-error, duplicate-code, too-many-branches, no-else-return, inconsistent-return-statements, too-many-locals, too-many-statements, wrong-import-order, too-many-return-statements
 from pathlib import Path
 
 from pandas import DataFrame
 from pydantic.dataclasses import dataclass
+from tqdm import tqdm
 
 from admin_utils.get_model_analytics import get_references, save_reference
+from admin_utils.get_references import get_classification_models
 
 from lab_7_llm.main import LLMPipeline, TaskDataset  # isort:skip
 from reference_lab_classification.main import ClassificationLLMPipeline  # isort:skip
 from reference_lab_generation.main import GenerationLLMPipeline  # isort:skip
+from reference_lab_ner.main import NERLLMPipeline  # isort:skip
 from reference_lab_nli.main import NLILLMPipeline  # isort:skip
 from reference_lab_open_qa.main import OpenQALLMPipeline  # isort:skip
 
@@ -87,8 +90,16 @@ def get_inference_from_task(
             inference_params.batch_size,
             inference_params.device,
         )
-    else:
+    elif task == "open_qa":
         pipeline = OpenQALLMPipeline(
+            model_name,
+            dataset,
+            inference_params.max_length,
+            inference_params.batch_size,
+            inference_params.device,
+        )
+    elif task == "ner":
+        pipeline = NERLLMPipeline(
             model_name,
             dataset,
             inference_params.max_length,
@@ -97,7 +108,7 @@ def get_inference_from_task(
         )
 
     result = {}
-    for sample in samples:
+    for sample in sorted(samples):
         if "[TEST SEP]" in sample:
             first_value, second_value = sample.split("[TEST SEP]")
             prediction = pipeline.infer_sample((first_value, second_value))
@@ -133,18 +144,7 @@ def get_task(model: str, inference_params: InferenceParams, samples: list) -> di
 
     generation_model = ["VMware/electra-small-mrqa", "timpal0l/mdeberta-v3-base-squad2"]
 
-    classification_model = [
-        "cointegrated/rubert-tiny-toxicity",
-        "cointegrated/rubert-tiny2-cedr-emotion-detection",
-        "papluca/xlm-roberta-base-language-detection",
-        "fabriceyhc/bert-base-uncased-ag_news",
-        "XSY/albert-base-v2-imdb-calssification",
-        "aiknowyou/it-emotion-analyzer",
-        "blanchefort/rubert-base-cased-sentiment-rusentiment",
-        "tatiana-merz/turkic-cyrillic-classifier",
-        "s-nlp/russian_toxicity_classifier",
-        "IlyaGusev/rubertconv_toxic_clf",
-    ]
+    classification_model = get_classification_models()
 
     nli_model = [
         "cointegrated/rubert-base-cased-nli-threeway",
@@ -162,11 +162,13 @@ def get_task(model: str, inference_params: InferenceParams, samples: list) -> di
         "dmitry-vorobiev/rubert_ria_headlines",
     ]
 
-    _ = [
+    open_qa_model = [
         "EleutherAI/pythia-160m-deduped",
         "JackFram/llama-68m",
         "EleutherAI/gpt-neo-125m",
     ]
+
+    ner_model = ["dslim/distilbert-NER", "Babelscape/wikineural-multilingual-ner"]
 
     if model in nmt_model:
         return get_inference_from_task(model, inference_params, samples, "nmt")
@@ -178,8 +180,12 @@ def get_task(model: str, inference_params: InferenceParams, samples: list) -> di
         return get_inference_from_task(model, inference_params, samples, "nli")
     elif model in summarization_model:
         return get_inference_from_task(model, inference_params, samples, "summarization")
-    else:
+    elif model in open_qa_model:
         return get_inference_from_task(model, inference_params, samples, "open_qa")
+    elif model in ner_model:
+        return get_inference_from_task(model, inference_params, samples, "ner")
+    else:
+        raise ValueError(f"Unsupported model {model}")
 
 
 def main() -> None:
@@ -187,12 +193,12 @@ def main() -> None:
     Run collected reference scores.
     """
     references_path = Path(__file__).parent / "reference_inference_analytics.json"
-    dest = Path(__file__).parent / "reference_inference_analytics_.json"
+    dest = Path(__file__).parent / "reference_inference_analytics.json"
 
     max_length = 120
     batch_size = 1
     num_samples = 100
-    device = "cpu"
+    device = "cuda"
 
     inference_params = InferenceParams(
         num_samples=num_samples,
@@ -205,8 +211,8 @@ def main() -> None:
     references = get_references(path=references_path)
     result = {}
 
-    for model, pairs in references.items():
-        predictions = get_task(model, inference_params, pairs)
+    for model in tqdm(sorted(references)):
+        predictions = get_task(model, inference_params, references[model])
         print(model)
         result[model] = predictions
 
