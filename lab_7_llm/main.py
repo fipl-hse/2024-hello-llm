@@ -11,6 +11,7 @@ import datasets
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
@@ -121,7 +122,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return self._data.iloc[index]
+        return tuple(self._data.iloc[index])
 
     @property
     def data(self) -> DataFrame:
@@ -140,7 +141,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -153,7 +154,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+        self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length)
 
     def analyze_model(self) -> dict:
@@ -200,9 +202,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         loader = DataLoader(batch_size=self._batch_size, dataset=self._dataset)
 
-        all_predictions = [
-            prediction for batch in loader for prediction in self._infer_batch(batch)
-        ]
+        all_predictions = [prediction for batch in loader for prediction in self._infer_batch(batch)]
 
         results_df = pd.DataFrame(self._dataset.data)
         results_df[ColumnNames.PREDICTION.value] = all_predictions
@@ -225,13 +225,11 @@ class LLMPipeline(AbstractLLMPipeline):
             padding=True,
             truncation=True,
             max_length=self._max_length
-        )
-
-        attention_mask = inputs["attention_mask"].to(self._device)
+        ).to(self._device)
 
         output_ids = self._model.generate(
             input_ids=inputs["input_ids"],
-            attention_mask=attention_mask,
+            attention_mask=inputs["attention_mask"],
             max_length=self._max_length
         )
 
@@ -253,6 +251,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -262,4 +262,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        results_df = pd.read_csv(self.data_path)
+        texts = results_df[ColumnNames.PREDICTION.value]
+        targets = results_df[ColumnNames.TARGET.value]
+        evaluation = {}
 
+        string_metrics = [format(metric) for metric in self._metrics]
+
+        for metr in string_metrics:
+            metric = load(metr, seed=77).compute(predictions=texts, references=targets)
+            if metr == Metrics.ROUGE.value:
+                evaluation[metr] = metric[Metrics.ROUGE.value + 'L']
+            else:
+                evaluation[metr] = metric[metr]
+
+        return evaluation

@@ -10,7 +10,7 @@ from lab_7_llm.main import (
     RawDataImporter,
     RawDataPreprocessor,
     report_time,
-    TaskDataset,
+    TaskDataset, TaskEvaluator,
 )
 
 
@@ -35,7 +35,14 @@ def main() -> None:
     print(pipeline.analyze_model())
     infer_sample = pipeline.infer_sample(dataset[1])
     print(infer_sample)
-    result = pipeline
+    infer_df = pipeline.infer_dataset()
+    path_to_outputs = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    path_to_outputs.parent.mkdir(exist_ok=True)
+    infer_df.to_csv(path_to_outputs, index=False)
+    evaluation = TaskEvaluator(path_to_outputs, settings['parameters']['metrics'])
+    eval = evaluation.run()
+    print(eval)
+    result = eval
     assert result is not None, "Demo does not work correctly"
 
 
