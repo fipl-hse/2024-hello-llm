@@ -45,6 +45,7 @@ def main() -> None:
     model_metadata = pipeline.analyze_model()
     print("Model properties:", model_metadata)
 
+
     sample = task_dataset[0]
     result = pipeline.infer_sample(sample)
     print("Inference result for first sample:", result)
