@@ -49,7 +49,7 @@ def main() -> None:
 
     predictions_path = PROJECT_ROOT / 'lab_7_llm/dist/predictions.csv'
     predictions_path.parent.mkdir(exist_ok=True)
-    sample_inference_result = pipeline.infer_sample(tuple(dataset[0][1]))
+    sample_inference_result = pipeline.infer_sample(dataset[0])
     print('Sample inference result:', sample_inference_result, sep='\n')
 
     pipeline.infer_dataset().to_csv(predictions_path, index=False)

@@ -116,7 +116,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.iloc[index])
+        return (self._data[ColumnNames.SOURCE].iloc[index],)
 
     @property
     def data(self) -> pd.DataFrame:
@@ -211,12 +211,8 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         dataloader = DataLoader(self._dataset, self._batch_size)
-        targets = []
-        preds = []
-        for batch in dataloader:
-            targets.extend([tensor_.item() for tensor_ in batch[2]])
-            preds.extend(self._infer_batch(batch[1]))
-        return pd.DataFrame({ColumnNames.TARGET.value: targets,
+        preds = sum([self._infer_batch(batch) for batch in dataloader], [])
+        return pd.DataFrame({ColumnNames.TARGET.value: self._dataset.data[ColumnNames.TARGET],
                              ColumnNames.PREDICTION.value: preds})
 
 
@@ -231,13 +227,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        tokens = self._tokenizer(sample_batch,
+        if not self._model:
+            raise ValueError('Model is not defined')
+        tokens = self._tokenizer(list(sample_batch[0]),
                                  return_tensors='pt',
                                  padding=True,
                                  truncation=True)
-        with torch.no_grad():
-            output = self._model(**tokens).logits
-            return [str(torch.argmax(logit).item()) for logit in output]
+        output = self._model(**tokens).logits
+        logits = torch.argmax(output, dim=1)
+        return [str(logit.item()) for logit in logits]
 
 
 
