@@ -173,8 +173,8 @@ class LLMPipeline(AbstractLLMPipeline):
         input_tensors = {'input_ids': sample_input,
                          'attention_mask': sample_input}
 
-        if self._model is None:
-            raise ValueError("Model is not initialized. Check model loading process.")
+        if not isinstance(self._model, torch.nn.Module):
+            raise ValueError("The model has not been correctly initialized")
 
         model_summary = summary(self._model, input_data=input_tensors, verbose=0)
         model_metadata = {
