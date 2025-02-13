@@ -19,7 +19,7 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 
 
@@ -140,7 +140,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.loc[index, ColumnNames.SOURCE.value])
+        # return tuple(self._data.loc[index, ColumnNames.SOURCE.value])
+        return (str(self._data[ColumnNames.SOURCE.value].iloc[index]),)
 
     @property
     def data(self) -> pd.DataFrame:
@@ -210,14 +211,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        tokens = self._tokenizer(sample[0],
-                                 padding=True,
-                                 truncation=True,
-                                 return_tensors="pt")
-        with torch.no_grad():
-            output = self._model(**tokens)
-        predicted_class = torch.argmax(torch.softmax(output.logits, -1), dim=1)
-        return str(predicted_class.item())
+        # print(self._infer_batch([sample])[0])
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -227,6 +222,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataset_loader = DataLoader(self._dataset, batch_size=self._batch_size)
+
+        predictions = []
+        for batch in dataset_loader:
+            predictions.extend(self._infer_batch(batch))
+
+        df = pd.DataFrame(self._dataset.data)
+        df[ColumnNames.PREDICTION.value] = predictions
+        return df
+
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -239,16 +244,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        # print(sample_batch)
-        # input = self._tokenizer(
-        #     text=sample_batch,
-        #     padding=True,
-        #     truncation=True,
-        #     return_tensors="pt"
-        # )
-        # print(input)
-        # output = self._model(**input)
-        # predicted_class = torch.argmax(torch.softmax(output.logits, -1), dim=1)
+
+        input_tokens = self._tokenizer(
+            text=sample_batch[0],
+            padding=True,
+            truncation=True,
+            return_tensors="pt"
+        )
+        output = self._model(**input_tokens)
+        predicted_class = torch.argmax(torch.softmax(output.logits, -1), dim=1).numpy()
+        return [str(cl) for cl in predicted_class]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
