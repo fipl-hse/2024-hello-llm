@@ -3,7 +3,7 @@ evaluate==0.4.3
 fastapi==0.115.8
 pandas==2.2.3
 rouge-score==0.1.2
-torch==2.1.2
+torch==2.5.1
 torchinfo==1.8.0
 transformers==4.48.2
 uvicorn==0.34.0

@@ -40,6 +40,7 @@ def main() -> None:
     print(pipeline.infer_sample(dataset[22]))
 
     predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    predictions_path.mkdir(parents=True, exist_ok=True)
     predictions = pipeline.infer_dataset()
     predictions.to_csv(predictions_path)
 

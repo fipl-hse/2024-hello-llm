@@ -225,8 +225,11 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        print(sample_batch)
         model_input = self._tokenizer(sample_batch[0], return_tensors='pt',
                                       max_length=self._max_length, padding=True, truncation=True)
+        print(model_input.token_to_sequence())
+        print(self._tokenizer.batch_decode(model_input, skip_special_tokens=False))
 
         input_ids = model_input['input_ids'].to(self._device)
         attention_mask = model_input['attention_mask'].to(self._device)

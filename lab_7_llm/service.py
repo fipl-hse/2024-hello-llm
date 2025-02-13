@@ -6,7 +6,6 @@ Web service for model inference.
 from dataclasses import dataclass
 
 import pandas as pd
-import uvicorn
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -20,7 +19,9 @@ from config.lab_settings import LabSettings
 
 @dataclass
 class Query:
-    """Class representing an input text to be summarized."""
+    """
+    Class representing an input text to be summarized by the model.
+    """
     question: str
 
 
@@ -28,7 +29,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     """
     Initialize core application.
 
-    Run: uvicorn reference_service.server:app --reload
+    Run: uvicorn lab_7_llm.service:app --reload
 
     Returns:
         tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
@@ -57,14 +58,40 @@ app.mount('/assets', StaticFiles(directory=app_path), name='assets')
 
 
 @app.get('/', response_class=HTMLResponse)
-async def read_root(request: Request):
+async def root(request: Request) -> HTMLResponse:
+    """
+    Serve the root endpoint of the service by rendering the main HTML template.
+
+    Args:
+        request (Request): The incoming HTTP request object, provided by FastAPI
+
+    Returns:
+        TemplateResponse: An HTMLResponse object containing the rendered `index.html` template
+    """
+    logger.info("Received request in root: %s", request)
     templates = Jinja2Templates(directory=app_path)
     return templates.TemplateResponse('index.html', {'request': request})
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+logger.info("FastAPI application started")
 
 @app.post('/infer')
-async def infer(request: Query):
+async def infer(request: Query) -> dict[str, str]:
+    """
+    Create an endpoint for model call.
+
+    Args:
+        request (Query): The incoming HTTP request object containing the input text
+
+    Returns:
+        dict[str, str]: A dictionary containing the inference results
+    """
+    logger.info("Received request: %s", request.question)
+
     result = pipeline.infer_sample((request.question, ))
-    return {'result': result}
-
-
+    print(result)
+    return {'infer': result}
