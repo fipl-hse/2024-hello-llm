@@ -36,13 +36,12 @@ def main() -> None:
     pipeline = LLMPipeline(settings_dict['parameters']['model'], dataset, max_length=120, batch_size=1, device="cpu")
 
     model_properties = pipeline.analyze_model()
-    prediction = pipeline.infer_sample(dataset.__getitem__(0))
+    prediction = pipeline.infer_sample(dataset[2])
     print(prediction)
     result = prediction
 
 
     assert result is not None, "Demo does not work correctly"
-
 
 
 if __name__ == "__main__":
