@@ -211,7 +211,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        # print(self._infer_batch([sample])[0])
         return self._infer_batch([sample])[0]
 
     @report_time
