@@ -37,7 +37,6 @@ def main() -> None:
     print(prediction)
     result = prediction
 
-
     assert result is not None, "Demo does not work correctly"
 
 
