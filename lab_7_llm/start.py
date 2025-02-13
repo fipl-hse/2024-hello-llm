@@ -2,9 +2,6 @@
 Starter for demonstration of laboratory work.
 """
 import random
-
-# pylint: disable= too-many-locals, undefined-variable, unused-import
-from pandas import DataFrame
 from pathlib import Path
 
 from config.lab_settings import LabSettings
@@ -16,6 +13,9 @@ from lab_7_llm.main import (
     TaskDataset,
     TaskEvaluator,
 )
+
+# pylint: disable= too-many-locals, undefined-variable, unused-import
+
 
 MAX_LENGTH = 120
 BATCH_SIZE = 64
@@ -33,7 +33,7 @@ def main() -> None:
     data_importer = RawDataImporter(settings.parameters.dataset)
     data_importer.obtain()
 
-    if not data_importer.raw_data:
+    if data_importer.raw_data is None:
         raise ValueError('No dataset created by obtain() method')
 
     data_preprocessor = RawDataPreprocessor(data_importer.raw_data)
