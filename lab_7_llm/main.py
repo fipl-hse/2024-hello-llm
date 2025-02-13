@@ -193,11 +193,6 @@ class LLMPipeline(AbstractLLMPipeline):
                 input_ids["input_ids"],
                 attention_mask=input_ids["attention_mask"],
                 max_length=self._max_length,
-                top_k=50,
-                top_p=0.95,
-                temperature=0.7,
-                pad_token_id=0,
-                no_repeat_ngram_size=2
             )
 
         generated_text = self._tokenizer.decode(output[0], skip_special_tokens=True)
