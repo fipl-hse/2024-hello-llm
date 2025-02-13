@@ -254,6 +254,9 @@ class LLMPipeline(AbstractLLMPipeline):
         )
         inputs = inputs.to(self._device)
 
+        if self._model is None:
+            raise ValueError("Model is not initialized. Cannot perform inference.")
+
         self._model.eval()
         outputs = self._model(**inputs)
         logits = outputs.logits
