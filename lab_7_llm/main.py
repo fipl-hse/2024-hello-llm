@@ -12,6 +12,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 import pandas as pd
 import torch
+from torchinfo import summary
 from transformers import GPTNeoXForCausalLM, AutoTokenizer
 
 from core_utils.llm.metrics import Metrics
@@ -54,23 +55,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        dataset_number_of_samples = len(self._raw_data)
-        dataset_columns = self._raw_data.columns.size
-        dataset_duplicates = self._raw_data.duplicated().sum()
-        dataset_empty_rows = self._raw_data.isna().sum().sum()
-        self._raw_data.dropna(inplace=True)
-        dataset_sample_min_len = min(self._raw_data['instruction'].apply(len))
-        dataset_sample_max_len = max(self._raw_data['instruction'].apply(len))
-
-        df_analysis = {
-            'dataset_number_of_samples': dataset_number_of_samples,
-            'dataset_columns': dataset_columns,
-            'dataset_duplicates': dataset_duplicates,
-            'dataset_empty_rows': dataset_empty_rows,
-            'dataset_sample_min_len': dataset_sample_min_len,
-            'dataset_sample_max_len': dataset_sample_max_len
-        }
-        return df_analysis
+        return {'dataset_number_of_samples': len(self._raw_data),
+                'dataset_columns': self._raw_data.columns.size,
+                'dataset_duplicates': self._raw_data.duplicated().sum(),
+                'dataset_empty_rows': self._raw_data.isna().sum().sum(),
+                'dataset_sample_min_len': min(self._raw_data.dropna()['instruction'].apply(len)),
+                'dataset_sample_max_len': max(self._raw_data.dropna()['instruction'].apply(len))}
 
     @report_time
     def transform(self) -> None:
@@ -115,7 +105,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.loc[index].values)
+        return tuple([self._data.iloc[index][ColumnNames.QUESTION]])
 
     @property
     def data(self) -> DataFrame:
@@ -147,7 +137,7 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name)
+        self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name).to(device)
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
 
     def analyze_model(self) -> dict:
@@ -157,6 +147,27 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        model_summary = summary(
+            self._model,
+            input_data={
+                "input_ids": torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long),
+                "attention_mask": torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long)
+            },
+        )
+        model_configurations = self._model.config
+
+        return {
+            'input_shape': {
+                'attention_mask': list(model_summary.input_size['attention_mask']),
+                'input_ids': list(model_summary.input_size['input_ids'])
+            },
+            'embedding_size': model_configurations.max_position_embeddings,
+            'output_shape': model_summary.summary_list[-1].output_size,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': model_configurations.vocab_size,
+            'size': model_summary.total_param_bytes,
+            'max_context_length': model_configurations.max_length
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -169,6 +180,26 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+
+        input_ids = self._tokenizer.encode_plus(sample[0], return_tensors="pt", max_length=120, truncation=True).to(self._device)
+
+        with torch.no_grad():
+            output = self._model.generate(
+                input_ids["input_ids"],
+                attention_mask=input_ids["attention_mask"],
+                max_length=self._max_length,
+                top_k=50,
+                top_p=0.95,
+                temperature=0.7,
+                pad_token_id=0,
+                no_repeat_ngram_size=2
+            )
+
+        generated_text = self._tokenizer.decode(output[0], skip_special_tokens=True)
+        return generated_text.split('\n\n')[1].replace("\n", " ")
+
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:

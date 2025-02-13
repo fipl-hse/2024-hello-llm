@@ -16,17 +16,23 @@ def main() -> None:
     with open(Path(__file__).parent / "settings.json", encoding="utf-8") as f:
         settings = json.load(f)
 
-    importer = RawDataImporter(settings["parameters"]["dataset"])
+    importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    result = preprocessor.analyze()
+    dataset_analysis = preprocessor.analyze()
+    preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
-    batch_size = 1
-    max_length = 194
-    device = 'cpu'
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
+    BATCH_SIZE = 1
+    MAX_LENGTH = 120
+    DEVICE = 'cpu'
+    pipeline = LLMPipeline(settings.parameters.model, dataset, MAX_LENGTH, BATCH_SIZE, DEVICE)
+    model_analysis = pipeline.analyze_model()
+    SAMPLE = dataset[0]
+    generated_sample = pipeline.infer_sample(SAMPLE)
+
+    result = generated_sample
 
     assert result is not None, "Demo does not work correctly"
 
