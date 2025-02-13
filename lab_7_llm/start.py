@@ -2,6 +2,7 @@
 Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
+from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
