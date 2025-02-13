@@ -27,6 +27,7 @@ def main() -> None:
     device = "cpu"
     batch_size = 1
     max_length = 120
+
     pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
     model_an = pipeline.analyze_model()
     sample_inference = pipeline.infer_sample(dataset[0])

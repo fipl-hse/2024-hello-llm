@@ -196,7 +196,6 @@ class LLMPipeline(AbstractLLMPipeline):
             'size': result.total_param_bytes,
             'max_context_length': self._model.config.max_length
         }
-
         return model_properties
 
 
