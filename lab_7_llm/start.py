@@ -5,6 +5,7 @@ Starter for demonstration of laboratory work.
 import json
 from pathlib import Path
 
+from config.lab_settings import LabSettings
 from lab_7_llm.main import (
     LLMPipeline,
     RawDataImporter,
@@ -20,12 +21,8 @@ def main() -> None:
     Run the translation pipeline.
     """
     result = None
-
-    with open(Path(__file__).parent / "settings.json", encoding="utf-8") as f:
-        settings_dict = json.load(f)
-
-
-    importer = RawDataImporter(settings_dict["parameters"]["dataset"])
+    settings = LabSettings(Path(__file__).parent / 'settings.json')
+    importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
@@ -33,7 +30,7 @@ def main() -> None:
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(settings_dict['parameters']['model'], dataset, max_length=120, batch_size=1, device="cpu")
+    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=1, device="cpu")
 
     model_properties = pipeline.analyze_model()
     prediction = pipeline.infer_sample(dataset[2])
