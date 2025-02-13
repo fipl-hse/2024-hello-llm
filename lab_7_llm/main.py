@@ -196,7 +196,7 @@ class LLMPipeline(AbstractLLMPipeline):
             )
 
         generated_text = self._tokenizer.decode(output[0], skip_special_tokens=True)
-        return generated_text.split('\n\n')[1].replace("\n", " ")
+        return generated_text.split('\n\n')[1]
 
 
     @report_time
