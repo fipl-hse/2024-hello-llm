@@ -174,6 +174,9 @@ class LLMPipeline(AbstractLLMPipeline):
         input_tensors = {'input_ids': sample_input,
                          'attention_mask': sample_input}
 
+        if self._model is None:
+            raise ValueError("Model is not initialized. Check model loading process.")
+
         model_summary = summary(self._model, input_data=input_tensors, verbose=0)
         model_metadata = {
             'input_shape': {key: list(value.shape) for key, value in input_tensors.items()},
@@ -286,10 +289,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self._data_path)
+        data = pd.read_csv(self._data_path)
 
-        references = df['target'].tolist()
-        predictions = df['predictions'].tolist()
+        references = data['target'].tolist()
+        predictions = data['predictions'].tolist()
 
         results = {}
         for metric_enum in self._metrics:
