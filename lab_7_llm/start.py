@@ -17,7 +17,7 @@ def main() -> None:
     with open(Path(__file__).parent / "settings.json", encoding="utf-8") as f:
         settings = json.load(f)
 
-    importer = RawDataImporter(settings.parameters.dataset)
+    importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
@@ -28,7 +28,7 @@ def main() -> None:
     BATCH_SIZE = 1
     MAX_LENGTH = 120
     DEVICE = 'cpu'
-    pipeline = LLMPipeline(settings.parameters.model, dataset, MAX_LENGTH, BATCH_SIZE, DEVICE)
+    pipeline = LLMPipeline(settings['parameters']['model'], dataset, MAX_LENGTH, BATCH_SIZE, DEVICE)
     model_analysis = pipeline.analyze_model()
     SAMPLE = dataset[0]
     generated_sample = pipeline.infer_sample(SAMPLE)
