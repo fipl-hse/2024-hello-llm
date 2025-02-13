@@ -188,19 +188,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return
-        """
-        text = [i for i in sample]
 
-        tokens = self._tokenizer(text, max_length=self._max_length, padding=True,
-                                 truncation=True, return_tensors='pt').to(self._device)
-        self._model.eval()
-
-        with torch.no_grad():
-            output = self._model(**tokens)
-
-        predictions = torch.argmax(output.logits).item()
-        return str(predictions)
-        """
         return self._infer_batch([sample])[0]
 
 
@@ -234,19 +222,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        """
-        print("Batch:", sample_batch)
-        inputs = self._tokenizer(
-            list(sample_batch[0]),
-            max_length=self._max_length,
-            padding=True,
-            truncation=True,
-            return_tensors='pt'
-        )
-        outputs = self._model(**inputs)
-        predictions = torch.argmax(outputs.logits, dim=1).tolist()
-        print([str(i) for i in predictions])
-        """
+
         inputs = self._tokenizer(
             list(sample_batch[0]),
             max_length=self._max_length,
