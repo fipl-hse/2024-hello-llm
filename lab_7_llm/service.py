@@ -5,15 +5,15 @@ Web service for model inference.
 from pathlib import Path
 
 
-def init_application() -> tuple[FastAPI, LLMPipeline]:
-    """
-    Initialize core application.
+# def init_application() -> tuple[FastAPI, LLMPipeline]:
+#     """
+#     Initialize core application.
+#
+#     Run: uvicorn reference_service.server:app --reload
+#
+#     Returns:
+#         tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
+#     """
 
-    Run: uvicorn reference_service.server:app --reload
 
-    Returns:
-        tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
-    """
-
-
-app, pipeline = (None, None)
+# app, pipeline = (None, None)
