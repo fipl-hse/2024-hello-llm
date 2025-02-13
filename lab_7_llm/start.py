@@ -26,7 +26,7 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
-    print(analysis)     # for mark 4
+    print(analysis)      # for mark 4
 
     result = None
     assert result is not None, "Demo does not work correctly"
