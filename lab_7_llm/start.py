@@ -21,15 +21,18 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     properties = preprocessor.analyze()
     preprocessor.transform()
+
     dataset = TaskDataset(preprocessor.data.head(100))
+
     device = "cpu"
-    batch_size = 64
+    batch_size = 1
     max_length = 120
     pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
-    model_an = pipeline.analyze_model
-    result = pipeline
-    # print(result)
-    # assert result is not None, "Demo does not work correctly"
+    model_an = pipeline.analyze_model()
+    sample_inference = pipeline.infer_sample(dataset[0])
+
+    result = sample_inference
+    assert result is not None, "Demo does not work correctly"
 
 if __name__ == "__main__":
     main()

@@ -14,6 +14,7 @@ from transformers import AutoTokenizer, BertForSequenceClassification
 from torchinfo import summary
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
@@ -96,17 +97,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
 
         self._data = self._raw_data.drop(['id', 'text'], axis=1)
         self._data['labels'] = self._data['labels'].apply(lambda x: tuple(x))
-        self._data.rename(
-            columns={"labels": ColumnNames.TARGET.value, "ru_text": ColumnNames.SOURCE.value},
-            inplace=False
-        )
+        self._data = self._data.rename(
+            columns={"labels": ColumnNames.TARGET.value, "ru_text": ColumnNames.SOURCE.value})
         self._data = self._data[self._data['target'].apply(lambda x: not any(label in unwanted_labels for label in x))]
-        print(self._data)
         self._data['target'] = self._data['target'].apply(
             lambda x: next((class_num for class_num, emotions in class_rules.items() if x[0] in emotions), 8)
         )
         self._data = self._data.dropna().drop_duplicates(subset='source')
-        self._data.reset_index(drop=True, inplace=True)
+        self._data = self._data.reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
@@ -142,8 +140,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.loc[index])
-
+        return tuple(self._data.loc[index, ColumnNames.SOURCE.value])
 
     @property
     def data(self) -> pd.DataFrame:
@@ -214,6 +211,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        tokens = self._tokenizer(sample[0],
+                                 padding=True,
+                                 truncation=True,
+                                 return_tensors="pt")
+        with torch.no_grad():
+            output = self._model(**tokens)
+        predicted_class = torch.argmax(torch.softmax(output.logits, -1), dim=1)
+        return str(predicted_class.item())
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -235,6 +240,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        # print(sample_batch)
+        # input = self._tokenizer(
+        #     text=sample_batch,
+        #     padding=True,
+        #     truncation=True,
+        #     return_tensors="pt"
+        # )
+        # print(input)
+        # output = self._model(**input)
+        # predicted_class = torch.argmax(torch.softmax(output.logits, -1), dim=1)
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
