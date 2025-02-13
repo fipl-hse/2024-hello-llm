@@ -1,20 +1,21 @@
 """
 Starter for demonstration of laboratory work.
 """
-import json
 import random
 
 # pylint: disable= too-many-locals, undefined-variable, unused-import
+from pandas import DataFrame
 from pathlib import Path
 
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import (LLMPipeline,
-                            RawDataImporter,
-                            RawDataPreprocessor,
-                            TaskDataset,
-                            TaskEvaluator)
-
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    TaskDataset,
+    TaskEvaluator,
+)
 
 MAX_LENGTH = 120
 BATCH_SIZE = 64
@@ -31,6 +32,9 @@ def main() -> None:
 
     data_importer = RawDataImporter(settings.parameters.dataset)
     data_importer.obtain()
+
+    if not data_importer.raw_data:
+        raise ValueError('No dataset created by obtain() method')
 
     data_preprocessor = RawDataPreprocessor(data_importer.raw_data)
     _dataset_properties = data_preprocessor.analyze()

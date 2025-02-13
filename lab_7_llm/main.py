@@ -4,7 +4,6 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
-import re
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -13,7 +12,8 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset, DataLoader
+from torch.nn import Module
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -163,7 +163,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return self._data[str(ColumnNames.SOURCE)][index],
+        return (self._data[str(ColumnNames.SOURCE)][index],)
 
     @property
     def data(self) -> DataFrame:
@@ -180,6 +180,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
+
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -199,6 +200,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
 
+        self._model: Module
         self._model.eval()
         self._model.to(self._device)
 
@@ -218,7 +220,10 @@ class LLMPipeline(AbstractLLMPipeline):
             input_data={'input_ids': ids, 'attention_mask': ids}
         )
 
-        input_shape = {input_type: list(shape) for input_type, shape in model_summary.input_size.items()}
+        input_shape = {
+            input_type: list(shape) for input_type, shape
+            in model_summary.input_size.items()
+        }
         embedding_size = model_config.max_position_embeddings
         output_shape = model_summary.summary_list[-1].output_size
         num_trainable_params = model_summary.trainable_params
@@ -249,7 +254,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
 
         if not self._model:
-            return
+            return None
 
         return self._infer_batch([sample])[0]
 
@@ -287,6 +292,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if not self._model:
+            raise ValueError('Model is not available')
 
         batch_list = list(sample_batch[0])
         tokens = self._tokenizer(batch_list,
