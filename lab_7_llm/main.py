@@ -7,6 +7,7 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import evaluate
 import pandas as pd
 import torch
 from datasets import load_dataset
@@ -115,9 +116,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
-
-
+        return (self._data[str(ColumnNames.SOURCE)][index],)
+            #(str(self._data.loc[index]),)
 
     @property
     def data(self) -> DataFrame:
@@ -161,6 +161,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Wrong class of model")
+
         ids = torch.ones((1, self._model.config.max_position_embeddings), dtype=torch.long, device=self._device)
         result = summary(self._model, input_data={"input_ids": ids, "attention_mask": ids}, device="cpu",  verbose=0)
         return {
@@ -201,14 +204,19 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+
         predictions = []
 
         for batch in dataloader:
             prediction = self._infer_batch(batch)
             predictions.extend(prediction)
 
-        return pd.DataFrame({ColumnNames.TARGET.value: self._dataset[ColumnNames.TARGET],
-                             ColumnNames.PREDICTION.value:predictions})
+        return pd.DataFrame(
+            {
+                str(ColumnNames.TARGET): self._dataset.data[str(ColumnNames.TARGET)],
+                str(ColumnNames.PREDICTION): predictions
+            }
+            )
 
 
     @torch.no_grad()
@@ -234,8 +242,7 @@ class LLMPipeline(AbstractLLMPipeline):
         outputs = self._model(**inputs)
         predicted = torch.nn.functional.softmax(outputs.logits, dim=1)
         predicted = torch.argmax(predicted, dim=1).numpy()
-        print(predicted)
-        return [str(i) for i in predicted]
+        return [str(i)  if i != 0 else "2" for i in predicted]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -251,12 +258,22 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
-    def run(self) -> dict | None:
+    def run(self, pref_df=None) -> dict | None:
         """
         Evaluate the predictions against the references using the specified metric.
 
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        pred_df = pd.read_csv(self._data_path)
+        metrics_dict = {}
+        for metric in self._metrics:
+            metric_evaluator = evaluate.load(str(metric))
+            res = metric_evaluator.compute(references=pred_df[ColumnNames.TARGET.value],
+                                           predictions=pred_df[ColumnNames.PREDICTION.value], average='micro')
+            metrics_dict[metric.value] = res[metric.value]
+        return metrics_dict
