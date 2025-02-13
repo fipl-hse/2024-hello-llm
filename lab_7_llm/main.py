@@ -195,8 +195,8 @@ class LLMPipeline(AbstractLLMPipeline):
                 max_length=self._max_length,
             )
 
-        generated_text = self._tokenizer.decode(output[0], skip_special_tokens=True)
-        return generated_text.replace(sample[0]+'\n', '')
+        generated_text = self._tokenizer.decode(output[:, input_ids["input_ids"].shape[1]+1:][0], skip_special_tokens=True)
+        return generated_text
 
 
     @report_time
