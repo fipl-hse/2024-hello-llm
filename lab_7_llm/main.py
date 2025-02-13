@@ -7,12 +7,27 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import pandas as pd
+import torch
+from datasets import load_dataset
+from evaluate import load
+from pandas import DataFrame
+from torch.utils.data import DataLoader, Dataset
+from torchinfo import summary
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
     A class that imports the HuggingFace dataset.
     """
-
     @report_time
     def obtain(self) -> None:
         """
@@ -21,6 +36,8 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        dataset = load_dataset(self._hf_name, split="test")
+        self._raw_data = dataset.to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +52,15 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        ds_len = self._raw_data['instruction'].apply(len)
+        return {
+            'dataset_number_of_samples': self._raw_data.shape[0],
+            'dataset_columns': self._raw_data.shape[-1],
+            'dataset_duplicates': self._raw_data.duplicated().sum(),
+            'dataset_empty_rows': self._raw_data.isna().any(axis=1).sum(),
+            'dataset_sample_min_len': ds_len.min(),
+            'dataset_sample_max_len': ds_len.max()
+        }
 
     @report_time
     def transform(self) -> None:
