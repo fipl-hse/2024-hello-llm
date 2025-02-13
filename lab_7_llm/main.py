@@ -4,7 +4,6 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
-
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -12,9 +11,11 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
-from transformers import BertForSequenceClassification, BertTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+import evaluate
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -88,7 +89,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                                    'toxic': ColumnNames.TARGET.value},
                                     inplace=True)
 
-
 class TaskDataset(Dataset):
     """
     A class that converts pd.DataFrame to Dataset and works with it.
@@ -154,16 +154,12 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        self._model_name = model_name
-        self._dataset = dataset
-        self._device = device
-        self._max_length = max_length
-        self._batch_size = batch_size
+        super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
+        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
         self._model.to(self._device)
 
-        self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -202,25 +198,10 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        if not self._model:
-            return None
-
-        inputs = self._tokenizer(
-            sample[0],
-            truncation=True,
-            padding="max_length",
-            max_length=self._max_length,
-            return_tensors="pt"
-        )
-
-        inputs = {key: value.to(self._device) for key, value in inputs.items()}
-
-        self._model.eval()
-        with torch.no_grad():
-            outputs = self._model(**inputs)
-
-        predicted_class = torch.argmax(outputs.logits, dim=1).item()
-        return str(predicted_class)
+        batch_predictions = self._infer_batch([sample])
+        if batch_predictions:
+            return batch_predictions[0]
+        return None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -230,6 +211,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(self._dataset, batch_size=self._batch_size, shuffle=False)
+
+        all_predictions = []
+        all_targets = []
+
+        for batch in data_loader:
+            texts, targets = batch
+
+            samples = list(zip(texts, targets))
+            batch_preds = self._infer_batch(samples)
+
+            all_predictions.extend(batch_preds)
+            all_targets.extend(targets)
+
+        result_df = pd.DataFrame({
+            "target": all_targets,
+            "predictions": all_predictions
+        })
+        return result_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -242,6 +242,24 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        texts = [item[0] for item in sample_batch]
+
+        inputs = self._tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=self._max_length,
+            return_tensors="pt"
+        )
+        inputs = inputs.to(self._device)
+
+        self._model.eval()
+        outputs = self._model(**inputs)
+        logits = outputs.logits
+
+        predicted_ids = torch.argmax(logits, dim=1).tolist()
+
+        return [str(pred) for pred in predicted_ids]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -257,6 +275,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -266,3 +286,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        df = pd.read_csv(self._data_path)
+
+        references = df['target'].tolist()
+        predictions = df['predictions'].tolist()
+
+        results = {}
+        for metric_enum in self._metrics:
+            metric_name = metric_enum.value
+            metric = evaluate.load(metric_name)
+
+            score = metric.compute(predictions=predictions, references=references)
+
+            results[metric_name] = score
+
+        return results
