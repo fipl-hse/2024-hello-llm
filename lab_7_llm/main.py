@@ -46,7 +46,8 @@ class RawDataImporter(AbstractRawDataImporter):
 
         if self._raw_data is None:
             raise TypeError(
-                f"Failed to convert dataset to DataFrame. Expected 'Dataset', got {type(dataset)} instead."
+                f"Failed to convert dataset to DataFrame. Expected 'Dataset', "
+                f"got {type(dataset)} instead."
             )
 
 
