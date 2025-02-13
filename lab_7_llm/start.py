@@ -23,7 +23,7 @@ def main() -> None:
     dataset_name = settings.parameters.dataset
     model_name = settings.parameters.model
     metric_list = settings.parameters.metrics
-    predictions_file = PROJECT_ROOT / "dist" / "predictions.csv"
+    predictions_file = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
 
     importer = RawDataImporter(dataset_name)
     importer.obtain()
