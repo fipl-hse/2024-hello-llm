@@ -301,6 +301,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
             score = metric.compute(predictions=predictions, references=references)
 
+            if isinstance(score, dict):
+                score = score.get(metric_name, 0)
+
             results[metric_name] = score
 
         return results
