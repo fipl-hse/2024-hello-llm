@@ -29,7 +29,7 @@ def main() -> None:
     analysis = preprocessor.analyze()
     print(analysis)      # for mark 4
 
-    result = None
+    result = analysis
     assert result is not None, "Demo does not work correctly"
 
 
