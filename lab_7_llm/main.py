@@ -77,7 +77,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_sample_max_len": max_sample_length,
         }
 
-
     @report_time
     def transform(self) -> None:
         """
@@ -88,6 +87,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         self._data.rename(columns={'text': ColumnNames.SOURCE.value,
                                    'toxic': ColumnNames.TARGET.value},
                                     inplace=True)
+
 
 class TaskDataset(Dataset):
     """
@@ -160,7 +160,6 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
         self._model.to(self._device)
 
-
     def analyze_model(self) -> dict:
         """
         Analyze model computing properties.
@@ -188,7 +187,6 @@ class LLMPipeline(AbstractLLMPipeline):
             'max_context_length': self._model.config.max_length
         }
         return model_metadata
-
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
