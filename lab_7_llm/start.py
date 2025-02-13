@@ -10,7 +10,7 @@ from lab_7_llm.main import (
     RawDataPreprocessor,
     report_time,
     TaskDataset,
-    TaskEvaluator
+    TaskEvaluator,
 )
 
 
