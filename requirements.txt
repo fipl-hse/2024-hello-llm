@@ -8,6 +8,6 @@ scikit-learn==1.6.1
 torch==2.1.2
 torchinfo==1.8.0
 torchvision==0.16.2
-transformers==
+transformers==4.44.0
 
 --extra-index-url https://download.pytorch.org/whl/cpu
