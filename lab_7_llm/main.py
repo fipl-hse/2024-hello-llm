@@ -297,6 +297,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         batch_list = list(sample_batch[0])
         tokens = self._tokenizer(batch_list,
+                                 max_length=self._max_length,
                                  padding=True,
                                  truncation=True,
                                  return_tensors='pt').to(self._device)
