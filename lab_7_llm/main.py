@@ -242,7 +242,7 @@ class LLMPipeline(AbstractLLMPipeline):
         outputs = self._model(**inputs)
         predicted = torch.nn.functional.softmax(outputs.logits, dim=1)
         predicted = torch.argmax(predicted, dim=1).numpy()
-        return [str(i)  if i != 0 else "2" for i in predicted]
+        return [str(i) if i != 0 else "2" for i in predicted]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):

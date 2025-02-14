@@ -41,6 +41,9 @@ def main() -> None:
 
     dataset_inference = pipeline.infer_dataset()
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
+    if not predictions_path.parent.is_dir():
+        predictions_path.mkdir()
+
     dataset_inference.to_csv(predictions_path)
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
