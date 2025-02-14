@@ -2,17 +2,17 @@
 Web service for model inference.
 """
 import json
-import sys
+
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from pathlib import Path
 
 import pandas as pd
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
-from starlette.staticfiles import StaticFiles
-from starlette.templating import Jinja2Templates
-from fastapi import FastAPI
+
 from lab_7_llm.main import LLMPipeline, TaskDataset
 
 SETTINGS_PATH = Path(__file__).parent / "settings.json"
@@ -28,7 +28,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     Returns:
         tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
     """
-    app = FastAPI()
+    my_app = FastAPI()
     with SETTINGS_PATH.open("r", encoding="utf-8") as file:
         settings = json.load(file)
 
@@ -40,7 +40,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
         batch_size=1,
         device="cpu"
     )
-    return app, model_pipeline
+    return my_app, model_pipeline
 
 
 app, pipeline = init_application()
@@ -49,6 +49,9 @@ templates = Jinja2Templates(directory=str(ASSETS_PATH))
 
 
 class Text(BaseModel):
+    """
+    /
+    """
     question: str
 
 

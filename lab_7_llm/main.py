@@ -105,7 +105,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return str(self._data.loc[index, ColumnNames.SOURCE]),
+        return (str(self._data.loc[index, ColumnNames.SOURCE]), )
 
     @property
     def data(self) -> DataFrame:
