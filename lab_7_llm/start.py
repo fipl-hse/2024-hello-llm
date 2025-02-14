@@ -11,8 +11,9 @@ from lab_7_llm.main import (
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    TaskEvaluator
+    TaskEvaluator,
 )
+
 
 @report_time
 def main() -> None:
@@ -39,10 +40,10 @@ def main() -> None:
     print(pipeline.analyze_model())
     print(pipeline.infer_sample(dataset[22]))
 
-    predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist'
     predictions_path.mkdir(parents=True, exist_ok=True)
     predictions = pipeline.infer_dataset()
-    predictions.to_csv(predictions_path)
+    predictions.to_csv(predictions_path / 'predictions.csv')
 
     evaluator = TaskEvaluator(predictions_path, parameters.metrics)
     comparison = evaluator.run()
