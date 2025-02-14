@@ -7,10 +7,9 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
-
-import pandas as pd
 from datasets import load_dataset
 from torchinfo import summary
 from transformers import AutoTokenizer, BertForSequenceClassification
