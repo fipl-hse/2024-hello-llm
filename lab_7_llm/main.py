@@ -10,7 +10,6 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
-from evaluate import load
 from torchinfo import summary
 from transformers import AutoTokenizer, BertForSequenceClassification
 
@@ -20,8 +19,7 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-from torch.utils.data import Dataset, DataLoader
-
+from torch.utils.data import DataLoader, Dataset
 
 
 class RawDataImporter(AbstractRawDataImporter):
