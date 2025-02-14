@@ -157,7 +157,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        batch_size = self._batch_size
         emb_size = self._model.config.hidden_size
         vocab_size = self._model.config.vocab_size
 
@@ -165,7 +164,8 @@ class LLMPipeline(AbstractLLMPipeline):
         decoder_input_data = torch.ones((1, self._max_length), dtype=torch.long)
 
         test_model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
-        model_summary = summary(test_model, input_data=input_data, decoder_input_ids=decoder_input_data)
+        model_summary = summary(test_model,
+                                input_data=input_data, decoder_input_ids=decoder_input_data)
 
         model_properties = {
             'input_shape': [model_summary.input_size[0], emb_size],
