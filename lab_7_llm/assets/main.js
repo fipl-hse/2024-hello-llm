@@ -21,7 +21,8 @@ document.getElementById('summarizeButton').addEventListener('click', async () =>
         }
 
         const data = await response.json();
-        resultDiv.textContent = data.infer;
+        resultDiv.textContent = data.infer
+
     } catch (error) {
         resultDiv.textContent = 'An error occurred while summarizing the text.';
         console.error('Error:', error);
