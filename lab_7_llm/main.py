@@ -67,8 +67,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = (self._raw_data.rename(columns={'article': ColumnNames.SOURCE,
-                                                     'abstract': ColumnNames.TARGET})
+        self._data = (self._raw_data.rename(columns={'article': ColumnNames.SOURCE.value,
+                                                     'abstract': ColumnNames.TARGET.value})
                       .reset_index(drop=True).drop_duplicates())
 
 
