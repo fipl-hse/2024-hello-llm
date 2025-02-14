@@ -22,11 +22,11 @@ def main() -> None:
     """
     settings_path = PROJECT_ROOT / 'lab_7_llm' / 'settings.json'
     parameters = LabSettings(settings_path).parameters
-    if not parameters.dataset:
-        return
 
     importer = RawDataImporter(parameters.dataset)
     importer.obtain()
+    if not importer.raw_data:
+        return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     print(preprocessor.analyze())

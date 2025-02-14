@@ -235,8 +235,9 @@ class LLMPipeline(AbstractLLMPipeline):
 
         output = self._model.generate(input_ids=input_ids,
                                       attention_mask=attention_mask)
-        if decoded := self._tokenizer.batch_decode(output, skip_special_tokens=True):
-            return decoded
+        decoded = self._tokenizer.batch_decode(output, skip_special_tokens=True)
+
+        return list(map(str, decoded))
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
