@@ -266,7 +266,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metr in string_metrics:
             metric = load(metr, seed=77).compute(predictions=summaries, references=targets)
             if metr == Metrics.ROUGE.value:
-                evaluation[metr] = metric[Metrics.ROUGE.value + 'L']
+                evaluation[metr] = metric['rougeL']
             else:
                 evaluation[metr] = metric[metr]
         return evaluation

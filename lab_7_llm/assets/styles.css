@@ -1,17 +1,11 @@
-body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 40px;
-}
-
-textarea {
+.input-line {
     width: 100%;
     height: 100px;
     margin: 10px;
     padding: 10px 5px;
 }
 
-button {
+.button-class {
     padding: 10px 20px;
     font-size: 14px;
     background-color: #3ea4edb3;
@@ -20,7 +14,7 @@ button {
     color: #ffffff;
 }
 
-div {
+.output-line {
     padding: 10px 5px;
     margin: 10px;
     font-size: 15px;

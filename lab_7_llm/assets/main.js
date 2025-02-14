@@ -22,7 +22,7 @@ submitBtn.addEventListener('click', async () => {
             let data = await response.json();
             updateResponseText(data.infer);
         } else {
-            alert("HTTP-error: " + response.status);
+            alert(`HTTP-error: ${response.status}`);
         }
     }
     catch (error) {
