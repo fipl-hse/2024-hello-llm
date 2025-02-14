@@ -34,7 +34,7 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    batch_size = 64
+    batch_size = 1
     max_length = 120
     device = 'cpu'
 
@@ -44,6 +44,8 @@ def main() -> None:
 
     predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
+
+
     predictions = pipeline.infer_dataset()
     predictions.to_csv(predictions_path)
 

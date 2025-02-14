@@ -161,16 +161,16 @@ class LLMPipeline(AbstractLLMPipeline):
         emb_size = self._model.config.hidden_size
         vocab_size = self._model.config.vocab_size
 
-        input_ids = torch.randint(0, vocab_size, (batch_size, self._max_length))
-        attention_mask = torch.ones((batch_size, self._max_length), dtype=torch.long)
+        input_data = torch.ones((1, self._max_length), dtype=torch.long)
+        decoder_input_data = torch.ones((1, self._max_length), dtype=torch.long)
 
         test_model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
-        model_summary = summary(test_model, input_ids=input_ids, attention_mask=attention_mask)
+        model_summary = summary(test_model, input_data=input_data, decoder_input_ids=decoder_input_data)
 
         model_properties = {
-            'input_shape': [batch_size, emb_size],
+            'input_shape': [model_summary.input_size[0], emb_size],
             'embedding_size': emb_size,
-            'output_shape': [batch_size, emb_size, vocab_size],
+            'output_shape': [model_summary.input_size[0], emb_size, vocab_size],
             'num_trainable_params': model_summary.trainable_params,
             'vocab_size': vocab_size,
             'size': model_summary.total_param_bytes,
