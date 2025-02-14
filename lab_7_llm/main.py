@@ -67,8 +67,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = (self._raw_data.rename(columns={'article': ColumnNames.SOURCE.value,
-                                                     'abstract': ColumnNames.TARGET.value})
+        self._data = (self._raw_data.rename(columns={'article': ColumnNames.SOURCE,
+                                                     'abstract': ColumnNames.TARGET})
                       .reset_index(drop=True).drop_duplicates())
 
 
@@ -105,7 +105,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
+        return str(self._data.loc[index, ColumnNames.SOURCE]),
 
     @property
     def data(self) -> DataFrame:
@@ -138,7 +138,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
-        self._model.eval()
+        #self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -148,12 +148,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a Module model')
+
         tensor = torch.ones((1, self._model.config.n_positions),
                             dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
-
-        if not isinstance(self._model, torch.nn.Module):
-            raise TypeError('The model is not a Module model')
 
         summary_m = summary(self._model, input_data=inputs,
                             decoder_input_ids=tensor, verbose=False)
@@ -189,6 +189,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        if not isinstance(self._dataset, TaskDataset):
+            raise TypeError("Dataset is not a TaskDataset object")
+
         data_loader = DataLoader(batch_size=self._batch_size, dataset=self._dataset)
         outputs = []
 
@@ -197,7 +200,7 @@ class LLMPipeline(AbstractLLMPipeline):
             outputs.extend(summarized)
 
         infered_dataset = pd.DataFrame(self._dataset.data)
-        infered_dataset[ColumnNames.PREDICTION.value] = outputs
+        infered_dataset[ColumnNames.PREDICTION] = outputs
 
         return infered_dataset
 
@@ -212,6 +215,11 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a Module model')
+
+        self._model.eval()
+
         inputs = self._tokenizer(list(sample_batch[0]),
                                  return_tensors="pt",
                                  padding=True,
@@ -237,8 +245,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
         self.data_path = data_path
-        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -251,7 +259,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
         outputs_df = pd.read_csv(self.data_path)
         summaries = outputs_df[ColumnNames.PREDICTION.value]
         targets = outputs_df[ColumnNames.TARGET.value]
-
         evaluation = {}
 
         string_metrics = [format(item) for item in self._metrics]

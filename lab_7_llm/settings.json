@@ -2,7 +2,10 @@
   "parameters": {
     "model": "nandakishormpai/t5-small-machine-articles-tag-generation",
     "dataset": "ccdv/pubmed-summarization",
-    "metrics": ["bleu", "rouge"]
+    "metrics": [
+      "bleu",
+      "rouge"
+    ]
   },
-  "target_score": 8
+  "target_score": 10
 }

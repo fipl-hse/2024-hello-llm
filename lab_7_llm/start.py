@@ -46,7 +46,7 @@ def main() -> None:
                            device='cpu')
     print(pipeline.analyze_model())
 
-    sample = pipeline.infer_sample(dataset[0])
+    sample = pipeline.infer_sample(dataset[1])
     print(sample)
 
     infered_df = pipeline.infer_dataset()
