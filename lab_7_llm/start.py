@@ -6,8 +6,13 @@ import json
 from pathlib import Path
 
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset
+from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset, TaskEvaluator
 
+BATCH_SIZE = 1
+MAX_LENGTH = 120
+DEVICE = 'cpu'
+PREDICTIONS_PATH = Path(__file__).parent / 'dist' / 'predictions.csv'
+PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 @report_time
 def main() -> None:
@@ -25,16 +30,13 @@ def main() -> None:
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
-    BATCH_SIZE = 1
-    MAX_LENGTH = 120
-    DEVICE = 'cpu'
     pipeline = LLMPipeline(settings['parameters']['model'], dataset, MAX_LENGTH, BATCH_SIZE, DEVICE)
     model_analysis = pipeline.analyze_model()
-    SAMPLE = dataset[0]
-    generated_sample = pipeline.infer_sample(SAMPLE)
+    predictions = pipeline.infer_dataset()
+    predictions.to_csv(PREDICTIONS_PATH, index=False)
 
-    result = generated_sample
-
+    evaluator = TaskEvaluator(PREDICTIONS_PATH, settings['parameters']['metrics'])
+    result = evaluator.run()
     assert result is not None, "Demo does not work correctly"
 
 
