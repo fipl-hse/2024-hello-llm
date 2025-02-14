@@ -22,6 +22,8 @@ def main() -> None:
     """
     settings_path = PROJECT_ROOT / 'lab_7_llm' / 'settings.json'
     parameters = LabSettings(settings_path).parameters
+    if not parameters.dataset:
+        return
 
     importer = RawDataImporter(parameters.dataset)
     importer.obtain()
@@ -40,10 +42,10 @@ def main() -> None:
     print(pipeline.analyze_model())
     print(pipeline.infer_sample(dataset[22]))
 
-    predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist'
-    predictions_path.mkdir(parents=True, exist_ok=True)
+    predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    predictions_path.parent.mkdir(parents=True, exist_ok=True)
     predictions = pipeline.infer_dataset()
-    predictions.to_csv(predictions_path / 'predictions.csv')
+    predictions.to_csv(predictions_path)
 
     evaluator = TaskEvaluator(predictions_path, parameters.metrics)
     comparison = evaluator.run()

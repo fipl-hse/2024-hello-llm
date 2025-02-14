@@ -59,10 +59,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         ds_properties = {
             'dataset_number_of_samples': len(self._raw_data),
             'dataset_columns': len(self._raw_data.columns),
-            'dataset_duplicates': self._raw_data.duplicated().sum().item(),
+            'dataset_duplicates': int(self._raw_data.duplicated().sum()),
             'dataset_empty_rows': n_empty_rows,
-            'dataset_sample_min_len': ds_lens.min().item(),
-            'dataset_sample_max_len': ds_lens.max().item()
+            'dataset_sample_min_len': int(ds_lens.min()),
+            'dataset_sample_max_len': int(ds_lens.max())
         }
 
         return ds_properties
@@ -130,8 +130,8 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
-                 ) -> None:
+    def __init__(self, model_name: str, dataset: TaskDataset,
+                 max_length: int, batch_size: int, device: str) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -144,6 +144,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         self._dataset = dataset
         self._device = device
+        self._model_name = model_name
         self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
         self._batch_size = batch_size
@@ -163,7 +164,8 @@ class LLMPipeline(AbstractLLMPipeline):
         input_ids = torch.randint(0, vocab_size, (batch_size, self._max_length))
         attention_mask = torch.ones((batch_size, self._max_length), dtype=torch.long)
 
-        model_summary = summary(self._model, input_ids=input_ids, attention_mask=attention_mask)
+        test_model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+        model_summary = summary(test_model, input_ids=input_ids, attention_mask=attention_mask)
 
         model_properties = {
             'input_shape': [batch_size, emb_size],
@@ -233,9 +235,8 @@ class LLMPipeline(AbstractLLMPipeline):
 
         output = self._model.generate(input_ids=input_ids,
                                       attention_mask=attention_mask)
-        decoded = self._tokenizer.batch_decode(output, skip_special_tokens=True)
-
-        return decoded
+        if decoded := self._tokenizer.batch_decode(output, skip_special_tokens=True):
+            return decoded
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -253,7 +254,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
-        self._metrics = metrics
+
 
     @report_time
     def run(self) -> dict | None:
@@ -270,7 +271,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         comparison = {}
         for metric in self._metrics:
             calculated = load(metric.value).compute(predictions=predictions, references=target)
-            if metric.value == Metrics.ROUGE:
+
+            if metric.value == Metrics.ROUGE.value:
                 comparison[metric.value] = calculated['rougeL']
             else:
                 comparison[metric.value] = calculated[metric.value]
