@@ -164,8 +164,7 @@ class LLMPipeline(AbstractLLMPipeline):
         input_ids = torch.randint(0, vocab_size, (batch_size, self._max_length))
         attention_mask = torch.ones((batch_size, self._max_length), dtype=torch.long)
 
-        test_model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
-        model_summary = summary(test_model, input_ids=input_ids, attention_mask=attention_mask)
+        model_summary = summary(self._model, input_ids=input_ids, attention_mask=attention_mask)
 
         model_properties = {
             'input_shape': [batch_size, emb_size],

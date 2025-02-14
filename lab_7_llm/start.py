@@ -52,7 +52,7 @@ def main() -> None:
     print(comparison)
 
     result = comparison
-    assert result is not None, "Demo does not work correctly"
+    assert result is not None, 'Demo does not work correctly'
 
 
 if __name__ == "__main__":
