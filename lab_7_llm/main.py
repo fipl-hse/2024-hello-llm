@@ -200,7 +200,7 @@ class LLMPipeline(AbstractLLMPipeline):
             outputs.extend(summarized)
 
         infered_dataset = pd.DataFrame(self._dataset.data)
-        infered_dataset[ColumnNames.PREDICTION] = outputs
+        infered_dataset[ColumnNames.PREDICTION.value] = outputs
 
         return infered_dataset
 
