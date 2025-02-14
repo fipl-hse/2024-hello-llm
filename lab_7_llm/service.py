@@ -68,7 +68,7 @@ async def infer(text: Text) -> JSONResponse:
     """
     Endpoint for model inference.
     """
-    print("Received input:", text.question)
+    # print("Received input:", text.question)
     summarized_text = pipeline.infer_sample((text.question,))
-    print("Summarized output:", summarized_text)
+    # print("Summarized output:", summarized_text)
     return JSONResponse(content={"infer": summarized_text})
