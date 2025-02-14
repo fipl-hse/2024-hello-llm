@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoTokenizer, GPTNeoXForCausalLM
 
@@ -69,8 +69,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = self._raw_data.drop(['context', 'category', 'text'], axis=1)
-        self._data.rename(columns={'instruction': ColumnNames.QUESTION,
-                                   'response': ColumnNames.TARGET},
+        self._data.rename(columns={'instruction': ColumnNames.QUESTION.value,
+                                   'response': ColumnNames.TARGET.value},
                           inplace=True)
         self._data.reset_index(inplace=True, drop=True)
 
@@ -108,7 +108,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple([self._data.iloc[index][ColumnNames.QUESTION]])
+        return tuple([self._data.iloc[index][ColumnNames.QUESTION.value]])
 
     @property
     def data(self) -> DataFrame:
@@ -142,6 +142,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name).to(device)
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     def analyze_model(self) -> dict:
         """
@@ -186,18 +187,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        input_ids = self._tokenizer.encode_plus(sample[0], return_tensors="pt", max_length=120, truncation=True).to(self._device)
-
-        with torch.no_grad():
-            output = self._model.generate(
-                input_ids["input_ids"],
-                attention_mask=input_ids["attention_mask"],
-                max_length=self._max_length,
-            )
-
-        generated_text = self._tokenizer.decode(output[:, input_ids["input_ids"].shape[1]+1:][0], skip_special_tokens=True)
-        return generated_text
-
+        return self._infer_batch(sample)[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -207,6 +197,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataset_loader = DataLoader(self._dataset, self._batch_size)
+        predictions = []
+
+        for batch in dataset_loader:
+            predictions.extend(self._infer_batch(batch[0]))
+        data_predictions = pd.DataFrame({ColumnNames.TARGET.value: self._dataset.data[ColumnNames.TARGET.value].values,
+                                         ColumnNames.PREDICTION.value: predictions})
+
+        return data_predictions
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -219,6 +218,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        input_ids = self._tokenizer.batch_encode_plus(sample_batch,
+                                                      return_tensors="pt",
+                                                      max_length=self._max_length,
+                                                      truncation=True).to(self._device)
+        with torch.no_grad():
+            outputs = self._model.generate(
+                input_ids["input_ids"],
+                attention_mask=input_ids["attention_mask"],
+                max_length=self._max_length
+            )
+
+        return [self._tokenizer.decode(output[input_ids["input_ids"].shape[1] + 1:],
+                                       skip_special_tokens=True) for output in outputs]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
