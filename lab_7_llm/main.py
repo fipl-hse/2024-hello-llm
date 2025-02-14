@@ -9,8 +9,8 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader, Dataset
 from datasets import load_dataset
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoTokenizer, BertForSequenceClassification
 
