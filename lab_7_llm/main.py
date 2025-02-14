@@ -197,7 +197,7 @@ class LLMPipeline(AbstractLLMPipeline):
             str | None: A prediction
         """
         if not self._model:
-            return
+            raise ValueError("There is no model")
 
         return self._infer_batch([sample])[0]
 
