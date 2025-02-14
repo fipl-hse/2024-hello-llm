@@ -3,18 +3,21 @@ Web service for model inference.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 
+import logging
 from dataclasses import dataclass
 
 import pandas as pd
-
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from lab_7_llm.main import LLMPipeline, TaskDataset
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
+from lab_7_llm.main import LLMPipeline, TaskDataset
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -56,6 +59,8 @@ app, pipeline = init_application()
 app_path = PROJECT_ROOT / 'lab_7_llm' / 'assets'
 app.mount('/assets', StaticFiles(directory=app_path), name='assets')
 
+logger.info('fastapi application started')
+
 
 @app.get('/', response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
@@ -68,16 +73,10 @@ async def root(request: Request) -> HTMLResponse:
     Returns:
         TemplateResponse: An HTMLResponse object containing the rendered `index.html` template
     """
-    logger.info("Received request in root: %s", request)
+    logger.info('received request in root: %s', request)
     templates = Jinja2Templates(directory=app_path)
     return templates.TemplateResponse('index.html', {'request': request})
 
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-logger.info("FastAPI application started")
 
 @app.post('/infer')
 async def infer(request: Query) -> dict[str, str]:
@@ -90,8 +89,8 @@ async def infer(request: Query) -> dict[str, str]:
     Returns:
         dict[str, str]: A dictionary containing the inference results
     """
-    logger.info("Received request: %s", request.question)
-
+    logger.info('received request: %s', request.question)
     result = pipeline.infer_sample((request.question, ))
-    print(result)
+    logger.info('model inference complete: %s', result)
+
     return {'infer': result}
