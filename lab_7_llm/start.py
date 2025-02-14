@@ -6,7 +6,6 @@ from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-from core_utils.llm.raw_data_preprocessor import ColumnNames
 from lab_7_llm.main import RawDataImporter, report_time, RawDataPreprocessor, TaskDataset, LLMPipeline
 
 
@@ -33,10 +32,7 @@ def main() -> None:
 
     pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
     model_analysis = pipeline.analyze_model()
-    sample_inference = pipeline.infer_dataset(dataset[0])
-
-    # dataset_inference = pipeline.infer_dataset()
-    # dataset_inference.to_csv('predictions.csv', columns=ColumnNames.PREDICTION.value)
+    sample_inference = pipeline.infer_sample(dataset[0])
 
     result = sample_inference
     assert result is not None, "Demo does not work correctly"

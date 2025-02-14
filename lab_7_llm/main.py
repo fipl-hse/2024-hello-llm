@@ -7,11 +7,12 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from datasets import load_dataset
 import pandas as pd
 import torch
-from transformers import AutoTokenizer, BertForSequenceClassification
+from datasets import load_dataset
+from evaluate import load
 from torchinfo import summary
+from transformers import AutoTokenizer, BertForSequenceClassification
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -269,6 +270,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         super().__init__(metrics)
+        self.data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
