@@ -72,12 +72,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = self._raw_data.copy()
-        self._data.drop(["part", "movie_name", "review_id", "author", "date", "title", "grade10"], axis=1, inplace=True)
-        self._data.rename(columns={"grade3": ColumnNames.TARGET.value, "content": ColumnNames.SOURCE.value}, inplace=True)
+        self._data.drop(["part", "movie_name", "review_id", "author", "date", "title", "grade10"],
+                        axis=1, inplace=True)
+        self._data.rename(columns={"grade3": ColumnNames.TARGET.value, "content": ColumnNames.SOURCE.value},
+                          inplace=True)
         self._data.dropna(inplace=True)
         #self._data.dropna(how="all", inplace=True)
         #labels for the model: 0: neutral, 1: positive, 2: negative
-        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map({"Good": 1, "Bad": 2, "Neutral": 0})
+        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(
+            {"Good": 1, "Bad": 2, "Neutral": 0}
+        )
         self._data.reset_index(inplace=True, drop=True)
 
 
@@ -164,10 +168,13 @@ class LLMPipeline(AbstractLLMPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Wrong class of model")
 
-        ids = torch.ones((1, self._model.config.max_position_embeddings), dtype=torch.long, device=self._device)
-        result = summary(self._model, input_data={"input_ids": ids, "attention_mask": ids}, device="cpu",  verbose=0)
+        ids = torch.ones((1, self._model.config.max_position_embeddings),
+                         dtype=torch.long, device=self._device)
+        result = summary(self._model, input_data={"input_ids": ids, "attention_mask": ids},
+                         device="cpu",  verbose=0)
         return {
-            "input_shape": {"input_ids": list(result.input_size["input_ids"]), "attention_mask": list(result.input_size["input_ids"])},
+            "input_shape": {"input_ids": list(result.input_size["input_ids"]),
+                            "attention_mask": list(result.input_size["input_ids"])},
             "embedding_size": self._model.config.max_position_embeddings,
             "output_shape": result.summary_list[-1].output_size,
             "num_trainable_params": result.trainable_params,
@@ -262,7 +269,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         self._data_path = data_path
 
     @report_time
-    def run(self, pref_df=None) -> dict | None:
+    def run(self) -> dict | None:
         """
         Evaluate the predictions against the references using the specified metric.
 
@@ -274,6 +281,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric in self._metrics:
             metric_evaluator = evaluate.load(str(metric))
             res = metric_evaluator.compute(references=pred_df[ColumnNames.TARGET.value],
-                                           predictions=pred_df[ColumnNames.PREDICTION.value], average='micro')
+                                           predictions=pred_df[ColumnNames.PREDICTION.value],
+                                           average='micro')
             metrics_dict[metric.value] = res[metric.value]
         return metrics_dict
