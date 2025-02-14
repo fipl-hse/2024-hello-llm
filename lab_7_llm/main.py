@@ -7,8 +7,10 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import pandas as pd
 import torch
+from torch.utils.data import DataLoader, Dataset
+
+import pandas as pd
 from datasets import load_dataset
 from torchinfo import summary
 from transformers import AutoTokenizer, BertForSequenceClassification
@@ -19,7 +21,6 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-from torch.utils.data import DataLoader, Dataset
 
 
 class RawDataImporter(AbstractRawDataImporter):
