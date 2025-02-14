@@ -17,6 +17,10 @@ from lab_7_llm.main import LLMPipeline, TaskDataset
 
 def init_application() -> tuple[FastAPI, LLMPipeline]:
     """
+    Initialize core application.
+
+    Run: uvicorn reference_service.server:app --reload
+
     Returns:
         tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
     """
@@ -40,19 +44,17 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
 
     return llm_app, llm_pipe
 
-
 app, pipeline = init_application()
 
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
     """
-    Root endpoint for the web application.
+    Serves the main page.
     Args:
-        request (Request): The incoming HTTP request object.
+        request (Request): Incoming HTTP request.
     Returns:
-        HTMLResponse: The rendered HTML response containing the content of
-        'index.html'.
+        HTMLResponse: Rendered 'index.html'.
     """
     templates = Jinja2Templates(directory=Path(__file__).parent / "assets")
     return templates.TemplateResponse('index.html', {'request': request})
@@ -60,20 +62,18 @@ async def root(request: Request) -> HTMLResponse:
 @dataclass
 class Query:
     """
-    A class to represent a query with a question.
-    Attributes:
-        question (str): User input text
+    Represents a user query.
     """
     question: str
 
 @app.post("/infer")
 async def infer(query: Query) -> dict[str, str]:
     """
-    Perform inference based on the provided query.
+    Runs model inference.
     Args:
-        query (Query): Input query for inference.
+        query (Query): User input.
     Returns:
-        dict[str, str]: Inference results as a dictionary.
+        dict[str, str]: Inference result.
     """
     answer = pipeline.infer_sample((query.question,))
     return {"infer": answer}
