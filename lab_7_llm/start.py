@@ -25,7 +25,7 @@ def main() -> None:
 
     importer = RawDataImporter(parameters.dataset)
     importer.obtain()
-    if not importer.raw_data:
+    if importer.raw_data is None:
         return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
