@@ -245,8 +245,11 @@ class LLMPipeline(AbstractLLMPipeline):
             raise ValueError("There is no model")
 
         outputs = self._model(**inputs)
-        predicted = torch.nn.functional.softmax(outputs.logits, dim=1)
+        """
+        torch.nn.functional.softmax(outputs.logits, dim=1)
         predicted = torch.argmax(predicted, dim=1).numpy()
+        """
+        predicted = torch.argmax(outputs.logits, dim=1).tolist()
         return [str(i) if i != 0 else "2" for i in predicted]
 
 

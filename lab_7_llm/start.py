@@ -25,7 +25,8 @@ def main() -> None:
     settings = LabSettings(Path(__file__).parent / 'settings.json')
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
-
+    if importer.raw_data is None:
+        return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     print(preprocessor.analyze())
