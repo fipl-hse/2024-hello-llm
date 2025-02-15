@@ -44,7 +44,6 @@ class RawDataImporter(AbstractRawDataImporter):
             raise TypeError("The downloaded dataset is not pd.DataFrame")
 
 
-
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
@@ -83,8 +82,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         )
 
         self._data.reset_index(inplace=True, drop=True)
-
-
 
 
 class TaskDataset(Dataset):
@@ -243,6 +240,9 @@ class LLMPipeline(AbstractLLMPipeline):
             truncation=True,
             return_tensors='pt'
         ).to(self._device)
+
+        if not self._model:
+            raise ValueError("There is no model")
 
         outputs = self._model(**inputs)
         predicted = torch.nn.functional.softmax(outputs.logits, dim=1)
