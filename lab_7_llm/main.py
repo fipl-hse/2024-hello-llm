@@ -14,7 +14,7 @@ from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import MarianMTModel, MarianTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -128,7 +128,6 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
-    _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -144,9 +143,9 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = MarianMTModel.from_pretrained(model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._model.to(self._device)
-        self._tokenizer = MarianTokenizer.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -218,9 +217,8 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         samples = [text for el in sample_batch for text in el]
-        inputs = self._tokenizer.prepare_seq2seq_batch(src_texts=samples,
-                                                       padding=True, truncation=True,
-                                                       return_tensors='pt')
+        inputs = self._tokenizer(src_texts=samples, padding=True, truncation=True,
+                                 return_tensors='pt')
         outputs = self._model.generate(**inputs)
         return list(self._tokenizer.batch_decode(outputs, skip_special_tokens=True))
 
