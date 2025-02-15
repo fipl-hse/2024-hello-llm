@@ -11,11 +11,11 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoTokenizer, GPTNeoXForCausalLM
-from evaluate import load
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -247,7 +247,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        super().__init__(metrics)
+        self._metrics = [load(metric.value) for metric in metrics]
         self._data_path = data_path
 
     @report_time
@@ -261,9 +261,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         data = pd.read_csv(self._data_path)
         calculated_metrics = {}
 
-        for metric_name in self._metrics:
-            metric = load(metric_name.value)
-            calculated_metrics[metric_name.value] = metric.compute(predictions=data[ColumnNames.PREDICTION.value],
-                                                                   references=data[ColumnNames.TARGET.value])
+        for metric in self._metrics:
+            calculated_metrics[metric.value] = metric.compute(predictions=data[ColumnNames.PREDICTION.value],
+                                                              references=data[ColumnNames.TARGET.value])
 
         return calculated_metrics

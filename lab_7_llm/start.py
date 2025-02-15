@@ -6,13 +6,15 @@ import json
 from pathlib import Path
 
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset, TaskEvaluator
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    TaskDataset,
+    TaskEvaluator,
+)
 
-BATCH_SIZE = 1
-MAX_LENGTH = 120
-DEVICE = 'cpu'
-PREDICTIONS_PATH = Path(__file__).parent / 'dist' / 'predictions.csv'
-PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
+from core_utils.llm.metrics import Metrics
 
 @report_time
 def main() -> None:
@@ -29,13 +31,21 @@ def main() -> None:
     dataset_analysis = preprocessor.analyze()
     preprocessor.transform()
 
+    BATCH_SIZE = 1
+    MAX_LENGTH = 120
+    DEVICE = 'cpu'
+
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings['parameters']['model'], dataset, MAX_LENGTH, BATCH_SIZE, DEVICE)
     model_analysis = pipeline.analyze_model()
     predictions = pipeline.infer_dataset()
+
+    PREDICTIONS_PATH = Path(__file__).parent / 'dist' / 'predictions.csv'
+    PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
     predictions.to_csv(PREDICTIONS_PATH, index=False)
 
-    evaluator = TaskEvaluator(PREDICTIONS_PATH, settings['parameters']['metrics'])
+    metrics = [Metrics(metric) for metric in settings['parameters']['metrics']]
+    evaluator = TaskEvaluator(PREDICTIONS_PATH, metrics)
     result = evaluator.run()
     assert result is not None, "Demo does not work correctly"
 
