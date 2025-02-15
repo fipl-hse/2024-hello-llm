@@ -27,26 +27,26 @@ def main() -> None:
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
 
-    preprocessor = RawDataPreprocessor(importer.raw_data)
-    dataset_analysis = preprocessor.analyze()
-    preprocessor.transform()
+    if importer.raw_data:
+        preprocessor = RawDataPreprocessor(importer.raw_data)
+        preprocessor.transform()
 
-    BATCH_SIZE = 1
-    MAX_LENGTH = 120
-    DEVICE = 'cpu'
+        batch_size = 1
+        max_length = 120
+        device = 'cpu'
 
-    dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(settings['parameters']['model'], dataset, MAX_LENGTH, BATCH_SIZE, DEVICE)
-    model_analysis = pipeline.analyze_model()
-    predictions = pipeline.infer_dataset()
+        dataset = TaskDataset(preprocessor.data.head(100))
+        pipeline = LLMPipeline(settings['parameters']['model'], dataset, max_length, batch_size, device)
+        predictions = pipeline.infer_dataset()
 
-    PREDICTIONS_PATH = Path(__file__).parent / 'dist' / 'predictions.csv'
-    PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    predictions.to_csv(PREDICTIONS_PATH, index=False)
+        predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
+        predictions_path.parent.mkdir(parents=True, exist_ok=True)
+        predictions.to_csv(predictions_path, index=False)
 
-    metrics = [Metrics(metric) for metric in settings['parameters']['metrics']]
-    evaluator = TaskEvaluator(PREDICTIONS_PATH, metrics)
-    result = evaluator.run()
+        metrics = [Metrics(metric) for metric in settings['parameters']['metrics']]
+        evaluator = TaskEvaluator(predictions_path, metrics)
+        result = evaluator.run()
+
     assert result is not None, "Demo does not work correctly"
 
 

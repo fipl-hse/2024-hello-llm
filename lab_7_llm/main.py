@@ -152,12 +152,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not self._model:
+            return {}
+
+        ids = torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long)
         model_summary = summary(
             self._model,
             input_data={
-                "input_ids": torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long),
-                "attention_mask": torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long)
-            },
+                "input_ids": ids,
+                "attention_mask": ids}
         )
         model_configurations = self._model.config
 
@@ -199,11 +202,13 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         dataset_loader = DataLoader(self._dataset, self._batch_size)
+        targets = self._dataset.data[ColumnNames.TARGET.value].values
         predictions = []
 
         for batch in dataset_loader:
             predictions.extend(self._infer_batch(batch[0]))
-        data_predictions = pd.DataFrame({ColumnNames.TARGET.value: self._dataset.data[ColumnNames.TARGET.value].values,
+
+        data_predictions = pd.DataFrame({ColumnNames.TARGET.value: targets,
                                          ColumnNames.PREDICTION.value: predictions})
 
         return data_predictions
@@ -247,7 +252,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        self._metrics = [load(metric.value) for metric in metrics]
+        self._metrics = [load(str(metric)) for metric in metrics]
         self._data_path = data_path
 
     @report_time
@@ -261,8 +266,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         data = pd.read_csv(self._data_path)
         calculated_metrics = {}
 
+        predictions = data[ColumnNames.PREDICTION.value]
+        references = data[ColumnNames.TARGET.value]
         for metric in self._metrics:
-            calculated_metrics[metric.value] = metric.compute(predictions=data[ColumnNames.PREDICTION.value],
-                                                              references=data[ColumnNames.TARGET.value])
+            calculated_metrics[str(metric)] = metric.compute(predictions=predictions,
+                                                              references=references)
 
         return calculated_metrics
