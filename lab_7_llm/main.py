@@ -70,17 +70,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.copy()
-        self._data.drop(["part", "movie_name", "review_id", "author", "date", "title", "grade10"],
-                        axis=1, inplace=True)
-        self._data.rename(columns={"grade3": ColumnNames.TARGET.value,
-                                   "content": ColumnNames.SOURCE.value},
-                          inplace=True)
-        self._data.dropna(inplace=True)
+        self._data = self._raw_data.drop(
+            ["part", "movie_name", "review_id", "author", "date", "title", "grade10"], axis=1)\
+            .rename(columns={"grade3": ColumnNames.TARGET.value,
+                             "content": ColumnNames.SOURCE.value}).dropna()
         self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(
             {"Good": 1, "Bad": 2, "Neutral": 0}
         )
-
         self._data.reset_index(inplace=True, drop=True)
 
 
