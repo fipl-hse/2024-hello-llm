@@ -216,8 +216,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        sample_batch_squeezed = [sample for tuples in sample_batch for sample in tuples]
         samples = [text for el in sample_batch for text in el]
-        inputs = self._tokenizer(src_texts=samples, padding=True, truncation=True,
+        inputs = self._tokenizer(samples, padding=True, truncation=True,
                                  return_tensors='pt')
         outputs = self._model.generate(**inputs)
         return list(self._tokenizer.batch_decode(outputs, skip_special_tokens=True))
