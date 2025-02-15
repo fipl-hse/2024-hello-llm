@@ -36,7 +36,11 @@ def main() -> None:
         device = 'cpu'
 
         dataset = TaskDataset(preprocessor.data.head(100))
-        pipeline = LLMPipeline(settings['parameters']['model'], dataset, max_length, batch_size, device)
+        pipeline = LLMPipeline(settings['parameters']['model'],
+                               dataset,
+                               max_length,
+                               batch_size,
+                               device)
         predictions = pipeline.infer_dataset()
 
         predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
