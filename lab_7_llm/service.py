@@ -27,11 +27,11 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     """
     settings = LabSettings(Path(__file__).parent / 'settings.json')
     dataset = TaskDataset(pd.DataFrame())
-    pipeline = LLMPipeline(settings.parameters.model,
-                           dataset, max_length=120, batch_size=1, device='cpu')
+    llm_pipeline = LLMPipeline(settings.parameters.model,
+                               dataset, max_length=120, batch_size=1, device='cpu')
     fastapi = FastAPI()
 
-    return fastapi, pipeline
+    return fastapi, llm_pipeline
 
 
 app, pipeline = init_application()
@@ -62,4 +62,3 @@ async def infer(query: Query) -> dict:
     """
     response_text = pipeline.infer_sample((query.question,))
     return {"infer": response_text}
-
