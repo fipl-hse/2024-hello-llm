@@ -3,10 +3,6 @@ Laboratory work.
 
 Working with Large Language Models.
 """
-from __future__ import annotations
-
-from copy import deepcopy
-
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -17,7 +13,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
-from transformers import BertForSequenceClassification, BertTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -157,8 +153,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = BertForSequenceClassification.from_pretrained(model_name).to(device)
-        self._tokenizer = BertTokenizer.from_pretrained(model_name)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -218,7 +214,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        pass
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -231,7 +226,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        pass
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -247,7 +241,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        pass
 
     @report_time
     def run(self) -> dict | None:
@@ -257,4 +250,3 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        pass
