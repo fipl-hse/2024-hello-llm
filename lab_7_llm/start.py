@@ -15,7 +15,8 @@ from lab_7_llm.main import (
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    TaskEvaluator)
+    TaskEvaluator,
+)
 
 
 @report_time
