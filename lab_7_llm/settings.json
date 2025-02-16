@@ -1,6 +1,6 @@
 {
   "parameters": {
-    "model": "",
+    "model": "UrukHan/t5-russian-summarization",
     "dataset": "d0rj/curation-corpus-ru",
     "metrics": []
   },
