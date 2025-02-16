@@ -266,14 +266,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        self._data_path = data_path
-
-        if isinstance(metrics, str):
-            self._metrics = [metrics]
-        elif isinstance(metrics, Iterable):
-            self._metrics = list(metrics)
-        else:
-            self._metrics = [metrics]
+        self.data_path = data_path
+        self.metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
