@@ -242,7 +242,7 @@ class LLMPipeline(AbstractLLMPipeline):
             return_tensors='pt'
         )
         tokens = {k: v.to(self._device) for k, v in tokens.items()}
-        output = self._model(**tokens)
+        output = self._model(**tokens).logits
         preds = torch.argmax(output.logits, dim=-1)
         return [str(pred.item()) for pred in preds]
 
