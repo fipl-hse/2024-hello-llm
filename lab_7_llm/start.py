@@ -33,14 +33,20 @@ def main() -> None:
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    key_properties = preprocessor.analyze()
+    preprocessor.analyze()
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=64, device='cpu')
-    model_properties = pipeline.analyze_model()
-    sample_inference = pipeline.infer_sample(dataset[0])
+    pipeline = LLMPipeline(
+        settings.parameters.model,
+        dataset,
+        max_length=120,
+        batch_size=64,
+        device='cpu'
+    )
+    pipeline.analyze_model()
+    pipeline.infer_sample(dataset[0])
 
     dataset_inference = pipeline.infer_dataset()
     dataset_inference.to_csv(predictions_path)

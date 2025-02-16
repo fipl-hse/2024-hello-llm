@@ -37,7 +37,11 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
         # dataset requires additional custom code to load properly
-        self._raw_data = load_dataset(self._hf_name, split='validation', trust_remote_code=True).to_pandas()
+        self._raw_data = load_dataset(
+            self._hf_name,
+            split='validation',
+            trust_remote_code=True
+        ).to_pandas()
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError('The downloaded dataset is not pd.DataFrame.')
@@ -71,7 +75,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = self._raw_data.copy()
-        self._data.drop(['Idx', 'review_id', 'source_url', 'category', 'title'], axis=1, inplace=True)
+        self._data.drop(
+            ['Idx', 'review_id', 'source_url', 'category', 'title'],
+            axis=1,
+            inplace=True
+        )
         self._data.rename(columns={
             'sentiment': ColumnNames.TARGET.value,
             'content': ColumnNames.SOURCE.value
@@ -156,10 +164,17 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         tensor = torch.zeros(1, self._model.config.max_position_embeddings, dtype=torch.long)
-        model_summary = summary(self._model, input_data={'input_ids': tensor, 'attention_mask': tensor}, device='cpu')
+        model_summary = summary(
+            self._model,
+            input_data={'input_ids': tensor, 'attention_mask': tensor},
+            device='cpu'
+        )
 
         properties = {
-            'input_shape': {'input_ids': list(tensor.size()), 'attention_mask': list(tensor.size())},
+            'input_shape': {
+                'input_ids': list(tensor.size()),
+                'attention_mask': list(tensor.size())
+            },
             'embedding_size': self._model.config.max_position_embeddings,
             'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
@@ -192,12 +207,12 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
-        df = pd.DataFrame(self._dataset.data)
+        dataframe = pd.DataFrame(self._dataset.data)
         predicted = []
         for batch in dataloader:
             predicted.extend(self._infer_batch(batch))
-        df[ColumnNames.PREDICTION.value] = predicted
-        return df
+        dataframe[ColumnNames.PREDICTION.value] = predicted
+        return dataframe
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
