@@ -196,15 +196,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        tokens = self._tokenizer(
-                sample,
-                max_length=self._max_length,
-                padding=True,
-                truncation=True,
-                return_tensors='pt'
-        )
-        output = self._model(**tokens)
-        return str(torch.argmax(output.logits).item())
+        predictions = self._infer_batch([sample])
+        return predictions[0] if predictions else None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
