@@ -59,8 +59,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         dataset_number_of_samples = self._raw_data.shape[0]
         dataset_columns = self._raw_data.shape[1]
         dataset_duplicates = len(self._raw_data[self._raw_data.duplicated()])
-        df = self._raw_data.replace('', pd.NA)
-        dataset_empty_rows = len(df[df.isna().any(axis=1)])
+        dataframe = self._raw_data.replace('', pd.NA)
+        dataset_empty_rows = len(dataframe[dataframe.isna().any(axis=1)])
         cleaned = self._raw_data.replace('', pd.NA).dropna().drop_duplicates()
         dataset_sample_min_len = int(cleaned['instruction'].str.len().min())
         dataset_sample_max_len = int(cleaned['instruction'].str.len().max())
@@ -76,11 +76,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        df = self._raw_data.copy()
-        df = df[df['category'] == 'open_qa']
-        df = df.drop(columns=['context', 'category', '__index_level_0__'])
-        df = df.rename(columns={"instruction": "question", "response": "target"})
-        self._data = df
+        dataframe = self._raw_data.copy()
+        dataframe = dataframe[dataframe['category'] == 'open_qa']
+        dataframe = dataframe.drop(columns=['context', 'category', '__index_level_0__'])
+        dataframe = dataframe.rename(columns={"instruction": "question", "response": "target"})
+        self._data = dataframe
 
 
 class TaskDataset(Dataset):
@@ -116,7 +116,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return self._data.iloc[index][ColumnNames.QUESTION.value], self._data.iloc[index][ColumnNames.TARGET.value]
+        return (self._data.iloc[index][ColumnNames.QUESTION.value],
+                self._data.iloc[index][ColumnNames.TARGET.value])
 
     @property
     def data(self) -> DataFrame:
@@ -153,7 +154,9 @@ class LLMPipeline(AbstractLLMPipeline):
                          batch_size=batch_size,
                          device=device)
         self._model = AutoModelForCausalLM.from_pretrained(model_name)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length, padding_side='left')
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                        model_max_length=max_length,
+                                                        padding_side='left')
         self._tokenizer.pad_token = self._tokenizer.eos_token
         self._model.to(self._device)
 
@@ -214,7 +217,8 @@ class LLMPipeline(AbstractLLMPipeline):
         for batch in dataloader:
             answers = self._infer_batch(batch)
             dataset_answers.extend(answers)
-        return pd.DataFrame({'predictions': dataset_answers, 'target' : self._dataset.data['target'].to_list()})
+        return pd.DataFrame({'predictions': dataset_answers,
+                             'target' : self._dataset.data['target'].to_list()})
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
