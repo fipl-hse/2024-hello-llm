@@ -23,7 +23,7 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(settings['parameters']['model'], dataset, 120, 64, 'cpu')
+    pipeline = LLMPipeline(settings.parameters.model, dataset, 120, 64, 'cpu')
 
     result = pipeline
     assert result is not None, "Demo does not work correctly"
