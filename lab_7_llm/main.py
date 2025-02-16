@@ -127,7 +127,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.iloc[index])
+        return tuple([str(self._data.loc[index, ColumnNames.SOURCE.value])])
 
     @property
     def data(self) -> DataFrame:
@@ -242,11 +242,12 @@ class LLMPipeline(AbstractLLMPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
-        output_ids = self._model.generate(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-            max_length=self._max_length,
-        )
+        with torch.no_grad():
+            output_ids = self._model.generate(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                max_length=self._max_length,
+            )
 
         return [
             prediction.strip()
@@ -283,13 +284,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
         targets = results_df[ColumnNames.TARGET.value]
         evaluation = {}
 
-        string_metrics = [format(metric) for metric in self._metrics]
-
-        for metr in string_metrics:
-            metric = load(metr, seed=77).compute(predictions=texts, references=targets)
-            if metr == Metrics.ROUGE.value:
-                evaluation[metr] = metric[Metrics.ROUGE.value + "L"]
+        for metric in self._metrics:
+            scores = load(metric.value, seed=77).compute(predictions=texts,
+                                                         references=targets)
+            if metric.value == "rouge":
+                evaluation[metric.value] = scores["rougeL"]
             else:
-                evaluation[metr] = metric[metr]
-
+                evaluation[metric.value] = scores[metric.value]
         return evaluation
