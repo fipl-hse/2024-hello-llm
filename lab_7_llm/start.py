@@ -4,6 +4,8 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
+import pandas as pd
+
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
@@ -31,6 +33,9 @@ def main() -> None:
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
+
+    if not isinstance(importer.raw_data, pd.DataFrame):
+        raise TypeError('The downloaded dataset is not pd.DataFrame.')
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.analyze()
