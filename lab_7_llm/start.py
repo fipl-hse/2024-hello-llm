@@ -8,10 +8,7 @@ from pathlib import Path
 from config.constants import PROJECT_ROOT
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import (LLMPipeline,
-                            RawDataImporter,
-                            RawDataPreprocessor,
-                            TaskDataset,
+from lab_7_llm.main import (LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset,
                             TaskEvaluator)
 
 
