@@ -233,6 +233,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if not self._model:
+            raise ValueError('Model is not defined')
+
         texts = [sample[0] for sample in sample_batch]
         tokens = self._tokenizer(
             texts,
@@ -243,7 +246,7 @@ class LLMPipeline(AbstractLLMPipeline):
         )
         tokens = {k: v.to(self._device) for k, v in tokens.items()}
         output = self._model(**tokens)
-        preds = torch.argmax(output.logits, dim=-1)
+        preds = torch.argmax(output.logits, dim=1)
         return [str(pred.item()) for pred in preds]
 
 class TaskEvaluator(AbstractTaskEvaluator):
