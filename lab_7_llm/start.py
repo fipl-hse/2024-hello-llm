@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from config.constants import PROJECT_ROOT
+from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
 from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset
 
@@ -16,16 +17,13 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    with open(PROJECT_ROOT/'lab_7_llm'/'settings.json', 'r', encoding='utf-8') as f:
-        settings = json.load(f)
+    settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings['parameters']['model'], dataset, 120, 64, 'cpu')
-    #print(preprocessor.analyze())
-    #print(pipeline.infer_sample(dataset[0]))
 
     result = pipeline
     assert result is not None, "Demo does not work correctly"

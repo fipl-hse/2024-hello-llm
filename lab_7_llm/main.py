@@ -10,7 +10,6 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
-from pandas import DataFrame
 from torch.utils.data import Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -58,8 +57,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_columns': self._raw_data.shape[1],
             'dataset_duplicates': self._raw_data.duplicated().sum(),
             'dataset_empty_rows': self._raw_data.isna().sum().sum(),
-            'dataset_sample_min_len': min(len(text) for text in self._raw_data['info']),
-            'dataset_sample_max_len': max(len(text) for text in self._raw_data['info'])
+            'dataset_sample_min_len': self._raw_data['info'].min(),
+            'dataset_sample_max_len': self._raw_data['info'].max()
         }
 
     @report_time
@@ -107,7 +106,7 @@ class TaskDataset(Dataset):
         return (self._data.source.iloc[index],)
 
     @property
-    def data(self) -> DataFrame:
+    def data(self) -> pd.DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
@@ -167,7 +166,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        encoded_batch = self._tokenizer.prepare_seq2seq_batch(
+        encoded_batch = self._tokenizer(
             [sample][0],
             return_tensors="pt",
             padding=True,
@@ -195,6 +194,7 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
 
+
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
         """
@@ -206,6 +206,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
