@@ -29,14 +29,15 @@ def main() -> None:
     dataset = TaskDataset(preprocessor.data.head(100))
     print(dataset[0])
 
-    pipeline = LLMPipeline(settings['parameters']['model'], dataset, 120, 1, 'cpu')
+    pipeline = LLMPipeline(settings['parameters']['model'], dataset, 120, 64, 'cpu')
     print(pipeline.analyze_model())
 
     print(pipeline.infer_sample(dataset[0]))
 
     predictions = pipeline.infer_dataset()
 
-    predictions_path = PROJECT_ROOT / 'lab_7_llm'/ 'predictions.csv'
+    Path(PROJECT_ROOT / 'lab_7_llm'/ 'dist').mkdir(exist_ok=True)
+    predictions_path = PROJECT_ROOT / 'lab_7_llm'/ 'dist' / 'predictions.csv'
     predictions.to_csv(predictions_path)
 
     metrics_list = []

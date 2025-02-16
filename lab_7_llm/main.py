@@ -153,8 +153,8 @@ class LLMPipeline(AbstractLLMPipeline):
                          batch_size=batch_size,
                          device=device)
         self._model = AutoModelForCausalLM.from_pretrained(model_name)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=max_length, padding_side='left')
+        self._tokenizer.pad_token = self._tokenizer.eos_token
         self._model.to(self._device)
 
     def analyze_model(self) -> dict:
@@ -227,7 +227,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        inputs = self._tokenizer(sample_batch[0][0],
+        inputs = self._tokenizer(sample_batch[0],
                                  return_tensors="pt",
                                  padding=True,
                                  truncation=True,
@@ -264,8 +264,14 @@ class TaskEvaluator(AbstractTaskEvaluator):
         data = pd.read_csv(self._data_path)
         calculated_metrics = {}
         for metric in self._metrics:
-            metric_eval = load(metric.value)
-            info = metric_eval.compute(predictions = data['predictions'].to_list(),
-                                         references = data['target'].to_list())
-            calculated_metrics[str(metric)] = info
+            if metric.value == 'bleu':
+                metric_eval = load(metric.value)
+                info = metric_eval.compute(predictions = data['predictions'].to_list(),
+                                             references = data['target'].to_list())
+                calculated_metrics.update({'bleu': info['bleu']})
+            elif metric.value == 'rouge':
+                metric_eval = load(metric.value)
+                info = metric_eval.compute(predictions = data['predictions'].to_list(),
+                                             references = data['target'].to_list())
+                calculated_metrics.update({'rouge': info['rougeL']})
         return calculated_metrics
