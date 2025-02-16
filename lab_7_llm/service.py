@@ -3,6 +3,7 @@ Web service for model inference.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from pathlib import Path
+
 import pandas as pd
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -18,6 +19,9 @@ PARENT_DIRECTORY = Path(__file__).parent
 
 @dataclass
 class Query:
+    """
+    Represents a user query.
+    """
     question: str
 
 
