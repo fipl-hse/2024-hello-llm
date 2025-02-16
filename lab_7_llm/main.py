@@ -160,6 +160,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("model is not properly initialized")
+
         config = self._model.config
         dummy_inputs = torch.ones((1,
                                   config.max_position_embeddings),
