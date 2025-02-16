@@ -69,7 +69,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = (
             self._raw_data.copy()
-            .drop(columns=['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate'], errors='ignore')
+            .drop(columns=['id',
+                           'severe_toxic',
+                           'obscene',
+                           'threat',
+                           'insult',
+                           'identity_hate'], errors='ignore')
             .rename(columns={
                 'toxic': ColumnNames.TARGET.value,
                 'comment_text': ColumnNames.SOURCE.value
