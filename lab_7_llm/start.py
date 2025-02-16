@@ -1,6 +1,7 @@
 """
 Starter for demonstration of laboratory work.
 """
+# pylint: disable= too-many-locals, undefined-variable, unused-import
 import random
 from pathlib import Path
 
@@ -14,20 +15,18 @@ from lab_7_llm.main import (
     TaskEvaluator,
 )
 
-# pylint: disable= too-many-locals, undefined-variable, unused-import
-
-
-MAX_LENGTH = 120
-BATCH_SIZE = 64
-DEVICE = 'cpu'
-SETTINGS_PATH = Path(__file__).parent / 'settings.json'
-PREDICTIONS_PATH = Path(__file__).parent / 'dist' / 'predictions.csv'
 
 @report_time
 def main() -> None:
     """
     Run the translation pipeline.
     """
+    MAX_LENGTH = 120
+    BATCH_SIZE = 64
+    DEVICE = 'cpu'
+    SETTINGS_PATH = Path(__file__).parent / 'settings.json'
+    PREDICTIONS_PATH = Path(__file__).parent / 'dist' / 'predictions.csv'
+
     settings = LabSettings(SETTINGS_PATH)
 
     data_importer = RawDataImporter(settings.parameters.dataset)

@@ -181,7 +181,6 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
@@ -220,25 +219,17 @@ class LLMPipeline(AbstractLLMPipeline):
             input_data={'input_ids': ids, 'attention_mask': ids}
         )
 
-        input_shape = {
-            input_type: list(shape) for input_type, shape
-            in model_summary.input_size.items()
-        }
-        embedding_size = model_config.max_position_embeddings
-        output_shape = model_summary.summary_list[-1].output_size
-        num_trainable_params = model_summary.trainable_params
-        vocab_size = model_config.vocab_size
-        size = model_summary.total_param_bytes
-        max_context_length = model_config.max_length
-
         return {
-            'input_shape': input_shape,
-            'embedding_size': embedding_size,
-            'output_shape': output_shape,
-            'num_trainable_params': num_trainable_params,
-            'vocab_size': vocab_size,
-            'size': size,
-            'max_context_length': max_context_length
+            'input_shape': {
+                input_type: list(shape) for input_type, shape
+                in model_summary.input_size.items()
+            },
+            'embedding_size': model_config.max_position_embeddings,
+            'output_shape': model_summary.summary_list[-1].output_size,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': model_config.vocab_size,
+            'size': model_summary.total_param_bytes,
+            'max_context_length': model_config.max_length
         }
 
     @report_time
@@ -336,7 +327,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         metrics_dict = {}
         for metric in self._metrics:
-            metric_computer = load(str(metric))
+            metric_computer = load(str(metric)) # надо посмотреть, как load обрабатывает список
 
             score = metric_computer.compute(
                 references=predictions_df[str(ColumnNames.TARGET)],
