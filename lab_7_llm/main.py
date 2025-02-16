@@ -269,26 +269,31 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         self.data_path = data_path
-        self._metrics = metrics
+        self._metrics = {
+            (metric if isinstance(metric, Metrics) else Metrics(metric)).value: load(
+                metric if isinstance(metric, Metrics) else Metrics(metric).value)
+            for metric in metrics
+        }
 
     @report_time
     def run(self) -> dict | None:
         """
-        Evaluate the predictions against the references using the specified metric.
+        Evaluate the predictions against the references using the specified metrics.
 
         Returns:
-            dict | None: A dictionary containing information about the calculated metric
+            dict | None: A dictionary containing the computed metric values.
         """
-        results_df = pd.read_csv(self.data_path)
-        texts = results_df[ColumnNames.PREDICTION.value]
-        targets = results_df[ColumnNames.TARGET.value]
+        outputs_df = pd.read_csv(self.data_path)
+        summaries = outputs_df[ColumnNames.PREDICTION.value]
+        targets = outputs_df[ColumnNames.TARGET.value]
         evaluation = {}
 
-        for metric in self._metrics:
-            scores = load(metric.value, seed=77).compute(predictions=texts,
-                                                         references=targets)
-            if metric.value == "rouge":
-                evaluation[metric.value] = scores["rougeL"]
+        for metric_name, metric_obj in self._metrics.items():
+            metric_result = metric_obj.compute(predictions=summaries, references=targets)
+
+            if metric_name == Metrics.ROUGE.value:
+                evaluation[metric_name] = metric_result['rougeL']
             else:
-                evaluation[metric.value] = scores[metric.value]
+                evaluation[metric_name] = metric_result.get(metric_name, metric_result)
+
         return evaluation
