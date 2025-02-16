@@ -89,7 +89,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
 
         self._data = (
             self._raw_data.drop(columns=["title", "date", "url"])
-                .rename(columns={"text": ColumnNames.SOURCE.value, "summary": ColumnNames.TARGET.value})
+                .rename(columns={"text": ColumnNames.SOURCE.value,
+                                 "summary": ColumnNames.TARGET.value})
                 .reset_index(drop=True)
         )
 
@@ -146,7 +147,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
