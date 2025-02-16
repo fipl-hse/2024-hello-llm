@@ -30,8 +30,8 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     dataset_analysis = preprocessor.analyze()
     print("Dataset analysis:")
-    for k, v in dataset_analysis.items():
-        print(k, v, sep=': ')
+    for field, value in dataset_analysis.items():
+        print(field, value, sep=': ')
 
     # mark6
     preprocessor.transform()
@@ -47,8 +47,8 @@ def main() -> None:
     print(f"Length of the summary of a sample with length {length}: {len(summary)}")
     model_analysis = pipeline.analyze_model()
     print("Model analysis:")
-    for k, v in model_analysis.items():
-        print(k, v, sep=': ')
+    for field, value in model_analysis.items():
+        print(field, value, sep=': ')
 
     # mark8
     pipeline = LLMPipeline(settings.parameters.model,
@@ -63,11 +63,12 @@ def main() -> None:
     predictions_dataframe.to_csv(predictions_path)
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
-    evaluation_result = evaluator.run()
+    result = evaluator.run()
     print("Evaluation results:")
-    for k, v in evaluation_result.items():
-        print(k, v, sep=': ')
+    for metric, value in result.items():
+        print(metric, value, sep=': ')
 
+    assert result is not None, "Demo does not work correctly"
 
 if __name__ == "__main__":
     main()
