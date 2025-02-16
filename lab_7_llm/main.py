@@ -163,6 +163,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a torch.nn.Module instance.')
+
         tensor = torch.zeros(1, self._model.config.max_position_embeddings, dtype=torch.long)
         model_summary = summary(
             self._model,
@@ -225,6 +228,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a torch.nn.Module instance.')
+
         inputs = self._tokenizer(
             [j for i in sample_batch for j in i],
             max_length=self._max_length,
@@ -234,8 +240,8 @@ class LLMPipeline(AbstractLLMPipeline):
         )
         outputs = self._model(**inputs)
         predicted = torch.nn.functional.softmax(outputs.logits, dim=1)
-        predicted = torch.argmax(predicted, dim=1).numpy()
-        return [str(i) if i != 0 else '2' for i in predicted]
+        predicted = torch.argmax(predicted, dim=1)
+        return [str(i.item()) if i.item() != 0 else '2' for i in predicted]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -262,13 +268,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self._data_path)
+        dataframe = pd.read_csv(self._data_path)
         metrics_scores = {}
         for metric in self._metrics:
             evaluator = evaluate.load(metric.value)
             score = evaluator.compute(
-                references=df[ColumnNames.TARGET.value],
-                predictions=df[ColumnNames.PREDICTION.value]
+                references=dataframe[ColumnNames.TARGET.value],
+                predictions=dataframe[ColumnNames.PREDICTION.value]
             )
             metrics_scores[metric.value] = score[metric.value]
         return metrics_scores
