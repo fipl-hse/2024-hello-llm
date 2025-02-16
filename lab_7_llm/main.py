@@ -57,8 +57,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_columns': self._raw_data.shape[1],
             'dataset_duplicates': self._raw_data.duplicated().sum(),
             'dataset_empty_rows': self._raw_data.isna().sum().sum(),
-            'dataset_sample_min_len': self._raw_data['info'].min(),
-            'dataset_sample_max_len': self._raw_data['info'].max()
+            'dataset_sample_min_len': self._raw_data['info'].str.len().min(),
+            'dataset_sample_max_len': self._raw_data['info'].str.len().max(),
         }
 
     @report_time
