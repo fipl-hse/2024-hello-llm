@@ -20,37 +20,53 @@ def main() -> None:
     Run the translation pipeline.
     """
     settings = LabSettings(PROJECT_ROOT / "lab_7_llm" / "settings.json")
+
+    # mark4
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
     if importer.raw_data is None:
         return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
+    dataset_analysis = preprocessor.analyze()
+    print("Dataset analysis:")
+    for k, v in dataset_analysis.items():
+        print(k, v, sep=': ')
 
-    analysis = preprocessor.analyze()
-    print(analysis)
-
+    # mark6
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings.parameters.model,
+                           dataset,
+                           max_length=120,
+                           batch_size=1,
+                           device="cpu")
+    length = 1024
+    long_text_sample = "a" * length
+    summary = pipeline.infer_sample(long_text_sample)
+    print(f"Length of the summary of a sample with length {length}: {len(summary)}")
+    model_analysis = pipeline.analyze_model()
+    print("Model analysis:")
+    for k, v in model_analysis.items():
+        print(k, v, sep=': ')
 
+    # mark8
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length=120,
                            batch_size=64,
                            device="cpu")
 
-    pipeline.analyze_model()
-    data_frame = pipeline.infer_dataset()
-
+    predictions_dataframe = pipeline.infer_dataset()
     predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
-    data_frame.to_csv(predictions_path)
+    predictions_dataframe.to_csv(predictions_path)
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
-    result = evaluator.run()
-    print(result)
-
-    assert result is not None, "Demo does not work correctly"
+    evaluation_result = evaluator.run()
+    print("Evaluation results:")
+    for k, v in evaluation_result.items():
+        print(k, v, sep=': ')
 
 
 if __name__ == "__main__":

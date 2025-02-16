@@ -57,7 +57,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
 
         dataset_info = {
             "dataset_number_of_samples": len(self._raw_data),
-            "dataset_columns": self._raw_data.shape[1],
+            "dataset_columns": len(self._raw_data.columns),
             "dataset_duplicates": self._raw_data.duplicated().sum(),
             "dataset_empty_rows": len(self._raw_data) - len(no_na_data),
             "dataset_sample_min_len": self._raw_data["info"].map(len).min(),
@@ -145,7 +145,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model.to(self._device)
+        self._model.to(self._device).eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                         model_max_length=max_length)
 
@@ -163,7 +163,7 @@ class LLMPipeline(AbstractLLMPipeline):
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
         return {
-            "input_shape": list(input_ids.size()),
+            "input_shape": list(model_summary.input_size["input_ids"]),
             "embedding_size": self._model.config.d_model,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
@@ -269,7 +269,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric in self._metrics:
             scores = load(metric.value, seed=77).compute(predictions=predictions,
                                                          references=references)
-            if metric.value == "rouge":
+
+            if metric.value == Metrics.ROUGE.value:
                 evaluation_res[metric.value] = scores["rougeL"]
             else:
                 evaluation_res[metric.value] = scores[metric.value]
