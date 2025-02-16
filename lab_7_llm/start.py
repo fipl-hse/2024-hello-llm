@@ -5,7 +5,7 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, TaskDataset
 from config.lab_settings import LabSettings
 from config.constants import PROJECT_ROOT
 
@@ -21,6 +21,10 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     print(preprocessor.analyze())
+
+    preprocessor.transform()
+
+    dataset = TaskDataset(preprocessor.data.head(100))
 
     result = True
     assert result is not None, "Demo does not work correctly"
