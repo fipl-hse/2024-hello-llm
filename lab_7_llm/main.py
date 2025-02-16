@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -133,7 +133,6 @@ class TaskDataset(Dataset):
         return self._data
 
 
-
 class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
@@ -214,6 +213,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(self._dataset, batch_size=self._batch_size, shuffle=False)
+        all_predictions = []
+        all_targets = []
+        for batch in dataloader:
+            texts, targets = batch
+            batch_samples = list(zip(texts, targets))
+            batch_predictions = self._infer_batch(batch_samples)
+            all_predictions.extend(batch_predictions)
+            all_targets.extend(targets)
+        result_df = pd.DataFrame({
+            ColumnNames.TARGET.value: all_targets,
+            "predictions": all_predictions
+        })
+        return result_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -226,7 +239,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-
+        texts = [sample[0] for sample in sample_batch]
+        tokens = self._tokenizer(
+            texts,
+            max_length=self._max_length,
+            padding=True,
+            truncation=True,
+            return_tensors='pt'
+        )
+        tokens = {k: v.to(self._device) for k, v in tokens.items()}
+        output = self._model(**tokens)
+        preds = torch.argmax(output.logits, dim=-1)
+        return [str(pred.item()) for pred in preds]
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
@@ -241,6 +265,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self.metrics = metrics
 
     @report_time
     def run(self) -> dict | None:

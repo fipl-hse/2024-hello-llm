@@ -12,6 +12,7 @@ from lab_7_llm.main import (
     RawDataPreprocessor,
     report_time,
     TaskDataset,
+    TaskEvaluator,
 )
 
 SETTINGS_PATH = PROJECT_ROOT / 'lab_7_llm/settings.json'
@@ -38,6 +39,18 @@ def main() -> None:
 
     print(pipeline.analyze_model())
     result = preprocessor.analyze()
+
+    predictions_path = PROJECT_ROOT / 'lab_7_llm/dist/predictions.csv'
+    predictions_path.parent.mkdir(exist_ok=True)
+    sample_inference_result = pipeline.infer_sample(dataset[0])
+    print('Sample inference result:', sample_inference_result, sep='\n')
+
+    pipeline.infer_dataset().to_csv(predictions_path, index=False)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
+    print('Resulting quality:', result, sep='\n')
+
     assert result is not None, "Demo does not work correctly"
 
 
