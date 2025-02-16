@@ -168,10 +168,7 @@ class LLMPipeline(AbstractLLMPipeline):
         input_data = {'input_ids': dummy_inputs,
                       'attention_mask': dummy_inputs}
 
-        if not isinstance(self._model, torch.nn.Module):
-            raise ValueError("model is not properly initialized")
-
-        model_summary = summary(self._model, input_data=input_data, verbose=0)
+        model_summary = summary(self._model, input_data=input_data)
 
         return {
             'input_shape': {k: list(v.shape) for k, v in input_data.items()},
