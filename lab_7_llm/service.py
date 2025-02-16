@@ -35,7 +35,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
         model_name=settings.parameters.model,
         dataset=dataset,
         max_length=120,
-        batch_size=64,
+        batch_size=1,
         device="cpu"
     )
 

@@ -67,18 +67,15 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        transformed_data = self._raw_data.copy()
-
-        drop_cols = ['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-        transformed_data.drop(columns=drop_cols, errors='ignore', inplace=True)
-
-        transformed_data.rename(columns={
-            'toxic': ColumnNames.TARGET.value,
-            'comment_text': ColumnNames.SOURCE.value
-        }, inplace=True)
-
-        transformed_data.reset_index(drop=True, inplace=True)
-        self._data = transformed_data
+        self._data = (
+            self._raw_data.copy()
+            .drop(columns=['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate'], errors='ignore')
+            .rename(columns={
+                'toxic': ColumnNames.TARGET.value,
+                'comment_text': ColumnNames.SOURCE.value
+            })
+            .reset_index(drop=True)
+        )
 
 
 class TaskDataset(Dataset):
@@ -224,16 +221,17 @@ class LLMPipeline(AbstractLLMPipeline):
         if self._model is None:
             raise ValueError("model has not been initialized")
 
-        inputs = {k: v.to(self._device) for k, v in self._tokenizer(
+        inputs = self._tokenizer(
             list(sample_batch[0]),
             return_tensors="pt",
             truncation=True,
             padding="max_length",
             max_length=self._max_length
-        ).items()}
+        )
+        inputs.to(self._device)
 
         preds = torch.argmax(self._model(**inputs).logits, dim=1)
-        return list(map(lambda p: str(p.item()), preds))
+        return [str(pred.item()) for pred in preds]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -250,7 +248,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         self._data_path = data_path
-        self._metrics = metrics
+        self._metrics = [load(metric.value) for metric in metrics]
 
     @report_time
     def run(self) -> dict | None:
@@ -267,11 +265,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         results = {}
         for metric_item in self._metrics:
-            metric = load(metric_item.value)
-            scores = metric.compute(predictions=predictions,
-                                    references=targets,
-                                    average="micro")
+            scores = metric_item.compute(predictions=predictions,
+                                         references=targets,
+                                         average="micro")
 
-            results[metric_item.value] = scores.get(metric_item.value)
+            key = metric_item.__class__.__name__.lower()
+            results[key] = scores.get(key)
 
         return results
