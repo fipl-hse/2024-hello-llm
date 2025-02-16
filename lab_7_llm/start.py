@@ -18,7 +18,7 @@ def main() -> None:
     Run the translation pipeline.
     """
     settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
-    importer = RawDataImporter(settings['parameters']['dataset'])
+    importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
