@@ -89,8 +89,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
 
         self._data = (
             self._raw_data.drop(columns=["title", "date", "url"])
-            .rename(columns={"text": ColumnNames.SOURCE.value, "summary": ColumnNames.TARGET.value})
-            .reset_index(drop=True)
+                .rename(columns={"text": ColumnNames.SOURCE.value, "summary": ColumnNames.TARGET.value})
+                .reset_index(drop=True)
         )
 
 
@@ -146,7 +146,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -269,11 +269,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         self.data_path = data_path
-        self._metrics = {
-            (metric if isinstance(metric, Metrics) else Metrics(metric)).value: load(
-                metric if isinstance(metric, Metrics) else Metrics(metric).value)
-            for metric in metrics
-        }
+        self._metrics = [load(str(item)) for item in metrics]
 
     @report_time
     def run(self) -> dict | None:
@@ -288,12 +284,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         targets = outputs_df[ColumnNames.TARGET.value]
         evaluation = {}
 
-        for metric_name, metric_obj in self._metrics.items():
-            metric_result = metric_obj.compute(predictions=summaries, references=targets)
+        for metr in self._metrics:
+            metric_result = metr.compute(predictions=summaries, references=targets)
+            metric_name = metr.name
 
-            if metric_name == Metrics.ROUGE.value:
-                evaluation[metric_name] = metric_result['rougeL']
+            if metric_name == "rouge":
+                evaluation[metric_name] = metric_result.get("rougeL", None)
             else:
-                evaluation[metric_name] = metric_result.get(metric_name, metric_result)
+                evaluation[metric_name] = metric_result.get("bleu", None)
 
         return evaluation
