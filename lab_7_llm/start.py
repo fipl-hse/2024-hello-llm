@@ -4,6 +4,7 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 import json
 from pathlib import Path
+from random import randint
 
 from config.constants import PROJECT_ROOT
 from core_utils.llm.metrics import Metrics
@@ -36,7 +37,7 @@ def main() -> None:
     pipeline = LLMPipeline(settings['parameters']['model'], dataset, 120, 64, 'cpu')
     print(pipeline.analyze_model())
 
-    print(pipeline.infer_sample(dataset[0]))
+    print(pipeline.infer_sample(dataset[randint(0, len(dataset)-1)]))
 
     predictions = pipeline.infer_dataset()
 
