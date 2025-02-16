@@ -1,8 +1,8 @@
 {
   "parameters": {
     "model": "",
-    "dataset": "",
+    "dataset": "d0rj/curation-corpus-ru",
     "metrics": []
   },
-  "target_score": 0
+  "target_score": 4
 }
