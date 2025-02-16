@@ -2,7 +2,7 @@
   "parameters": {
     "model": "JackFram/llama-68m",
     "dataset": "jtatman/databricks-dolly-8k-qa-open-close",
-    "metrics": []
+    "metrics": ["bleu", "rouge"]
   },
-  "target_score": 6
+  "target_score": 8
 }

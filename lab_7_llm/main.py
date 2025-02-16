@@ -12,8 +12,9 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -115,7 +116,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.iloc[index][ColumnNames.QUESTION.value])
+        return self._data.iloc[index][ColumnNames.QUESTION.value], self._data.iloc[index][ColumnNames.TARGET.value]
 
     @property
     def data(self) -> DataFrame:
@@ -208,6 +209,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataset_answers = []
+        dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        for batch in dataloader:
+            answers = self._infer_batch(batch)
+            dataset_answers.extend(answers)
+        return pd.DataFrame({'predictions': dataset_answers, 'target' : self._dataset.data['target'].to_list()})
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -220,11 +227,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        input_batch = []
-        for sample in sample_batch:
-            for string in sample:
-                input_batch.append(string)
-        inputs = self._tokenizer(input_batch,
+        inputs = self._tokenizer(sample_batch[0][0],
                                  return_tensors="pt",
                                  padding=True,
                                  truncation=True,
@@ -247,6 +250,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self._metrics = metrics
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -256,3 +261,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data = pd.read_csv(self._data_path)
+        calculated_metrics = {}
+        for metric in self._metrics:
+            metric_eval = load(metric.value)
+            info = metric_eval.compute(predictions = data['predictions'].to_list(),
+                                         references = data['target'].to_list())
+            calculated_metrics[str(metric)] = info
+        return calculated_metrics
