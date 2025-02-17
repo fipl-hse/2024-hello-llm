@@ -7,6 +7,7 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 from datasets import load_dataset
+import string
 
 import pandas as pd
 import numpy as np
@@ -17,6 +18,7 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
+import re
 from torchinfo import summary
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 import torch
@@ -36,9 +38,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = pd.DataFrame(
-            load_dataset(self._hf_name, split="validation", trust_remote_code=True)
-        )
+        self._raw_data = load_dataset(self._hf_name, split="validation", trust_remote_code=True).to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -151,8 +151,10 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForTokenClassification.from_pretrained(self._model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        self._model = AutoModelForTokenClassification.from_pretrained(self._model_name).to(device)
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            self._model_name,
+        )
 
     def analyze_model(self) -> dict:
         """
@@ -162,19 +164,25 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         model_config = self._model.config
+        input_ids = torch.ones((1, model_config.max_position_embeddings),
+                               dtype=torch.long, device=self._device)
 
-        input_size = [self._batch_size, self._max_length]
-        output_size = [self._batch_size, self._max_length, model_config.dim]
-        info = summary(self._model, input_size=input_size, verbose=0)
+        input_data = {"input_ids": input_ids, "attention_mask": input_ids}
+
+        info = summary(model=self._model, input_data=input_data, verbose=0)
+        input_size = list(info.input_size["input_ids"])
 
         return {
-            "input_shape": info.input_size,
+            "embedding_size": model_config.max_position_embeddings,
+            "input_shape": {
+                'attention_mask': input_size,
+                'input_ids': input_size
+            },
+            "max_context_length": model_config.max_length,
             "num_trainable_params": info.trainable_params,
+            "output_shape": info.summary_list[-1].output_size,
             "size": info.total_param_bytes,
             "vocab_size": model_config.vocab_size,
-            "max_context_length": self._max_length,
-            "output_shape": output_size,
-            "embedding_size": model_config.dim,
         }
 
     @report_time
@@ -189,24 +197,28 @@ class LLMPipeline(AbstractLLMPipeline):
             str | None: A prediction
         """
         if self._model:
-            input_data = self.tokenizer(
+            input_data = self._tokenizer(
                 sample,
-                truncation=True,
-                add_special_tokens=True,
-                is_split_into_words=True,
                 return_tensors="pt",
+                is_split_into_words=True
             )
+
+            tokens_words_mapping = input_data.word_ids()
+            label_ids = []
+            prev_token = None
+            for word_id in tokens_words_mapping:
+                if word_id is not None and word_id != prev_token:
+                    prev_token = word_id
+                    label_ids.append(tokens_words_mapping.index(word_id))
 
             with torch.no_grad():
                 logits = self._model(**input_data).logits
 
             pred = torch.argmax(logits, dim=2)
-            # predicted_ token_class = [self._model.config.id2label[t.item()] for t in pred[0]]
+            labels = [int(t) for t in pred[0]]
 
-            # pred_labels = pred[0][1:-1]
-
-            return [int(t) for t in pred[0]]
-
+            final_labels = [int(labels[label_id]) for label_id in label_ids]
+            return str(final_labels)
         return
 
     @report_time

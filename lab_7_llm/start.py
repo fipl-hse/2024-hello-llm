@@ -11,6 +11,7 @@ from lab_7_llm.main import (
     LLMPipeline,
     TaskDataset,
 )
+from transformers import AutoModelForTokenClassification, AutoTokenizer
 
 
 @report_time
@@ -22,8 +23,6 @@ def main() -> None:
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
-
-    # data = AbstractRawDataPreprocessor(importer.raw_data)
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
@@ -37,8 +36,8 @@ def main() -> None:
     pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
     pipeline.analyze_model()
 
-    print(pipeline.infer_sample(dataset[0][1]))
-    # assert result is not None, "Demo does not work correctly"
+    result = pipeline.infer_sample(tuple(dataset[0][1]))
+    assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":
