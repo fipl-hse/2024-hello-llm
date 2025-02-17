@@ -1,8 +1,6 @@
 """
 Starter for demonstration of laboratory work.
 """
-import json
-
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
 
@@ -31,7 +29,6 @@ def main() -> None:
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model, dataset, 120, 64, 'cpu')
-    sample = pipeline.infer_sample(dataset[1])
     infer_dataframe = pipeline.infer_dataset()
 
     path_to_outputs = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
