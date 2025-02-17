@@ -156,7 +156,12 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self,
+            model_name: str,
+            dataset: TaskDataset,
+            max_length: int,
+            batch_size: int,
+            device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -211,7 +216,9 @@ class LLMPipeline(AbstractLLMPipeline):
             truncation=True,
             max_length=self.max_length
         ).to(self.device)
-        print(f"Tokenized input: {self._tokenizer.convert_ids_to_tokens(inputs['input_ids'][0].tolist())}")
+        print(
+            f"Tokenized input: {self._tokenizer.convert_ids_to_tokens(inputs['input_ids'][0].tolist())}"
+        )
 
         with torch.no_grad():
             output = self._model.generate(**inputs, max_length=self.max_length)
