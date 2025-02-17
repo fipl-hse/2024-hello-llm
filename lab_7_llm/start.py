@@ -24,6 +24,12 @@ def main() -> None:
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model, dataset, 120, 64, 'cpu')
+    sample = pipeline.infer_sample(dataset[1])
+    infer_dataframe = pipeline.infer_dataset()
+
+    path_to_outputs = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    path_to_outputs.parent.mkdir(exist_ok=True)
+    infer_dataframe.to_csv(path_to_outputs, index=False)
 
     result = pipeline
     assert result is not None, "Demo does not work correctly"
