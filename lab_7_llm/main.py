@@ -196,7 +196,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        batch = list(sample)
+        batch = [sample]
         prediction = self._infer_batch(batch)[0]
         if prediction and isinstance(prediction, str):
             return prediction

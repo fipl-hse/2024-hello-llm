@@ -43,8 +43,8 @@ def main() -> None:
                            max_length,
                            batch_size,
                            device)
-    sample = dataset[0]
-    _sample_prediction = pipeline.infer_sample(sample)
+
+    _sample_prediction = pipeline.infer_sample(dataset[0])
     predictions = pipeline.infer_dataset()
 
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
