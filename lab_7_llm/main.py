@@ -75,7 +75,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         cleaned_dataset = self._data.dropna()
         return {
-            "dataset_number_of_samples": len(self._data),
+            "dataset_number_of_samples": len(self._data) if self._data is not None else 0,
             "dataset_columns": len(self._data.columns) if self._data is not None else 0,
             "dataset_duplicates": self._data.duplicated().sum(),
             "dataset_empty_rows": self._data.isnull().sum().sum(),
@@ -284,7 +284,7 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self.max_length
         ).to(self.device)
         outputs = self._model.generate(**inputs, max_length=self.max_length)
-        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        return list(self._tokenizer.batch_decode(outputs, skip_special_tokens=True))
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
