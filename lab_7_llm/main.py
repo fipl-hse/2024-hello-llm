@@ -260,6 +260,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
+        self._metrics_dict = {}
+        for metric in self._metrics:
+            self._metrics_dict[metric.value] = evaluate.load(str(metric))
 
     @report_time
     def run(self) -> dict | None:
@@ -270,11 +273,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         pred_df = pd.read_csv(self._data_path)
-        metrics_dict = {}
-        for metric in self._metrics:
-            metric_evaluator = evaluate.load(str(metric))
+        metric_counts = {}
+        for metric_name, metric_evaluator in self._metrics_dict.items():
             res = metric_evaluator.compute(references=pred_df[ColumnNames.TARGET.value],
                                            predictions=pred_df[ColumnNames.PREDICTION.value],
                                            average='micro')
-            metrics_dict[metric.value] = res[metric.value]
-        return metrics_dict
+            metric_counts[metric_name] = res[metric_name]
+        return metric_counts
