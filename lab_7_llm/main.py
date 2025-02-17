@@ -135,7 +135,9 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str) -> None:
+    def __init__(
+        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+    ) -> None:
         """
         Initialize an instance of LLMPipeline.
 
