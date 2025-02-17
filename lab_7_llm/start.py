@@ -37,8 +37,10 @@ def main() -> None:
                            device="cpu")
 
     pipeline.analyze_model()
-    data_frame = pipeline.infer_dataset()
+    sample_inference = pipeline.infer_sample(dataset[0])
+    print(sample_inference)
 
+    data_frame = pipeline.infer_dataset()
     predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
     data_frame.to_csv(predictions_path)
