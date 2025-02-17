@@ -234,8 +234,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-
-        input_ids = self._tokenizer.batch_encode_plus(sample_batch,
+        samples = [sample[0] for sample in sample_batch]
+        input_ids = self._tokenizer.batch_encode_plus(samples,
                                                       return_tensors="pt",
                                                       max_length=self._max_length,
                                                       padding=True,
