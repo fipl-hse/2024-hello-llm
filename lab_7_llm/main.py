@@ -7,6 +7,19 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import pandas as pd
+import torch
+from datasets import load_dataset
+from pandas import DataFrame
+from torch.utils.data import Dataset
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -21,6 +34,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        data = load_dataset(self._hf_name, split='train')
+        self._raw_data = pd.DataFrame(data)
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError('Downloaded dataset is not a pandas DataFrame.')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +53,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+
+        properties = {
+            'dataset_number_of_samples': len(self._raw_data),
+            'dataset_columns': len(self._raw_data.columns),
+            'dataset_duplicates': int(self._raw_data.duplicated().sum()),
+            'dataset_empty_rows': int(self._raw_data.isnull().all(axis=1).sum()),
+            'dataset_sample_min_len': int(self._raw_data['comment'].str.len().min()),
+            'dataset_sample_max_len': int(self._raw_data['comment'].str.len().max()),
+        }
+        return properties
 
     @report_time
     def transform(self) -> None:
