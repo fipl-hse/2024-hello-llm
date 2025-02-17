@@ -43,6 +43,8 @@ def main() -> None:
                            max_length,
                            batch_size,
                            device)
+    sample = dataset[0]
+    sample_prediction = pipeline.infer_sample(sample)
     predictions = pipeline.infer_dataset()
 
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
@@ -55,6 +57,7 @@ def main() -> None:
 
     assert result is not None, "Demo does not work correctly"
 
+    return None
 
 if __name__ == "__main__":
     main()
