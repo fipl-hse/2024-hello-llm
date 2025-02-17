@@ -51,6 +51,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
     """
+
     def __init__(self, raw_data: DataFrame) -> None:
         if raw_data is None:
             raise ValueError("Raw data cannot be None")
@@ -155,9 +156,8 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
-
         """
         Initialize an instance of LLMPipeline.
 
@@ -185,7 +185,8 @@ class LLMPipeline(AbstractLLMPipeline):
         config = self._model.config
         return {
             "model_parameters": sum(p.numel() for p in self._model.parameters()),
-            "trainable_parameters": sum(p.numel() for p in self._model.parameters() if p.requires_grad),
+            "trainable_parameters": sum(p.numel() for p in self._model.parameters()
+                                        if p.requires_grad),
             "device": self.device,
             "num_layers": getattr(config, "num_hidden_layers", "Unknown"),
             "vocab_size": getattr(config, "vocab_size", "Unknown"),
@@ -206,7 +207,9 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         input_text = sample[0]
         inputs = self._tokenizer(
-            input_text, return_tensors="pt", truncation=True, max_length=self.max_length
+            input_text, return_tensors="pt",
+            truncation=True,
+            max_length=self.max_length
         ).to(self.device)
         print(f"Tokenized input: {self._tokenizer.convert_ids_to_tokens(inputs['input_ids'][0].tolist())}")
 
@@ -225,13 +228,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False)
+        dataloader = DataLoader(self.dataset,
+                                batch_size=self.batch_size,
+                                shuffle=False
+                                )
         predictions = []
 
         for batch in dataloader:
             input_texts = [sample[0] for sample in batch]
             inputs = self._tokenizer(
-                input_texts, return_tensors="pt", padding=True, truncation=True, max_length=self.max_length
+                input_texts, return_tensors="pt",
+                padding=True, truncation=True,
+                max_length=self.max_length
             ).to(self.device)
             with torch.no_grad():
                 outputs = self._model.generate(
@@ -264,7 +272,10 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         input_texts = [sample[0] for sample in sample_batch]
         inputs = self._tokenizer(
-            input_texts, return_tensors="pt", padding=True, truncation=True, max_length=self.max_length
+            input_texts, return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=self.max_length
         ).to(self.device)
         outputs = self._model.generate(**inputs, max_length=self.max_length)
         return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
