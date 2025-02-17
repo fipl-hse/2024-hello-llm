@@ -5,13 +5,13 @@ Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
-from typing import Iterable, Sequence, List
+from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
 from datasets import load_dataset
 from evaluate import load
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
