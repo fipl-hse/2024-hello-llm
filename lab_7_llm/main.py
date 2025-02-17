@@ -250,7 +250,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         self.data_path = data_path
-        self._metrics = metrics
+        self._metrics = {}
+        for metric in metrics:
+            self._metrics[metric.value] = load(metric.value, seed=77)
 
     @report_time
     def run(self) -> dict | None:
@@ -266,13 +268,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         references = data_frame[ColumnNames.TARGET.value]
 
         evaluation_res = {}
-        for metric in self._metrics:
-            scores = load(metric.value, seed=77).compute(predictions=predictions,
-                                                         references=references)
+        for metric_name, metric in self._metrics.items():
+            scores = metric.compute(predictions=predictions, references=references)
 
-            if metric.value == Metrics.ROUGE.value:
-                evaluation_res[metric.value] = scores["rougeL"]
+            if metric_name == Metrics.ROUGE.value:
+                evaluation_res[metric_name] = scores["rougeL"]
             else:
-                evaluation_res[metric.value] = scores[metric.value]
+                evaluation_res[metric_name] = scores[metric_name]
 
         return evaluation_res
