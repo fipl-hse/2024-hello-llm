@@ -9,7 +9,14 @@ from pathlib import Path
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import LLMPipeline, RawDataImporter, RawDataPreprocessor, TaskDataset
+from lab_7_llm.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+    TaskEvaluator,
+)
 
 
 @report_time
@@ -30,8 +37,11 @@ def main() -> None:
     path_to_outputs = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
     path_to_outputs.parent.mkdir(exist_ok=True)
     infer_dataframe.to_csv(path_to_outputs, index=False)
+    evaluation = TaskEvaluator(path_to_outputs, settings.parameters.metrics)
+    res = evaluation.run()
+    print(res)
 
-    result = pipeline
+    result = res
     assert result is not None, "Demo does not work correctly"
 
 

@@ -222,7 +222,7 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         encoded_batch = self._tokenizer(
-            [sample_batch][0],
+            list(sample_batch)[0],
             return_tensors="pt",
             padding=True,
             truncation=True,
