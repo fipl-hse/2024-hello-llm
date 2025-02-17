@@ -44,7 +44,6 @@ class RawDataImporter(AbstractRawDataImporter):
         self._data = dataset.to_pandas()
         if not isinstance(self._data, pd.DataFrame) or self._data.empty:
             raise ValueError("Dataset could not be loaded or is empty.")
-        return self._data
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -77,7 +76,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         cleaned_dataset = self._data.dropna()
         return {
             "dataset_number_of_samples": len(self._data),
-            "dataset_columns": len(self._data.columns),
+            "dataset_columns": len(self._data.columns) if self._data is not None else 0,
             "dataset_duplicates": self._data.duplicated().sum(),
             "dataset_empty_rows": self._data.isnull().sum().sum(),
             "dataset_sample_min_len": cleaned_dataset["source"].str.len().min()
@@ -222,9 +221,9 @@ class LLMPipeline(AbstractLLMPipeline):
         with torch.no_grad():
             output = self._model.generate(**inputs, max_length=self.max_length)
 
-        prediction = self._tokenizer.decode(output[0], skip_special_tokens=True)
+        prediction = str(self._tokenizer.decode(output[0], skip_special_tokens=True))
         print(f"Input: {input_text}, Prediction: {prediction}")
-        return prediction
+        return prediction if prediction else None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -278,7 +277,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         input_texts = [sample[0] for sample in sample_batch]
         inputs = self._tokenizer(
-            input_texts, return_tensors="pt",
+            input_texts,
+            return_tensors="pt",
             padding=True,
             truncation=True,
             max_length=self.max_length

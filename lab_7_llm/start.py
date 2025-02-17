@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from core_utils.llm.metrics import Metrics
 from lab_7_llm.main import (
     RawDataImporter,
     RawDataPreprocessor,
@@ -51,7 +52,8 @@ def main() -> None:
         predictions_path = Path("predictions.csv")
         predictions.to_csv(predictions_path, index=False)
 
-        evaluator = TaskEvaluator(predictions_path, ["rouge"])
+        metrics = [Metrics("rouge")]
+        evaluator = TaskEvaluator(predictions_path, metrics)
         results = evaluator.run()
         print("Evaluation Results:", results)
 
