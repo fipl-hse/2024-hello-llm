@@ -216,9 +216,8 @@ class LLMPipeline(AbstractLLMPipeline):
             truncation=True,
             max_length=self.max_length
         ).to(self.device)
-        print(
-            f"Tokenized input: {self._tokenizer.convert_ids_to_tokens(inputs['input_ids'][0].tolist())}"
-        )
+        tokens = self._tokenizer.convert_ids_to_tokens(inputs['input_ids'][0].tolist())
+        print(f"Tokenized input: {tokens}")
 
         with torch.no_grad():
             output = self._model.generate(**inputs, max_length=self.max_length)
