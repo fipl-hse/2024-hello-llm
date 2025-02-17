@@ -166,23 +166,23 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        input_data = torch.ones((1, self._max_length), dtype=torch.long)
         test_model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
 
+        vocab_size = test_model.config.vocab_size
+        emb_size = test_model.config.hidden_size
+
+        input_data = torch.ones((1, emb_size), dtype=torch.long)
         model_summary = summary(test_model,
                                 input_data=input_data, decoder_input_ids=input_data)
 
-        vocab_size = test_model.config.vocab_size
-        emb_size = model_summary.summary_list[0].output_size[2]
-
         model_properties = {
-            'input_shape': [model_summary.input_size[0], emb_size],
+            'input_shape': model_summary.summary_list[0].input_size,
             'embedding_size': emb_size,
             'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
             'vocab_size': vocab_size,
             'size': model_summary.total_param_bytes,
-            'max_context_length': self._model.config.max_length
+            'max_context_length': test_model.config.max_length
         }
 
         return model_properties

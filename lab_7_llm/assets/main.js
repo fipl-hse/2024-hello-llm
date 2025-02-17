@@ -28,7 +28,7 @@ summarizeButton.addEventListener('click', async () => {
         summaryResult.textContent = data.infer || "We couldn't summarize your text :(";
 
     } catch (error) {
-        summaryResult.textContent = 'An error occurred while summarizing the text.';
-        console.error('Error:', error);
+        summaryResult.textContent = 'An error occurred during summarizing the text :(';
+        console.error('Error: ${error.message}');
     }
 });
