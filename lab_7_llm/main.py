@@ -155,7 +155,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        if not self._model or not isinstance(self._model, ):
+        if not self._model:
             return {}
 
         ids = torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long)
