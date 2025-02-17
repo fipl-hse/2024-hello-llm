@@ -32,11 +32,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset('trixdade/reviews_russian', split="test")
-        self._raw_data = dataset.to_pandas()
+        self._raw_data = pd.DataFrame(load_dataset(self._hf_name, split='train'))
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError('Downloaded dataset is not pd.DataFrame')
+
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
@@ -50,11 +50,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+
         return {
             'dataset_number_of_samples': len(self._raw_data),
             'dataset_columns': len(self._raw_data.columns),
-            'dataset_duplicates': self._raw_data.duplicated().sum(),
-            'dataset_empty_rows': self._raw_data.isnull().sum().sum(),
+            'dataset_duplicates': int(self._raw_data.duplicated().sum()),
+            'dataset_empty_rows': int(self._raw_data.isnull().sum().sum()),
             'dataset_sample_min_len': min(len(sample) for sample in self._raw_data['Reviews']),
             'dataset_sample_max_len': max(len(sample) for sample in self._raw_data['Reviews']),
         }
