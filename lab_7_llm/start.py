@@ -21,13 +21,13 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    MAX_LENGTH = 120
-    BATCH_SIZE = 64
-    DEVICE = 'cpu'
-    SETTINGS_PATH = Path(__file__).parent / 'settings.json'
-    PREDICTIONS_PATH = Path(__file__).parent / 'dist' / 'predictions.csv'
+    max_length = 120
+    batch_size = 64
+    device = 'cpu'
+    settings_path = Path(__file__).parent / 'settings.json'
+    predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
 
-    settings = LabSettings(SETTINGS_PATH)
+    settings = LabSettings(settings_path)
 
     data_importer = RawDataImporter(settings.parameters.dataset)
     data_importer.obtain()
@@ -42,7 +42,7 @@ def main() -> None:
     preprocessed_dataset = TaskDataset(data_preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model,
                            preprocessed_dataset,
-                           MAX_LENGTH, BATCH_SIZE, DEVICE)
+                           max_length, batch_size, device)
     _model_params = pipeline.analyze_model()
 
     sample = preprocessed_dataset[random.randint(0, len(preprocessed_dataset))]
@@ -50,10 +50,10 @@ def main() -> None:
 
     dataset_predictions = pipeline.infer_dataset()
 
-    PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    dataset_predictions.to_csv(PREDICTIONS_PATH)
+    predictions_path.parent.mkdir(parents=True, exist_ok=True)
+    dataset_predictions.to_csv(predictions_path)
 
-    evaluator = TaskEvaluator(PREDICTIONS_PATH,
+    evaluator = TaskEvaluator(predictions_path,
                               settings.parameters.metrics)
     evaluation_result = evaluator.run()
     print(evaluation_result)

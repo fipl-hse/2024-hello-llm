@@ -4,5 +4,5 @@
     "dataset": "papluca/language-identification",
     "metrics": ["f1"]
   },
-  "target_score": 8
+  "target_score": 10
 }

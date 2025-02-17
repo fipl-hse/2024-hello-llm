@@ -2,8 +2,10 @@ datasets==3.2.0
 evaluate==0.4.3
 fastapi==0.115.6
 pandas==2.2.3
+pydantic==2.5.3
 scikit-learn==1.6.1
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.2
 torchinfo==1.8.0
 transformers==4.48.2
+uvicorn==0.34.0
