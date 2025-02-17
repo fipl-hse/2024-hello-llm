@@ -1,20 +1,16 @@
 const button = document.getElementById('buttonInput');
-console.log('button created');
 
 button.addEventListener('click', async () => {
 
-    const textInput = document.getElementById('textInput');
+    const textInput = document.getElementById('textInput').value;
     const resultDiv = document.getElementById('result');
-
-    resultDiv.innerText = 'Processing...';
-    const text = textInput.value.trim();
 
 let response = await fetch('/infer', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json'
-    }
-    body: JSON.stringify({ question: text })
+    },
+    body: JSON.stringify({ question: textInput })
 });
 
 if (response.ok) {
@@ -23,6 +19,5 @@ if (response.ok) {
     alert('Ошибка HTTP: ' + response.status);
 }
 
-resultDiv.innerText = result.infer;
-console.log('result sent to server');
+resultDiv.textContent = result.infer;
 });

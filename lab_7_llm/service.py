@@ -55,4 +55,5 @@ async def root(request: Request):
 @app.post('/infer')
 async def infer(query: Query):
     prediction = pipeline.infer_sample((query.question, ))
+    print(prediction)
     return JSONResponse(content={'infer': prediction})
