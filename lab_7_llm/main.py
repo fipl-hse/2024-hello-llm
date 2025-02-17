@@ -62,7 +62,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_duplicates": self._raw_data.duplicated().sum(),
             "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
             "dataset_sample_min_len": self._raw_data["text"].dropna().map(len).min(),
-            "dataset_sample_max_len": self._raw_data["text"].dropna().map(len).max()
+            "dataset_sample_max_len": self._raw_data["text"].map(len).max()
         }
 
         return properties_dict
@@ -110,8 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        data = self._data.iloc[index]
-        return tuple(data)
+        return tuple(self._data.iloc[index])
 
     @property
     def data(self) -> DataFrame:
@@ -217,10 +216,10 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        input_data = (self._tokenizer(sample_batch[0],
-                                      return_tensors="pt",
-                                      padding=True,
-                                      truncation=True))
+        input_data = self._tokenizer(sample_batch[0],
+                                     return_tensors="pt",
+                                     padding=True,
+                                     truncation=True)
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 

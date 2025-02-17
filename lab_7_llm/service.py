@@ -15,8 +15,6 @@ from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_7_llm.main import LLMPipeline, TaskDataset
 
-PARENT_DIRECTORY = Path(__file__).parent
-
 
 def init_application() -> tuple[FastAPI, LLMPipeline]:
     """
@@ -32,7 +30,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     )
 
     llm_app.mount("/assets",
-                  StaticFiles(directory=PARENT_DIRECTORY / "assets"),
+                  StaticFiles(directory=Path(__file__).parent / "assets"),
                   name="assets")
 
     lab_settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
@@ -50,17 +48,17 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     return llm_app, llm_pipeline
 
 
-app, pipeline = init_application()
+APP, PIPELINE = init_application()
 
 
-@app.get("/")
+@APP.get("/")
 async def root(request: Request) -> HTMLResponse:
     """
     Root endpoint for the service.
     Returns:
         TemplateResponse: Renders the index.html page with Jinja2.
     """
-    templates = Jinja2Templates(directory=PARENT_DIRECTORY / "assets")
+    templates = Jinja2Templates(directory=Path(__file__).parent / "assets")
     return templates.TemplateResponse(
         "index.html",
         {"request": request}
@@ -77,7 +75,7 @@ class Query(BaseModel):
     question: str
 
 
-@app.post("/infer")
+@APP.post("/infer")
 async def infer(query: Query) -> dict[str, str]:
     """
     Main endpoint for processing user queries using the LLM pipeline.
@@ -87,7 +85,7 @@ async def infer(query: Query) -> dict[str, str]:
         dict: Response containing the inference result.
     """
     input_text = query.question
-    response = pipeline.infer_sample((input_text,))
+    response = PIPELINE.infer_sample((input_text,))
     tags_to_text = {'0': 'sadness', '1': 'joy', '2': 'love', '3':
                     'anger', '4': 'fear', '5': 'surprise'}
     return {"infer": tags_to_text[response]}
