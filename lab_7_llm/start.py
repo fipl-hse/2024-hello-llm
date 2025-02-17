@@ -26,31 +26,32 @@ def main() -> None:
 
     importer = RawDataImporter(settings['parameters']['dataset'])
     importer.obtain()
-    result = None
 
-    if importer.raw_data is not None:
-        preprocessor = RawDataPreprocessor(importer.raw_data)
-        preprocessor.transform()
+    if importer.raw_data is None:
+        return None
 
-        batch_size = 1
-        max_length = 120
-        device = 'cpu'
+    preprocessor = RawDataPreprocessor(importer.raw_data)
+    preprocessor.transform()
 
-        dataset = TaskDataset(preprocessor.data.head(100))
-        pipeline = LLMPipeline(settings['parameters']['model'],
-                               dataset,
-                               max_length,
-                               batch_size,
-                               device)
-        predictions = pipeline.infer_dataset()
+    batch_size = 1
+    max_length = 120
+    device = 'cpu'
 
-        predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
-        predictions_path.parent.mkdir(parents=True, exist_ok=True)
-        predictions.to_csv(predictions_path, index=False)
+    dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings['parameters']['model'],
+                           dataset,
+                           max_length,
+                           batch_size,
+                           device)
+    predictions = pipeline.infer_dataset()
 
-        metrics = [Metrics(metric) for metric in settings['parameters']['metrics']]
-        evaluator = TaskEvaluator(predictions_path, metrics)
-        result = evaluator.run()
+    predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
+    predictions_path.parent.mkdir(parents=True, exist_ok=True)
+    predictions.to_csv(predictions_path, index=False)
+
+    metrics = [Metrics(metric) for metric in settings['parameters']['metrics']]
+    evaluator = TaskEvaluator(predictions_path, metrics)
+    result = evaluator.run()
 
     assert result is not None, "Demo does not work correctly"
 
