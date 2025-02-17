@@ -135,10 +135,7 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(
-            self, model_name: str, dataset: TaskDataset,
-            max_length: int, batch_size: int, device: str
-    ) -> None:
+    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -149,15 +146,11 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        self._dataset = dataset
-        self._device = device
+        super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._model_name = model_name
-        self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+        self._tokenizer = T5TokenizerFast.from_pretrained(self._model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name).to(self._device)
 
-        self._batch_size = batch_size
-        self._max_length = max_length
 
     def analyze_model(self) -> dict:
         """
@@ -175,7 +168,7 @@ class LLMPipeline(AbstractLLMPipeline):
         model_summary = summary(test_model,
                                 input_data=input_data, decoder_input_ids=input_data)
 
-        model_properties = {
+        return {
             'input_shape': model_summary.summary_list[0].input_size,
             'embedding_size': emb_size,
             'output_shape': model_summary.summary_list[-1].output_size,
@@ -185,7 +178,6 @@ class LLMPipeline(AbstractLLMPipeline):
             'max_context_length': test_model.config.max_length
         }
 
-        return model_properties
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
