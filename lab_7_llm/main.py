@@ -143,7 +143,7 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                         model_max_length=max_length)
 
