@@ -197,7 +197,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        prediction = self._infer_batch([sample])[0]
+        prediction = self._infer_batch([sample[0]])[0]
         if prediction and isinstance(prediction, str):
             return prediction
 
@@ -234,7 +234,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        print(sample_batch)
+
         input_ids = self._tokenizer.batch_encode_plus(sample_batch,
                                                       return_tensors="pt",
                                                       max_length=self._max_length,
