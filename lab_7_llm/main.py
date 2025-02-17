@@ -38,7 +38,9 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = load_dataset(self._hf_name, split="validation", trust_remote_code=True).to_pandas()
+        self._raw_data = load_dataset(
+            self._hf_name, split="validation", trust_remote_code=True
+        ).to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -164,8 +166,9 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         model_config = self._model.config
-        input_ids = torch.ones((1, model_config.max_position_embeddings),
-                               dtype=torch.long, device=self._device)
+        input_ids = torch.ones(
+            (1, model_config.max_position_embeddings), dtype=torch.long, device=self._device
+        )
 
         input_data = {"input_ids": input_ids, "attention_mask": input_ids}
 
@@ -174,10 +177,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return {
             "embedding_size": model_config.max_position_embeddings,
-            "input_shape": {
-                'attention_mask': input_size,
-                'input_ids': input_size
-            },
+            "input_shape": {"attention_mask": input_size, "input_ids": input_size},
             "max_context_length": model_config.max_length,
             "num_trainable_params": info.trainable_params,
             "output_shape": info.summary_list[-1].output_size,
@@ -198,9 +198,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if self._model:
             input_data = self._tokenizer(
-                sample,
-                return_tensors="pt",
-                is_split_into_words=True
+                sample, return_tensors="pt", is_split_into_words=True, padding=True, truncation=True
             )
 
             tokens_words_mapping = input_data.word_ids()
