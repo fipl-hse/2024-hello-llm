@@ -3,6 +3,7 @@ Web service for model inference.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from pathlib import Path
+from typing import Callable
 
 import pandas as pd
 from fastapi import FastAPI, Request
@@ -53,7 +54,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
 app, pipeline = init_application()
 
 @app.get('/', response_class=HTMLResponse)
-async def root(request: Request) -> Jinja2Templates.TemplateResponse:
+async def root(request: Request) -> Callable:
     """
     Root endpoint.
 
