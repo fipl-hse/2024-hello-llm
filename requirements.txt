@@ -1,7 +1,6 @@
 datasets==3.2.0
 evaluate==0.4.3
 fastapi==0.115.7
-numpy>=1.23.2
 pandas==1.5.3
 pydantic==2.10.6
 rouge-score==0.1.2
