@@ -177,24 +177,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        # encoded_batch = self._tokenizer(
-        #     [sample][0],
-        #     return_tensors="pt",
-        #     padding=True,
-        #     truncation=True,
-        #     max_length=self._max_length)
-        #
-        # output_ids = self._model.generate(
-        #     input_ids=encoded_batch["input_ids"],
-        #     max_length=self._max_length
-        # )
-        #
-        # headline = self._tokenizer.decode(output_ids[0],
-        #                             skip_special_tokens=True,
-        #                             clean_up_tokenization_spaces=False)
-        #
-        # return headline
-        return self._infer_batch([sample][0])
+        return self._infer_batch([sample])[0]
 
 
     @report_time
@@ -243,7 +226,7 @@ class LLMPipeline(AbstractLLMPipeline):
         )
 
         not_strings_predictions = self._tokenizer.batch_decode(output_ids, skip_special_tokens=True)
-        return list(str(string_prediction) for string_prediction in not_strings_predictions)
+        return [str(string_prediction) for string_prediction in not_strings_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
