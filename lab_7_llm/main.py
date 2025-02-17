@@ -142,8 +142,10 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name).to(device)
+        self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name)
         self._model: Module
+        self._model.eval()
+        self._model.to(device)
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
         self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
