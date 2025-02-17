@@ -96,7 +96,7 @@ Technical solution
 | <https://fastapi.tiangolo.com/>`__ |                                        |      |
 +------------------------------------+----------------------------------------+------+
 
-.. important:: ``torch`` module needs to be installed using
+.. important:: ``torch`` module version 2.1.2 needs to be installed using
                ``--extra-index-url https://download.pytorch.org/whl/cpu``
                in ``requirements.txt`` file.
 
@@ -729,4 +729,5 @@ Demonstrate work of your service by running a server
 implemented in ``service.py`` module and obtaining one sample inference result.
 
 .. note:: You can run you server using ``uvicorn PATH:app --reload`` command,
-          where ``PATH`` is a path to ``service.py`` module.
+          where ``PATH`` is a path to ``service.py`` module. Just replace slashes in path with dots.
+          Refer to the appropriate seminar listing for an example.

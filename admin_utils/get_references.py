@@ -33,6 +33,27 @@ class MainParams:
     metrics: list[Metrics]
 
 
+def get_classification_models() -> tuple[str, ...]:
+    """
+    Gets classification models.
+
+    Returns:
+        list[str]: list of classification models
+    """
+    return (
+        "cointegrated/rubert-tiny-toxicity",
+        "cointegrated/rubert-tiny2-cedr-emotion-detection",
+        "papluca/xlm-roberta-base-language-detection",
+        "fabriceyhc/bert-base-uncased-ag_news",
+        "XSY/albert-base-v2-imdb-calssification",
+        "aiknowyou/it-emotion-analyzer",
+        "blanchefort/rubert-base-cased-sentiment-rusentiment",
+        "tatiana-merz/turkic-cyrillic-classifier",
+        "s-nlp/russian_toxicity_classifier",
+        "IlyaGusev/rubertconv_toxic_clf",
+    )
+
+
 def get_task(model: str, main_params: MainParams, inference_params: InferenceParams) -> Any:
     """
     Gets task.
@@ -57,18 +78,7 @@ def get_task(model: str, main_params: MainParams, inference_params: InferencePar
 
     generation_model = ["VMware/electra-small-mrqa", "timpal0l/mdeberta-v3-base-squad2"]
 
-    classification_model = [
-        "cointegrated/rubert-tiny-toxicity",
-        "cointegrated/rubert-tiny2-cedr-emotion-detection",
-        "papluca/xlm-roberta-base-language-detection",
-        "fabriceyhc/bert-base-uncased-ag_news",
-        "XSY/albert-base-v2-imdb-calssification",
-        "aiknowyou/it-emotion-analyzer",
-        "blanchefort/rubert-base-cased-sentiment-rusentiment",
-        "tatiana-merz/turkic-cyrillic-classifier",
-        "s-nlp/russian_toxicity_classifier",
-        "IlyaGusev/rubertconv_toxic_clf",
-    ]
+    classification_models = get_classification_models()
 
     nli_model = [
         "cointegrated/rubert-base-cased-nli-threeway",
@@ -98,7 +108,7 @@ def get_task(model: str, main_params: MainParams, inference_params: InferencePar
         return get_result_for_nmt(inference_params, main_params)
     elif model in generation_model:
         return get_result_for_generation(inference_params, main_params)
-    elif model in classification_model:
+    elif model in classification_models:
         return get_result_for_classification(inference_params, main_params)
     elif model in nli_model:
         return get_result_for_nli(inference_params, main_params)
@@ -110,6 +120,43 @@ def get_task(model: str, main_params: MainParams, inference_params: InferencePar
         return get_result_for_ner(inference_params, main_params)
     else:
         raise ValueError(f"Unknown model {model} ...")
+
+
+def collect_combinations(references: dict[str, dict[str, list[str]]]) -> list[tuple[str, str, str]]:
+    """
+    Collects combinations of models, datasets and metrics
+
+    Args:
+        references (dict[str, dict[str, list[str]]]): references of combinations
+
+    Returns:
+        list[tuple(str, str, str)]: list of combinations
+    """
+    combinations = []
+    for model_name, datasets in sorted(references.items()):
+        for dataset_name, metrics in sorted(datasets.items()):
+            for metric in sorted(metrics):
+                combinations.append((model_name, dataset_name, metric))
+    return combinations
+
+
+def prepare_result_section(
+    results: dict[str, dict[str, dict]], model_name: str, dataset_name: str, metric: str
+) -> None:
+    """
+    Fill results section with combination.
+
+    Args:
+        model_name (str): model name
+        dataset_name (str): dataset name
+        metric (str): metric name
+    """
+    if model_name not in results:
+        results[model_name] = {}
+    if dataset_name not in results[model_name]:
+        results[model_name][dataset_name] = {}
+    if metric not in results[model_name][dataset_name]:
+        results[model_name][dataset_name][metric] = {}
 
 
 def main() -> None:
@@ -135,22 +182,14 @@ def main() -> None:
 
     references = get_references(path=references_path)
 
-    combos = []
-    for model_name, datasets in sorted(references.items()):
-        for dataset_name, metrics in sorted(datasets.items()):
-            for metric in sorted(metrics):
-                combos.append((model_name, dataset_name, metric))
+    combos = collect_combinations(references)
 
     result = {}
     for model_name, dataset_name, metric in tqdm(sorted(combos)):
         print(model_name, dataset_name, metric)
 
-        if model_name not in result:
-            result[model_name] = {}
-        if dataset_name not in result[model_name]:
-            result[model_name][dataset_name] = {}
-        if metric not in result[model_name][dataset_name]:
-            result[model_name][dataset_name][metric] = {}
+        prepare_result_section(result, model_name, dataset_name, metric)
+
         if "test_" in model_name:
             inference_params.num_samples = 10
 
