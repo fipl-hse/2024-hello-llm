@@ -128,7 +128,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple([str(self._data.loc[index, ColumnNames.SOURCE.value])])
+        return str(self._data.loc[index, ColumnNames.SOURCE.value]),
 
     @property
     def data(self) -> DataFrame:
@@ -270,7 +270,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         self.data_path = data_path
-        self._metrics = [load(str(item)) for item in metrics]
+        self._metrics = [load(str(item), seed=77) for item in metrics]
 
     @report_time
     def run(self) -> dict | None:
@@ -278,7 +278,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Evaluate the predictions against the references using the specified metrics.
 
         Returns:
-            dict | None: A dictionary containing the computed metric values.
+            dict | None: A dictionary containing information about the calculated metric
         """
         outputs_df = pd.read_csv(self.data_path)
         summaries = outputs_df[ColumnNames.PREDICTION.value]
@@ -287,11 +287,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         for metr in self._metrics:
             metric_result = metr.compute(predictions=summaries, references=targets)
-            metric_name = metr.name
 
-            if metric_name == "rouge":
-                evaluation[metric_name] = metric_result.get("rougeL", None)
+            metric_name = metr.name if hasattr(metr, "name") else str(metr)
+
+            if metric_name == Metrics.ROUGE.value:
+                evaluation[Metrics.ROUGE.value] = metric_result.get("rougeL", None)
             else:
-                evaluation[metric_name] = metric_result.get("bleu", None)
+                evaluation[Metrics.BLEU.value] = metric_result.get("bleu", None)
 
         return evaluation
