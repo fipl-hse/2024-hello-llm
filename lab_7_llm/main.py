@@ -70,10 +70,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.drop(['context', 'category', 'text'], axis=1)
-        self._data.rename(columns={'instruction': ColumnNames.QUESTION.value,
-                                   'response': ColumnNames.TARGET.value},
-                          inplace=True)
+        self._data = self._raw_data.\
+            drop(['context', 'category', 'text'], axis=1).\
+            rename(columns={'instruction': ColumnNames.QUESTION.value,
+                            'response': ColumnNames.TARGET.value})
         self._data.reset_index(inplace=True, drop=True)
 
 
@@ -145,7 +145,10 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name)
         self._model: Module
         self._model.to(device)
-        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name,
+                                                        model_max_length=max_length,
+                                                        padding_side='left')
+
         self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     def analyze_model(self) -> dict:
@@ -231,9 +234,11 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        print(sample_batch)
         input_ids = self._tokenizer.batch_encode_plus(sample_batch,
                                                       return_tensors="pt",
                                                       max_length=self._max_length,
+                                                      padding=True,
                                                       truncation=True).to(self._device)
         with torch.no_grad():
             outputs = self._model.generate(
