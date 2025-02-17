@@ -67,8 +67,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = (self._raw_data.rename(columns={'info': ColumnNames.SOURCE.value,
-                                                     'summary': ColumnNames.TARGET.value}).reset_index(drop=True))
+        self._data = (self._raw_data.rename(columns={
+            'info': ColumnNames.SOURCE.value,
+            'summary': ColumnNames.TARGET.value}).reset_index(drop=True))
 
 
 class TaskDataset(Dataset):
@@ -122,7 +123,9 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str) -> None:
+    def __init__(
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+    ) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -144,14 +147,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        tensor = torch.ones((1, self._model.config.encoder.max_position_embeddings), dtype=torch.long)
+        tensor = torch.ones(
+            (1, self._model.config.encoder.max_position_embeddings),
+            dtype=torch.long)
         inputs = {"input_ids": tensor, "attention_mask": tensor}
-        summary_m = summary(self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False)
+        summary_m = summary(
+            self._model, input_data=inputs, decoder_input_ids=tensor, verbose=False
+        )
 
         return {'input_shape': list(tensor.shape), 'embedding_size': list(tensor.shape)[1],
                 'output_shape': summary_m.summary_list[-1].output_size,
                 'num_trainable_params': summary_m.trainable_params,
-                'vocab_size': self._model.config.encoder.vocab_size, 'size': summary_m.total_param_bytes,
+                'vocab_size': self._model.config.encoder.vocab_size,
+                'size': summary_m.total_param_bytes,
                 'max_context_length': self._model.config.max_length}
 
     @report_time
