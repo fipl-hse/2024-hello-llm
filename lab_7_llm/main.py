@@ -13,6 +13,7 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from torch.nn import Module
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoTokenizer, GPTNeoXForCausalLM
@@ -142,6 +143,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name).to(device)
+        self._model: Module
+        self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
         self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
@@ -152,7 +155,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        if not self._model:
+        if not self._model or not isinstance(self._model, ):
             return {}
 
         ids = torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long)
@@ -191,7 +194,11 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        return self._infer_batch(sample)[0]
+        prediction = self._infer_batch([sample])[0]
+        if prediction and isinstance(prediction, str):
+            return prediction
+
+        return None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
