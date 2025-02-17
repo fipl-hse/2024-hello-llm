@@ -1,11 +1,15 @@
-document.getElementById('summarizeButton').addEventListener('click', async () => {
-    const inputText = document.getElementById('inputText').value;
-    const resultDiv = document.getElementById('result');
+const summarizeButton = document.getElementById('summarizeButton');
 
-    if (!inputText) {
-        resultDiv.textContent = 'Please enter some text to summarize.';
+summarizeButton.addEventListener('click', async () => {
+    const inputText = document.getElementById('inputText').value;
+    const summaryResult = document.getElementById('result');
+
+    if (!inputText.trim()) {
+        summaryResult.textContent = 'Please enter some text to summarize.';
         return;
     }
+
+    summaryResult.textContent = 'Summarizing...';
 
     try {
         const response = await fetch('/infer', {
@@ -21,10 +25,10 @@ document.getElementById('summarizeButton').addEventListener('click', async () =>
         }
 
         const data = await response.json();
-        resultDiv.textContent = data.infer
+        summaryResult.textContent = data.infer || "We couldn't summarize your text :(";
 
     } catch (error) {
-        resultDiv.textContent = 'An error occurred while summarizing the text.';
+        summaryResult.textContent = 'An error occurred while summarizing the text.';
         console.error('Error:', error);
     }
 });

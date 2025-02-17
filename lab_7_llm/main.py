@@ -6,6 +6,7 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+from pandas import DataFrame
 
 import pandas as pd
 import torch
@@ -72,11 +73,15 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.drop(columns=['title', 'date', 'url'])
-        self._data = self._data.rename(columns={'text': ColumnNames.SOURCE.name,
-                                                'summary': ColumnNames.TARGET.name})
-        self._data = self._data.replace('', pd.NA).dropna().drop_duplicates()
-        self._data = self._data.reset_index(drop=True)
+        self._data = (
+            self._raw_data
+            .drop(columns=['title', 'date', 'url'])
+            .rename(columns={'text': ColumnNames.SOURCE.name, 'summary': ColumnNames.TARGET.name})
+            .replace('', pd.NA)
+            .dropna()
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
 
 
 class TaskDataset(Dataset):
@@ -116,7 +121,7 @@ class TaskDataset(Dataset):
 
 
     @property
-    def data(self) -> pd.DataFrame:
+    def data(self) -> DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
@@ -130,8 +135,9 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(self, model_name: str, dataset: TaskDataset,
-                 max_length: int, batch_size: int, device: str) -> None:
+    def __init__(
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+    ) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -144,9 +150,11 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         self._dataset = dataset
         self._device = device
+
         self._model_name = model_name
         self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+
         self._batch_size = batch_size
         self._max_length = max_length
 
@@ -157,20 +165,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        emb_size = self._model.config.hidden_size
-        vocab_size = self._model.config.vocab_size
-
         input_data = torch.ones((1, self._max_length), dtype=torch.long)
-        decoder_input_data = torch.ones((1, self._max_length), dtype=torch.long)
-
         test_model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+
         model_summary = summary(test_model,
-                                input_data=input_data, decoder_input_ids=decoder_input_data)
+                                input_data=input_data, decoder_input_ids=input_data)
+
+        vocab_size = test_model.config.vocab_size
+        emb_size = model_summary.summary_list[0].output_size[2]
 
         model_properties = {
             'input_shape': [model_summary.input_size[0], emb_size],
             'embedding_size': emb_size,
-            'output_shape': [model_summary.input_size[0], emb_size, vocab_size],
+            'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
             'vocab_size': vocab_size,
             'size': model_summary.total_param_bytes,
@@ -210,7 +217,7 @@ class LLMPipeline(AbstractLLMPipeline):
             predictions.extend(output)
 
         res = pd.DataFrame(
-            {ColumnNames.TARGET.name: self._dataset.data[ColumnNames.TARGET.name].to_list(),
+            {ColumnNames.TARGET.name: self._dataset.data[ColumnNames.TARGET.name],
              ColumnNames.PREDICTION.name: predictions}
         )
         return res
@@ -227,14 +234,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        model_input = self._tokenizer(sample_batch[0], return_tensors='pt',
-                                      max_length=self._max_length, padding=True, truncation=True)
+        model_input = self._tokenizer(sample_batch[0],
+                                      return_tensors='pt',
+                                      max_length=self._max_length,
+                                      padding=True,
+                                      truncation=True).to(self._device)
 
-        input_ids = model_input['input_ids'].to(self._device)
-        attention_mask = model_input['attention_mask'].to(self._device)
-
-        output = self._model.generate(input_ids=input_ids,
-                                      attention_mask=attention_mask)
+        self._model.eval()
+        output = self._model.generate(**model_input)
         decoded = self._tokenizer.batch_decode(output, skip_special_tokens=True)
 
         return list(map(str, decoded))
@@ -254,6 +261,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         super().__init__(metrics)
+        self._loaded_metrics = [load(metric.value) for metric in self._metrics]
         self._data_path = data_path
 
 
@@ -270,12 +278,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         target = results_df[ColumnNames.TARGET.name]
 
         comparison = {}
-        for metric in self._metrics:
-            calculated = load(metric.value).compute(predictions=predictions, references=target)
+        for metric in self._loaded_metrics:
+            calculated = metric.compute(predictions=predictions, references=target)
 
-            if metric.value == Metrics.ROUGE.value:
-                comparison[metric.value] = calculated['rougeL']
+            if metric.name == Metrics.ROUGE.value:
+                comparison[metric.name] = float(calculated['rougeL'])
             else:
-                comparison[metric.value] = calculated[metric.value]
+                comparison[metric.name] = float(calculated[metric.name])
 
         return comparison

@@ -73,7 +73,7 @@ async def root(request: Request) -> HTMLResponse:
     Returns:
         TemplateResponse: An HTMLResponse object containing the rendered `index.html` template
     """
-    logger.info('received request in root: %s', request)
+
     templates = Jinja2Templates(directory=app_path)
     return templates.TemplateResponse('index.html', {'request': request})
 
