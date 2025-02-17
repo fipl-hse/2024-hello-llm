@@ -28,7 +28,7 @@ def main() -> None:
 
         if raw_data is None or raw_data.empty:
             print("Warning: No data obtained. Exiting early.")
-            return  # Вместо sys.exit(1)
+            return
 
         preprocessor = RawDataPreprocessor(raw_data)
         preprocessor.transform()

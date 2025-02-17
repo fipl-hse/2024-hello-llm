@@ -4,16 +4,16 @@ Laboratory work.
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
-import torch
 from pathlib import Path
-from typing import Sequence, Iterable
+from typing import Sequence, Iterable, Union
 
+import torch
 import pandas as pd
 from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from evaluate import load as load_metric
+from evaluate import load
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -28,6 +28,10 @@ class RawDataImporter(AbstractRawDataImporter):
     A class that imports the HuggingFace dataset.
     """
 
+    def __init__(self, dataset_name: str) -> None:
+        self._data: pd.DataFrame | None = None
+        self.dataset_name = dataset_name
+
     @report_time
     def obtain(self) -> None:
         """
@@ -36,7 +40,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset("trixdade/reviews_russian", split="train")
+        dataset = load_dataset(self.dataset_name, split="train")
         self._data = dataset.to_pandas()
         if not isinstance(self._data, pd.DataFrame) or self._data.empty:
             raise ValueError("Dataset could not be loaded or is empty.")
@@ -58,6 +62,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Property to access the preprocessed dataset.
         """
+        if self._data is None:
+            raise ValueError("Data has not been processed yet. Call transform() first.")
         return self._data
 
     def analyze(self) -> dict:
@@ -87,8 +93,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             pd.DataFrame: Preprocessed dataset
         """
-        if "Reviews" not in self._raw_data.columns or "Summary" not in self._raw_data.columns:
-            raise KeyError("Dataset does not contain 'Reviews' and 'Summary' columns.")
+        if "source" not in self._raw_data.columns or "target" not in self._raw_data.columns:
+            raise KeyError("Dataset does not contain 'source' and 'target' columns.")
         self._data = self._raw_data.dropna()
         self._data.rename(columns={"Reviews": "source", "Summary": "target"}, inplace=True)
         self._data.reset_index(drop=True, inplace=True)
@@ -229,7 +235,11 @@ class LLMPipeline(AbstractLLMPipeline):
             ).to(self.device)
             with torch.no_grad():
                 outputs = self._model.generate(
-                    **inputs, max_length=self.max_length, num_beams=5, repetition_penalty=1.2, early_stopping=True,
+                    **inputs,
+                    max_length=self.max_length,
+                    num_beams=5,
+                    repetition_penalty=1.2,
+                    early_stopping=True,
                     forced_bos_token_id=self._tokenizer.bos_token_id
                 )
             batch_predictions = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
@@ -277,7 +287,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         self.metrics = metrics
 
     @report_time
-    def run(self) -> dict | None:
+    def run(self) -> Union[dict, None]:
         """
         Evaluate the predictions against the references using the specified metric.
 
@@ -293,7 +303,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         for metric_name in self.metrics:
             if metric_name == "rouge":
-                metric = load_metric("rouge")
+                metric = load("rouge")
                 metric_result = metric.compute(
                     predictions=data['predicted_summary'].tolist(),
                     references=data['target'].tolist(),
@@ -303,7 +313,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
                 results["rougeL"] = metric_result["rougeL"]
 
             elif metric_name == "bleu":
-                metric = load_metric("bleu")
+                metric = load("bleu")
                 predictions = [pred.split() for pred in data["predicted_summary"].tolist()]
                 references = [[ref.split()] for ref in data["target"].tolist()]
                 metric_result = metric.compute(predictions=predictions, references=references)
