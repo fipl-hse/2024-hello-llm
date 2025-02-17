@@ -6,6 +6,7 @@ from pathlib import Path
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
+from core_utils.llm import raw_data_importer
 from lab_7_llm.main import (
     LLMPipeline,
     RawDataImporter,
@@ -25,6 +26,10 @@ def main() -> None:
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
+
+    if importer.raw_data is None:
+        raise ValueError('Received None instead of dataframe')
+
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))

@@ -148,6 +148,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if self._model is None:
+            raise ValueError("No model here")
         tensor = torch.ones(
             (1, self._model.config.encoder.max_position_embeddings),
             dtype=torch.long)
@@ -177,7 +179,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        return self._infer_batch([sample])[0]
+        return self._infer_batch([sample][0])
 
 
     @report_time
@@ -214,7 +216,7 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         encoded_batch = self._tokenizer(
-            list(sample_batch)[0],
+            sample_batch[0],
             return_tensors="pt",
             padding=True,
             truncation=True,
