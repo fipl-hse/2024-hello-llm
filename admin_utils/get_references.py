@@ -38,7 +38,7 @@ def get_classification_models() -> tuple[str, ...]:
     Gets classification models.
 
     Returns:
-        list[str]: list of classification models
+        tuple[str, ...]: list of classification models
     """
     return (
         "cointegrated/rubert-tiny-toxicity",
@@ -51,6 +51,53 @@ def get_classification_models() -> tuple[str, ...]:
         "tatiana-merz/turkic-cyrillic-classifier",
         "s-nlp/russian_toxicity_classifier",
         "IlyaGusev/rubertconv_toxic_clf",
+    )
+
+
+def get_summurization_models() -> tuple[str, ...]:
+    """
+    Gets summarization models.
+
+    Returns:
+        tuple[str, ...]: list of classification models
+    """
+    return (
+        "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization",
+        "nandakishormpai/t5-small-machine-articles-tag-generation",
+        "mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization",
+        "stevhliu/my_awesome_billsum_model",
+        "UrukHan/t5-russian-summarization",
+        "dmitry-vorobiev/rubert_ria_headlines",
+    )
+
+
+def get_nli_models() -> tuple[str, ...]:
+    """
+    Gets NLI models.
+
+    Returns:
+        tuple[str, ...]: list of classification models
+    """
+    return (
+        "cointegrated/rubert-base-cased-nli-threeway",
+        "cointegrated/rubert-tiny-bilingual-nli",
+        "cross-encoder/qnli-distilroberta-base",
+        "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+    )
+
+
+def get_nmt_models() -> tuple[str, ...]:
+    """
+    Gets NMT models.
+
+    Returns:
+        tuple[str, ...]: list of nmt models
+    """
+    return (
+        "Helsinki-NLP/opus-mt-en-fr",
+        "Helsinki-NLP/opus-mt-ru-en",
+        "Helsinki-NLP/opus-mt-ru-es",
+        "google-t5/t5-small",
     )
 
 
@@ -87,14 +134,7 @@ def get_task(model: str, main_params: MainParams, inference_params: InferencePar
         "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
     ]
 
-    summarization_model = [
-        "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization",
-        "nandakishormpai/t5-small-machine-articles-tag-generation",
-        "mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization",
-        "stevhliu/my_awesome_billsum_model",
-        "UrukHan/t5-russian-summarization",
-        "dmitry-vorobiev/rubert_ria_headlines",
-    ]
+    summarization_model = get_summurization_models()
 
     open_generative_qa_model = [
         "EleutherAI/pythia-160m-deduped",
