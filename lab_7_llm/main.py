@@ -41,8 +41,8 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset("trixdade/reviews_russian", split="train")
-        self._data = dataset.to_pandas()
+        self._data = load_dataset("trixdade/reviews_russian", split="train").to_pandas()
+
         if not isinstance(self._data, pd.DataFrame) or self._data.empty:
             raise ValueError("Dataset could not be loaded or is empty.")
 
