@@ -302,15 +302,14 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         predictions_df = pd.read_csv(self._data_path)
-        results = {}
-
+        metrics_dict = {}
+        predictions = predictions_df[ColumnNames.PREDICTION.value]
+        references = predictions_df[ColumnNames.TARGET.value]
         for metric in self._metrics:
             f1_metric = evaluate.load(metric.value)
-            predictions = predictions_df[ColumnNames.PREDICTION.value]
-            references = predictions_df[ColumnNames.TARGET.value]
             value = f1_metric.compute(
                 references=references,
                 predictions=predictions,
                 average='micro')
-            results[metric.value] = value[metric.value]
-            return results if results else None
+            metrics_dict[metric.value] = value[metric.value]
+        return metrics_dict
