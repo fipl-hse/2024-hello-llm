@@ -192,8 +192,7 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         data_loader = DataLoader(batch_size=self._batch_size,
-                                 dataset=self._dataset,
-                                 collate_fn=lambda x: x)
+                                 dataset=self._dataset)
         predictions = []
         for batch in data_loader:
             sample = self._infer_batch(batch)
