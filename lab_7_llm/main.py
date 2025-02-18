@@ -85,16 +85,19 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
         cleaned_dataset = self._data.dropna()
-        return {
+
+        dataset_stats = {
             "dataset_number_of_samples": len(self._data) if self._data is not None else 0,
             "dataset_columns": len(self._data.columns) if self._data is not None else 0,
             "dataset_duplicates": self._data.duplicated().sum(),
             "dataset_empty_rows": self._data.isnull().sum().sum(),
-            "dataset_sample_min_len": cleaned_dataset["source"].str.len().min()
-            if "source" in cleaned_dataset else None,
-            "dataset_sample_max_len": cleaned_dataset["source"].str.len().max()
-            if "source" in cleaned_dataset else None,
+            "dataset_sample_min_len": cleaned_dataset[
+                "source"].str.len().min() if "source" in cleaned_dataset else None,
+            "dataset_sample_max_len": cleaned_dataset[
+                "source"].str.len().max() if "source" in cleaned_dataset else None,
         }
+
+        return dataset_stats
 
     @report_time
     def transform(self) -> None:
@@ -232,9 +235,12 @@ class LLMPipeline(AbstractLLMPipeline):
         print(f"Tokenized input: {tokens}")
 
         with torch.no_grad():
-            output = self._model.generate(**inputs, max_length=self.max_length)
-
-        prediction = str(self._tokenizer.decode(output[0], skip_special_tokens=True))
+            prediction = str(
+                self._tokenizer.decode(
+                    self._model.generate(**inputs, max_length=self.max_length)[0],
+                    skip_special_tokens=True
+                )
+            )
         print(f"Input: {input_text}, Prediction: {prediction}")
         return prediction if prediction else None
 
