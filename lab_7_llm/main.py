@@ -7,6 +7,7 @@ Working with Large Language Models.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import evaluate
 import pandas as pd
 import torch
 from datasets import load_dataset
@@ -226,7 +227,8 @@ class LLMPipeline(AbstractLLMPipeline):
         for batch in dataset_loader:
             predictions.extend(self._infer_batch(batch))
 
-        df = pd.DataFrame(self._dataset.data)
+        df = pd.DataFrame()
+        df[ColumnNames.TARGET.value] = self._dataset.data[ColumnNames.TARGET.value]
         df[ColumnNames.PREDICTION.value] = predictions
         return df
 
@@ -245,6 +247,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         input_tokens = self._tokenizer(
             text=sample_batch[0],
+            max_length= self._max_length,
             padding=True,
             truncation=True,
             return_tensors="pt"
@@ -267,8 +270,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        super().__init__(metrics)
-        self.data_path = data_path
+        # super().__init__(metrics)
+        self._metrics = metrics
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -278,3 +282,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        predictions_df = pd.read_csv(self._data_path)
+        for metric in self._metrics:
+            f1_metric = evaluate.load(metric.value)
+            predictions = predictions_df[ColumnNames.PREDICTION.value]
+            references = predictions_df[ColumnNames.TARGET.value]
+            value = f1_metric.compute(references=references, predictions=predictions, average='micro')
+            return value
