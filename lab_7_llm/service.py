@@ -11,8 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic.dataclasses import dataclass
 
-from config.lab_settings import LabSettings
 from config.constants import PROJECT_ROOT
+from config.lab_settings import LabSettings
 from lab_7_llm.main import LLMPipeline, TaskDataset
 
 
