@@ -290,7 +290,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        # super().__init__(metrics)
         self._metrics = metrics
         self._data_path = data_path
 
@@ -303,6 +302,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         predictions_df = pd.read_csv(self._data_path)
+        results = {}
+
         for metric in self._metrics:
             f1_metric = evaluate.load(metric.value)
             predictions = predictions_df[ColumnNames.PREDICTION.value]
@@ -311,4 +312,5 @@ class TaskEvaluator(AbstractTaskEvaluator):
                 references=references,
                 predictions=predictions,
                 average='micro')
-            return dict(value)
+            results[metric.value] = value[metric.value]
+            return results
