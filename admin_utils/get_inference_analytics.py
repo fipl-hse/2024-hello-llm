@@ -9,6 +9,7 @@ from pydantic.dataclasses import dataclass
 from tqdm import tqdm
 
 from admin_utils.get_model_analytics import get_references, save_reference
+from admin_utils.get_references import get_classification_models
 
 from lab_7_llm.main import LLMPipeline, TaskDataset  # isort:skip
 from reference_lab_classification.main import ClassificationLLMPipeline  # isort:skip
@@ -125,8 +126,8 @@ def get_task(model: str, inference_params: InferenceParams, samples: list) -> di
 
     Args:
         model (str): name of model
-        inference_params (InferenceParams): Samples for inference
-        samples (list): Parameters from inference
+        inference_params (InferenceParams): Parameters from inference
+        samples (list): Samples for inference
 
     Returns:
         dict: Results with model predictions
@@ -143,18 +144,7 @@ def get_task(model: str, inference_params: InferenceParams, samples: list) -> di
 
     generation_model = ["VMware/electra-small-mrqa", "timpal0l/mdeberta-v3-base-squad2"]
 
-    classification_model = [
-        "cointegrated/rubert-tiny-toxicity",
-        "cointegrated/rubert-tiny2-cedr-emotion-detection",
-        "papluca/xlm-roberta-base-language-detection",
-        "fabriceyhc/bert-base-uncased-ag_news",
-        "XSY/albert-base-v2-imdb-calssification",
-        "aiknowyou/it-emotion-analyzer",
-        "blanchefort/rubert-base-cased-sentiment-rusentiment",
-        "tatiana-merz/turkic-cyrillic-classifier",
-        "s-nlp/russian_toxicity_classifier",
-        "IlyaGusev/rubertconv_toxic_clf",
-    ]
+    classification_model = get_classification_models()
 
     nli_model = [
         "cointegrated/rubert-base-cased-nli-threeway",

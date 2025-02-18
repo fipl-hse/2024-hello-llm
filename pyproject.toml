@@ -5,13 +5,18 @@ markers = [
     "mark8: tests for level 8",
     "mark10: tests for level 10",
     "reference_lab_nmt: tests for NMT task",
+    "reference_lab_nmt_sft: tests for fine-tuning NMT task",
     "reference_lab_classification: tests for classification task",
+    "reference_lab_classification_sft: tests for fine-tuning classification task",
     "reference_lab_summarization: tests for summarization task",
+    "reference_lab_summarization_sft: tests for fine-tuning summarization task",
     "reference_lab_nli: tests for nli task",
+    "reference_lab_nli_sft: tests for fine-tuning nli task",
+    "reference_lab_ner: tests for NER task",
     "reference_lab_generation: tests for generation task",
     "reference_lab_open_qa: tests for open generative Q&A task",
     "lab_7_llm: tests for lab 7",
-    "lab_8_finetuning: tests for lab 8",
+    "lab_8_sft: tests for lab 8",
 ]
 norecursedirs = [
     "venv*"
@@ -33,7 +38,9 @@ max-line-length = 100
 ignore = ['D004']
 ignore-path = [
     'venv*',
-    'build/'
+    'build/',
+    'config/website/test_sphinx_project/_build/',
+    'dist/',
 ]
 
 [tool.pydocstyle]
@@ -77,17 +84,21 @@ group_by_package = true
 force_alphabetical_sort_within_sections = true
 src_paths = [
     "reference_lab_classification",
+    "reference_lab_classification_sft",
     "reference_lab_summarization",
+    "reference_lab_summarization_sft",
     "reference_lab_ner",
     "reference_lab_nmt",
+    "reference_lab_nmt_sft",
     "reference_lab_nli",
+    "reference_lab_nli_sft",
     "reference_lab_generation",
     "reference_lab_open_qa",
     "core_utils",
     "admin_utils",
     "config",
     "lab_7_llm",
-    "lab_8_llm"
+    "lab_8_sft"
 ]
 
 [tool.mypy]
@@ -122,7 +133,7 @@ module = [
     'evaluate',
     'fastapi',
     'ghapi.all',
-    'memory_profiler',
+    'peft',
     'pydantic',
     'torch.*',
     'transformers'
@@ -144,8 +155,10 @@ disable_error_code = [
 [[tool.mypy.overrides]]
 module = [
     'core_utils.llm.llm_pipeline',
+    'core_utils.llm.sft_pipeline',
     'lab_7_llm.service',
     'lab_7_llm.main',
+    'lab_8_sft.service',
 ]
 disable_error_code = [
     'no-any-unimported'
@@ -156,7 +169,8 @@ module = [
     'admin_utils.get_datasets_analytics',
     'admin_utils.get_inference_analytics',
     'admin_utils.get_references',
-    'seminars.seminar_02_06_2024.try_fastapi',
+    'admin_utils.get_sft_references',
+    'seminars.seminar_02_12_2025.try_fastapi',
 ]
 disable_error_code = [
     'import-not-found',
