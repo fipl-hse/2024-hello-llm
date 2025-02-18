@@ -3,7 +3,9 @@ Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
+
 import pandas as pd
+
 from sphinx.addnodes import index
 
 from config.constants import PROJECT_ROOT
