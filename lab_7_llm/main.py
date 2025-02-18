@@ -138,7 +138,6 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
-        #self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -226,7 +225,8 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True,
                                  max_length=self._max_length).to(self._device)
 
-        outputs = self._model.generate(**inputs, max_length=self._max_length)
+        with torch.no_grad():
+            outputs = self._model.generate(**inputs, max_length=self._max_length)
         summarized_texts = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         return [str(text) for text in summarized_texts]

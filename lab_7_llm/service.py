@@ -1,8 +1,6 @@
 """
 Web service for model inference.
 """
-import json
-
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from pathlib import Path
 
@@ -13,9 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from config.lab_settings import LabSettings
 from lab_7_llm.main import LLMPipeline, TaskDataset
 
-SETTINGS_PATH = Path(__file__).parent / "settings.json"
 ASSETS_PATH = Path(__file__).parent / "assets"
 
 
@@ -29,12 +27,11 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
         tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
     """
     my_app = FastAPI()
-    with SETTINGS_PATH.open("r", encoding="utf-8") as file:
-        settings = json.load(file)
+    lab_settings = LabSettings(Path(__file__).parent / "settings.json")
 
     dataset = TaskDataset(pd.DataFrame())
     model_pipeline = LLMPipeline(
-        model_name=settings["parameters"]["model"],
+        model_name=lab_settings.parameters.model,
         dataset=dataset,
         max_length=120,
         batch_size=1,
@@ -50,7 +47,7 @@ templates = Jinja2Templates(directory=str(ASSETS_PATH))
 
 class Text(BaseModel):
     """
-    /
+    Class for user's text
     """
     question: str
 
@@ -68,7 +65,5 @@ async def infer(text: Text) -> JSONResponse:
     """
     Endpoint for model inference.
     """
-    # print("Received input:", text.question)
     summarized_text = pipeline.infer_sample((text.question,))
-    # print("Summarized output:", summarized_text)
     return JSONResponse(content={"infer": summarized_text})
