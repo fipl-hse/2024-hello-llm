@@ -205,7 +205,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         outputs = self._model.generate(
             **tokens,
-            max_length=self._max_length,
+            max_length=self._max_length + 50,
             decoder_input_ids=tokens["input_ids"]
         )
         prediction = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
