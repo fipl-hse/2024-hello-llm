@@ -1,0 +1,98 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #d4edc9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    flex-direction: column;
+    transition: background 0.5s ease;
+}
+
+.title {
+    font-size: 50px;
+    color: #2c5e1a;
+    margin-bottom: 60px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    animation: glowingTitle 1.5s infinite alternate;
+}
+
+@keyframes glowingTitle {
+    0%, 100% {
+        text-shadow: 0 0 5px rgba(44, 94, 26, 0.5), 0 0 10px rgba(44, 94, 26, 0.3);
+    }
+    50% {
+        text-shadow: 0 0 10px rgba(44, 94, 26, 1), 0 0 20px rgba(44, 94, 26, 0.8);
+    }
+}
+
+.address-bar, .response-box {
+    width: 80%;
+    max-width: 600px;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+    transition: box-shadow 0.3s ease;
+}
+
+.address-bar {
+    height: 50px;
+    padding: 15px 20px;
+    background-color: #f0faeb;
+    border: 2px solid #a8d5ba;
+    font-size: 18px;
+    color: #2c5e1a;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 25px;
+}
+
+.address-bar:focus {
+    box-shadow: 0 0 10px rgba(44, 94, 26, 0.7);
+    transform: scale(1.02);
+}
+
+.submit-button {
+    background: linear-gradient(135deg, #6ab04c, #4e9b29);
+    color: white;
+    border: none;
+    width: 100px;
+    height: 50px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.submit-button:hover {
+    background: linear-gradient(135deg, #4e9b29, #6ab04c);
+    transform: scale(1.05);
+}
+
+.response-box {
+    min-height: 150px;
+    padding: 20px;
+    background-color: #f0faeb;
+    border: 2px solid #a8d5ba;
+    font-size: 18px;
+    color: #2c5e1a;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    text-align: left;
+    margin-top: 20px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.response-box:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
