@@ -30,7 +30,6 @@ def main() -> None:
     if importer.raw_data is None:
         return
 
-
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
 
