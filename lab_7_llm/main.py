@@ -176,6 +176,7 @@ class LLMPipeline(AbstractLLMPipeline):
             "vocab_size": self._model.config.vocab_size,
             "size": statistics.total_param_bytes,
             "max_context_length": self._model.config.max_length
+        }
 
         return model_info
 
