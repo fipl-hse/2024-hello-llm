@@ -198,7 +198,11 @@ class LLMPipeline(AbstractLLMPipeline):
         tokens = self._tokenizer(input_text, return_tensors="pt", max_length=self._max_length, truncation=True)
         tokens = tokens.to(self._device)
 
-        outputs = self._model.generate(**tokens, max_length=self._max_length)
+        outputs = self._model.generate(
+            **tokens,
+            max_length=self._max_length,
+            decoder_input_ids=tokens["input_ids"]
+        )
         prediction = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         return prediction
