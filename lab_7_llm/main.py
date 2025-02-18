@@ -149,7 +149,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        if self._model is None:
+        if not isinstance(self._model, torch.nn.Module):
             raise ValueError("No model here")
         tensor = torch.ones(
             (1, self._model.config.encoder.max_position_embeddings),
