@@ -119,7 +119,7 @@ sample and truncates it to its maximum length, adding padding tokens to the maxi
 Method should return a dictionary with the ``input_ids``, ``attention_mask`` and
 ``labels`` for current sample as keys.
 
-Stage 2. Introduce dataset abstraction: ``TaskTokenizedDataset``
+Stage 2. Introduce dataset abstraction: ``TokenizedTaskDataset``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As in the previous laboratory work to interact with the model we will use PyTorch
@@ -129,7 +129,7 @@ we will use Transformers ``Trainer`` abstraction, which uses PyTorch ``DataLoade
 to efficiently load the data into the model's memory,
 process it in batches and pass it to the model.
 
-Implement :py:class:`lab_8_sft.main.TaskTokenizedDataset` abstraction, which allows to
+Implement :py:class:`lab_8_sft.main.TokenizedTaskDataset` abstraction, which allows to
 prepare data for fine-tuning.
 This class applies tokenization to the input data and stores it for efficient
 access during fine-tuning.
@@ -142,7 +142,7 @@ which has one internal attribute:
 Fill the attribute ``self._data`` with tokenized samples from the data.
 Use the function :py:func:`lab_8_sft.main._tokenize_sample`.
 
-.. important:: When instantiating ``TaskTokenizedDataset``
+.. important:: When instantiating ``TokenizedTaskDataset``
                abstraction in ``start.py`` module,
                limit the full ``pd.DataFrame`` you got
                from ``RawDataPreprocessor`` to the number of samples, calculating it for
@@ -153,7 +153,7 @@ See the intended instantiation:
 
 .. code:: py
 
-    dataset = TaskTokenizedDataset(preprocessor.data.loc[
+    dataset = TokenizedTaskDataset(preprocessor.data.loc[
             inference_params.num_samples : inference_params.num_samples + fine_tune_samples
         ])
 
@@ -165,7 +165,7 @@ Stage 2.1. Get the dataset length
 In the next two steps, we will override some methods
 that will allow us to further tune the model.
 
-Implement :py:meth:`lab_8_sft.main.TaskTokenizedDataset.__len__` method
+Implement :py:meth:`lab_8_sft.main.TokenizedTaskDataset.__len__` method
 which allows to get the number of items in dataset.
 PyTorch ``DataLoader`` uses this method
 to determine the total number of batches in an epoch.
@@ -173,7 +173,7 @@ to determine the total number of batches in an epoch.
 Stage 2.2. Retrieve an item from the dataset
 """"""""""""""""""""""""""""""""""""""""""""
 
-Implement :py:meth:`lab_8_sft.main.TaskTokenizedDataset.__getitem__` method
+Implement :py:meth:`lab_8_sft.main.TokenizedTaskDataset.__getitem__` method
 which allows to retrieve an item from the dataset by index.
 
 PyTorch ``DataLoader`` calls this method to retrieve data for each batch.
