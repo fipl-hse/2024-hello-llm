@@ -1,10 +1,10 @@
 datasets==3.2.0
 evaluate==0.4.3
 fastapi==0.115.7
-pandas==1.5.3
+pandas==2.2.3
 pydantic==2.10.6
 rouge-score==0.1.2
-torch==2.1.0
+torch==2.2.2
 torchinfo==1.8.0
 transformers==4.48.0
 uvicorn==0.34.0
