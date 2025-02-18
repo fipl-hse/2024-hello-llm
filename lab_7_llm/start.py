@@ -39,7 +39,7 @@ def main() -> None:
                            batch_size=1,
                            device='cpu')
     print(pipeline.analyze_model())
-    sample1 = pipeline.infer_sample(dataset[1])
+    sample1 = pipeline.infer_sample(dataset[0])
     print(sample1)          # for mark 6
 
     result = sample1
