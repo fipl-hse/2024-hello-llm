@@ -281,7 +281,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         predictions = data[ColumnNames.PREDICTION.value]
         references = data[ColumnNames.TARGET.value]
         for metric in self._metrics:
-            calculated_metrics[str(metric)] = metric.compute(predictions=predictions,
+            calculated_metrics[metric.name] = metric.compute(predictions=predictions,
                                                              references=references)
 
         return calculated_metrics
