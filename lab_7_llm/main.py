@@ -164,6 +164,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         self._model: Module = (BertForSequenceClassification.from_pretrained(model_name)
                                .to(self._device))
+        self._model.eval()
         self._tokenizer = BertTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
