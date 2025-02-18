@@ -165,6 +165,7 @@ module = [
     'admin_utils.get_datasets_analytics',
     'admin_utils.get_inference_analytics',
     'admin_utils.get_references',
+    'admin_utils.get_sft_references',
     'seminars.seminar_02_12_2025.try_fastapi',
 ]
 disable_error_code = [

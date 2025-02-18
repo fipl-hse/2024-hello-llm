@@ -1,7 +1,7 @@
 """
 Collect and store model analytics.
 """
-# pylint: disable=duplicate-code
+# pylint: disable=import-error, wrong-import-order, duplicate-code
 from decimal import Decimal, ROUND_FLOOR
 from pathlib import Path
 from typing import Any
@@ -20,10 +20,11 @@ from admin_utils.get_references import (
 )
 from config.lab_settings import InferenceParams, SFTParams
 from core_utils.llm.metrics import Metrics
-from reference_lab_classification_sft.start import get_result_for_classification
-from reference_lab_nli_sft.start import get_result_for_nli
-from reference_lab_nmt_sft.start import get_result_for_nmt
-from reference_lab_summarization_sft.start import get_result_for_summarization
+
+from reference_lab_classification_sft.start import get_result_for_classification  # isort:skip
+from reference_lab_nli_sft.start import get_result_for_nli  # isort:skip
+from reference_lab_nmt_sft.start import get_result_for_nmt  # isort:skip
+from reference_lab_summarization_sft.start import get_result_for_summarization  # isort:skip
 
 
 @dataclass
