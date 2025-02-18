@@ -12,6 +12,8 @@
     margin: 10px;
     border-color: #3ea4ed85;
     color: #ffffff;
+    display: flex;
+    margin: 0 auto;
 }
 
 .output-line {

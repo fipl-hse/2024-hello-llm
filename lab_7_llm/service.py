@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from pydantic.dataclasses import dataclass
 
 from config.lab_settings import LabSettings
 from lab_7_llm.main import LLMPipeline, TaskDataset
@@ -41,11 +41,12 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
 
 
 app, pipeline = init_application()
-app.mount("/static", StaticFiles(directory=ASSETS_PATH), name="static")
+app.mount("/my_assets", StaticFiles(directory=ASSETS_PATH), name="my_assets")
 templates = Jinja2Templates(directory=str(ASSETS_PATH))
 
 
-class Text(BaseModel):
+@dataclass
+class Query:
     """
     Class for user's input
     """
@@ -61,7 +62,7 @@ async def root(request: Request) -> HTMLResponse:
 
 
 @app.post("/infer")
-async def infer(text: Text) -> JSONResponse:
+async def infer(text: Query) -> JSONResponse:
     """
     Endpoint for model inference.
     """
