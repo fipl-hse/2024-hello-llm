@@ -313,4 +313,4 @@ class TaskEvaluator(AbstractTaskEvaluator):
                 predictions=predictions,
                 average='micro')
             results[metric.value] = value[metric.value]
-            return results
+            return results if results else None
