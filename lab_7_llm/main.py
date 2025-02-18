@@ -56,7 +56,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
         raw_data = self._raw_data.copy()
-        raw_data['labels'] = self._raw_data['labels'].apply(lambda x: tuple(x))
+        raw_data['labels'] = self._raw_data['labels'].apply(tuple)
 
         data_properties = {
             'dataset_number_of_samples': self._raw_data.shape[0],
@@ -96,12 +96,19 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         }
 
         self._data = self._raw_data.drop(['id', 'text'], axis=1)
-        self._data['labels'] = self._data['labels'].apply(lambda x: tuple(x))
+        self._data['labels'] = self._data['labels'].apply(tuple)
         self._data = self._data.rename(
             columns={"labels": ColumnNames.TARGET.value, "ru_text": ColumnNames.SOURCE.value})
-        self._data = self._data[self._data['target'].apply(lambda x: not any(label in unwanted_labels for label in x))]
+        self._data = (
+            self._data[
+                self._data['target'].apply(
+                    lambda x: not any(label in unwanted_labels for label in x)
+                )
+            ]
+        )
         self._data['target'] = self._data['target'].apply(
-            lambda x: next((class_num for class_num, emotions in class_rules.items() if x[0] in emotions), 8)
+            lambda x: next(
+                (class_num for class_num, emotions in class_rules.items() if x[0] in emotions),8)
         )
         self._data = self._data.dropna().drop_duplicates(subset='source')
         self._data = self._data.reset_index(drop=True)
@@ -158,7 +165,14 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
-    def __init__(self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str) -> None:
+    def __init__(
+            self,
+            model_name: str,
+            dataset: TaskDataset,
+            max_length: int,
+            batch_size: int,
+            device: str
+    ) -> None:
         """
         Initialize an instance of LLMPipeline.
 
@@ -227,10 +241,10 @@ class LLMPipeline(AbstractLLMPipeline):
         for batch in dataset_loader:
             predictions.extend(self._infer_batch(batch))
 
-        df = pd.DataFrame()
-        df[ColumnNames.TARGET.value] = self._dataset.data[ColumnNames.TARGET.value]
-        df[ColumnNames.PREDICTION.value] = predictions
-        return df
+        new_df = pd.DataFrame()
+        new_df[ColumnNames.TARGET.value] = self._dataset.data[ColumnNames.TARGET.value]
+        new_df[ColumnNames.PREDICTION.value] = predictions
+        return new_df
 
 
     @torch.no_grad()
@@ -287,5 +301,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             f1_metric = evaluate.load(metric.value)
             predictions = predictions_df[ColumnNames.PREDICTION.value]
             references = predictions_df[ColumnNames.TARGET.value]
-            value = f1_metric.compute(references=references, predictions=predictions, average='micro')
+            value = f1_metric.compute(
+                references=references,
+                predictions=predictions,
+                average='micro')
             return value
