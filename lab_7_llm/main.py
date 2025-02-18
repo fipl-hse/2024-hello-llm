@@ -278,10 +278,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         data = pd.read_csv(self._data_path)
         calculated_metrics = {}
 
-        predictions = data[ColumnNames.PREDICTION.value]
-        references = data[ColumnNames.TARGET.value]
+        predictions = data[ColumnNames.PREDICTION.value].tolist()
+        references = data[ColumnNames.TARGET.value].tolist()
         for metric in self._metrics:
-            calculated_metrics[metric.name] = metric.compute(predictions=predictions,
-                                                             references=references)
+            computed_metric = metric.compute(predictions=predictions,
+                                             references=references)
+
+            calculated_metrics[metric.name] = computed_metric['rougeL' if metric.name == 'rouge' else 'bleu']
 
         return calculated_metrics
