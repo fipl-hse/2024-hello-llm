@@ -283,7 +283,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric in self._metrics:
             computed_metric = metric.compute(predictions=predictions,
                                              references=references)
-
-            calculated_metrics[metric.name] = computed_metric['rougeL' if metric.name == 'rouge' else 'bleu']
+            if metric.name == 'bleu':
+                calculated_metrics[metric.name] = computed_metric['bleu']
+            else:
+                calculated_metrics[metric.name] = computed_metric['rougeL']
+            # calculated_metrics[metric.name] = computed_metric['rougeL' if metric.name == 'rouge' else 'bleu']
 
         return calculated_metrics
