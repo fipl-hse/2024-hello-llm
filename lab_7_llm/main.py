@@ -9,6 +9,7 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+from pandas import DataFrame
 from datasets import load_dataset
 from evaluate import load
 from torch.utils.data import DataLoader, Dataset
@@ -108,7 +109,7 @@ class TaskDataset(Dataset):
         return (self._data.source.iloc[index],)
 
     @property
-    def data(self) -> pd.DataFrame:
+    def data(self) -> DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
@@ -166,7 +167,7 @@ class LLMPipeline(AbstractLLMPipeline):
                 'max_context_length': self._model.config.max_length}
 
     @report_time
-    def infer_sample(self, sample: tuple[str, ...]) -> list[str] | None:
+    def infer_sample(self, sample: tuple[str, ...]) -> str | None:
         """
         Infer model on a single sample.
 
@@ -179,7 +180,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        return self._infer_batch([sample][0])
+        return self._infer_batch([sample])[0]
 
 
     @report_time
@@ -216,7 +217,7 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
         encoded_batch = self._tokenizer(
-            sample_batch[0],
+            list(sample_batch[0]),
             return_tensors="pt",
             padding=True,
             truncation=True,
