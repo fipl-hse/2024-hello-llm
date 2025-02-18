@@ -10,6 +10,7 @@ from typing import Iterable, Sequence
 import evaluate
 import pandas as pd
 import torch
+from torch.nn import Module
 from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
@@ -37,7 +38,7 @@ class RawDataImporter(AbstractRawDataImporter):
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
         dataset = load_dataset(self._hf_name, name='simplified', split='validation')
-        self._raw_data = pd.DataFrame.from_dict(dataset)
+        self._raw_data = pd.DataFrame.to_pandas(dataset)
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError('The downloaded dataset is not pd.DataFrame')
@@ -197,7 +198,10 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         ids = torch.ones(1, self._model.config.max_position_embeddings, dtype=torch.long)
         tokens = {"input_ids": ids, "attention_mask": ids}
-        result = summary(self._model, input_data=tokens, device="cpu", verbose=0)
+        if isinstance(self._model, Module):
+            result = summary(self._model, input_data=tokens, device="cpu", verbose=0)
+        else:
+            print("Model is not of type 'Module'")
 
         model_properties = {
             'input_shape': {
@@ -305,4 +309,4 @@ class TaskEvaluator(AbstractTaskEvaluator):
                 references=references,
                 predictions=predictions,
                 average='micro')
-            return value
+            return dict(value)

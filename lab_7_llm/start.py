@@ -6,6 +6,8 @@ from pathlib import Path
 
 from sphinx.addnodes import index
 
+import pandas as pd
+
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
@@ -28,6 +30,9 @@ def main() -> None:
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
+
+    if not isinstance(importer.raw_data, pd.DataFrame):
+        raise TypeError('The downloaded dataset is not pd.DataFrame')
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.analyze()
