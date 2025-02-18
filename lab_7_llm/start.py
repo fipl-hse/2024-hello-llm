@@ -14,7 +14,7 @@ from lab_7_llm.main import (
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    TaskEvaluator
+    TaskEvaluator,
 )
 
 
@@ -56,4 +56,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
