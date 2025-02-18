@@ -256,13 +256,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         predictions = data_frame[ColumnNames.PREDICTION.value]
         references = data_frame[ColumnNames.TARGET.value]
 
-        evaluation_res = {}
-        for metric in self._metrics:
-            scores = load(metric.value).compute(predictions=predictions,
-                                                references=references, average='micro')
-            if metric.value == "f1":
-                evaluation_res[metric.value] = scores["f1"]
-            else:
-                evaluation_res[metric.value] = scores[metric.value]
+        evaluation_res = {metric.value: load(metric.value).compute(predictions=predictions,
+                                                                   references=references, average='micro')[metric.value]
+                          for metric in self._metrics}
 
         return evaluation_res
