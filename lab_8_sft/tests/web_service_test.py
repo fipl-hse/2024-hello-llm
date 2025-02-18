@@ -13,7 +13,7 @@ except ImportError:
     print('Library "fastapi" not installed. Failed to import.')
     TestClient = namedtuple("TestClient", "post")
 
-from lab_7_llm.service import app
+from lab_8_sft.service import app
 
 
 class WebServiceTest(unittest.TestCase):
@@ -27,19 +27,21 @@ class WebServiceTest(unittest.TestCase):
 
         cls._client = TestClient(app)
 
-    @pytest.mark.lab_7_llm
+    @pytest.mark.lab_8_sft
     @pytest.mark.mark10
     def test_e2e_ideal(self) -> None:
         """
         Ideal service scenario
         """
+
         url = "/infer"
         input_text = "What is the capital of France?"
 
-        payload = {"question": input_text}
-        response = self._client.post(url, json=payload)
+        for model_type in range(2):
+            payload = {"question": input_text, "base_model": bool(model_type)}
+            response = self._client.post(url, json=payload)
 
-        self.assertEqual(200, response.status_code)
-        self.assertIn("infer", response.json())
-        print(response.json().get("infer"))
-        self.assertIsNotNone(response.json().get("infer"))
+            self.assertEqual(200, response.status_code)
+            self.assertIn("infer", response.json())
+            print(response.json().get("infer"))
+            self.assertIsNotNone(response.json().get("infer"))

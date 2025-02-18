@@ -3,6 +3,10 @@
         {
             "name": "lab_7_llm",
             "coverage": 83
+        },
+        {
+            "name": "lab_8_sft",
+            "coverage": 83
         }
     ],
     "addons": [

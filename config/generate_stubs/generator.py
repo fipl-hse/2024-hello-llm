@@ -50,6 +50,8 @@ def remove_implementation_from_function(
             opening_files.extend(original_declaration.body[1:])
 
         if isinstance(decl, ast.With) and decl not in opening_files:
+            if not ast.unparse(decl.items[0].context_expr.args):
+                continue
             if "assets" in ast.unparse(decl.items[0].context_expr.args[0]):  # type: ignore
                 opening_files.append(decl)
 
