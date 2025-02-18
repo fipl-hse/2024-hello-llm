@@ -3,9 +3,27 @@ Laboratory work.
 
 Working with Large Language Models.
 """
+import re
+from cgitb import small
+
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+
+import fastapi
+import pandas as pd
+import torch
+from datasets import load_dataset
+from torch.utils.data import Dataset, DataLoader
+from torchinfo import summary
+from transformers import AutoModelForTokenClassification, AutoTokenizer
+
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,12 +39,18 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(
+            self._hf_name, split="validation", trust_remote_code=True
+        ).to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
     """
+
+    def __init__(self, raw_data: pd.DataFrame):
+        super().__init__(raw_data)
 
     def analyze(self) -> dict:
         """
@@ -35,12 +59,34 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        temp_df = self._raw_data.copy()
+
+        for column in temp_df.columns:
+            temp_df[column] = temp_df[column].str.join(" ")
+
+        duplicates = temp_df[temp_df.duplicated()].shape[0]
+
+        empty_rows = self._raw_data[self._raw_data.isnull().all(axis=1)].shape[0]
+
+        no_na_df = self._raw_data.dropna()
+
+        return {
+            "dataset_columns": self._raw_data.shape[1],
+            "dataset_duplicates": duplicates,
+            "dataset_empty_rows": empty_rows,
+            "dataset_number_of_samples": self._raw_data.shape[0],
+            "dataset_sample_max_len": int(no_na_df["tokens"].str.len().max()),
+            "dataset_sample_min_len": int(no_na_df["tokens"].str.len().min()),
+        }
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = self._raw_data.rename(
+            columns={"ner_tags": "target", "tokens": "source"}
+        ).reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
@@ -55,6 +101,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -63,6 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return self._data.shape[0]
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -74,15 +122,17 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data.iloc[index].array)
 
     @property
-    def data(self) -> DataFrame:
+    def data(self) -> pd.DataFrame:
         """
         Property with access to preprocessed DataFrame.
 
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -103,6 +153,11 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = AutoModelForTokenClassification.from_pretrained(self._model_name).to(device)
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            self._model_name,
+        )
 
     def analyze_model(self) -> dict:
         """
@@ -111,6 +166,25 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        model_config = self._model.config
+        input_ids = torch.ones(
+            (1, model_config.max_position_embeddings), dtype=torch.long, device=self._device
+        )
+
+        input_data = {"input_ids": input_ids, "attention_mask": input_ids}
+
+        info = summary(model=self._model, input_data=input_data, verbose=0)
+        input_size = list(info.input_size["input_ids"])
+
+        return {
+            "embedding_size": model_config.max_position_embeddings,
+            "input_shape": {"attention_mask": input_size, "input_ids": input_size},
+            "max_context_length": model_config.max_length,
+            "num_trainable_params": info.trainable_params,
+            "output_shape": info.summary_list[-1].output_size,
+            "size": info.total_param_bytes,
+            "vocab_size": model_config.vocab_size,
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -123,6 +197,35 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        pattern = "[\w-]+|[-.,!?:;]"
+        pretokenized = sample if len(sample) > 1 else re.findall(pattern=pattern, string=sample[0])
+
+        if self._model:
+            input_data = self._tokenizer(
+                pretokenized,
+                return_tensors="pt",
+                is_split_into_words=True,
+                padding=True,
+                truncation=True,
+            )
+
+            tokens_words_mapping = input_data.word_ids()
+            label_ids = []
+            prev_token = None
+            for word_id in tokens_words_mapping:
+                if word_id is not None and word_id != prev_token:
+                    prev_token = word_id
+                    label_ids.append(tokens_words_mapping.index(word_id))
+
+            with torch.no_grad():
+                logits = self._model(**input_data).logits
+
+            pred = torch.argmax(logits, dim=2)
+            labels = [int(t) for t in pred[0]]
+
+            final_labels = [int(labels[label_id]) for label_id in label_ids]
+            return str(final_labels)
+        return
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
