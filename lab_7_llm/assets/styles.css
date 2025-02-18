@@ -1,0 +1,44 @@
+body {
+    background-color: lavender;
+    font-family: sans-serif;
+    margin: 20px;
+}
+
+h1 {
+    color: purple;
+    text-align: center;
+}
+
+textarea {
+    background-color: rgb(255, 252, 249);
+    border-radius: 4px;
+    color: rgb(167, 50, 220);
+    font-size: 1.5rem;
+    max-height: 650px;
+    max-width: 100%;
+    min-height: 250px;
+    min-width: 100%;
+    padding: 8px;
+}
+
+button {
+    background-color: rgb(239, 255, 253);
+    border: none;
+    border-radius: 4px;
+    color: purple;
+    font-size: 1rem;
+    margin-left: 5%;
+    margin-right: 5%;
+    padding: 12px 20px;
+}
+
+button:hover {
+    background-color: rgb(203, 0, 244);
+}
+
+#main {
+  display: flex;
+}
+#main > div {
+  width: 40%;
+}
