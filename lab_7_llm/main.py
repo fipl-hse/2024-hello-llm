@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 import pandas as pd
+import re
 import torch
 from datasets import load_dataset
 from evaluate import load
@@ -149,8 +150,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name,
                                                         model_max_length=max_length,
                                                         padding_side='left')
-
-        self._tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        self._tokenizer.pad_token = self._tokenizer.eos_token
 
     def analyze_model(self) -> dict:
         """
@@ -217,11 +217,10 @@ class LLMPipeline(AbstractLLMPipeline):
         predictions = []
 
         for batch in dataset_loader:
-            predictions.extend(self._infer_batch(batch[0]))
+            predictions.extend(self._infer_batch(batch))
 
         data_predictions = pd.DataFrame({ColumnNames.TARGET.value: targets,
                                          ColumnNames.PREDICTION.value: predictions})
-
         return data_predictions
 
     @torch.no_grad()
@@ -235,8 +234,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        samples = [sample[0] for sample in sample_batch]
-        input_ids = self._tokenizer.batch_encode_plus(samples,
+        input_ids = self._tokenizer.batch_encode_plus(list(sample_batch[0]),
                                                       return_tensors="pt",
                                                       max_length=self._max_length,
                                                       padding=True,
@@ -247,9 +245,8 @@ class LLMPipeline(AbstractLLMPipeline):
             attention_mask=input_ids["attention_mask"],
             max_length=self._max_length
         )
-
-        return [self._tokenizer.decode(output[input_ids["input_ids"].shape[1] + 1:],
-                                       skip_special_tokens=True) for output in outputs]
+        decoded_batch = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        return [re.sub(r"^.*?\n", "", decoded_answer) for decoded_answer in decoded_batch]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -281,6 +278,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         predictions = data[ColumnNames.PREDICTION.value].to_list()
         references = data[ColumnNames.TARGET.value].to_list()
+
         for metric in self._metrics:
             computed_metric = metric.compute(predictions=predictions,
                                              references=references)

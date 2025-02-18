@@ -37,7 +37,7 @@ def main() -> None:
     max_length = 120
     device = 'cpu'
 
-    dataset = TaskDataset(preprocessor.data.head(100))
+    dataset = TaskDataset(preprocessor.data.head(10))
     pipeline = LLMPipeline(settings['parameters']['model'],
                            dataset,
                            max_length,
@@ -54,6 +54,7 @@ def main() -> None:
     metrics = [Metrics(metric) for metric in settings['parameters']['metrics']]
     evaluator = TaskEvaluator(predictions_path, metrics)
     result = evaluator.run()
+    print(result)
 
     assert result is not None, "Demo does not work correctly"
 
