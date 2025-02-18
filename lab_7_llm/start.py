@@ -4,9 +4,7 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 import sys
 from pathlib import Path
-
 import pandas as pd
-
 from core_utils.llm.metrics import Metrics
 from lab_7_llm.main import (
     LLMPipeline,
@@ -24,17 +22,25 @@ def main() -> None:
     Run the translation pipeline.
     """
     try:
-        importer = RawDataImporter("trixdade/reviews_russian")
-        raw_data = importer.obtain()
+        importer = RawDataImporter()
+        importer.obtain()
+
+        raw_data = importer.data
 
         if raw_data is None or raw_data.empty:
             print("Warning: No data obtained. Exiting early.")
             return
 
         preprocessor = RawDataPreprocessor(raw_data)
+
         preprocessor.transform()
 
-        dataset = TaskDataset(preprocessor.data)
+        dataset_analysis = preprocessor.analyze()
+        print("Dataset analysis:")
+        for field, value in dataset_analysis.items():
+            print(field, value, sep=': ')
+
+        dataset = TaskDataset(preprocessor.data.head(100))
 
         model = LLMPipeline(
             model_name="stevhliu/my_awesome_billsum_model",
@@ -44,8 +50,10 @@ def main() -> None:
             device="cpu"
         )
 
-        model_properties = model.analyze_model()
-        print("Model Properties:", model_properties)
+        model_analysis = model.analyze_model()
+        print("Model analysis:")
+        for field, value in model_analysis.items():
+            print(field, value, sep=': ')
 
         predictions = model.infer_dataset()
 
@@ -56,6 +64,8 @@ def main() -> None:
         evaluator = TaskEvaluator(predictions_path, metrics)
         results = evaluator.run()
         print("Evaluation Results:", results)
+
+        assert results is not None, "Demo does not work correctly"
 
     except (ValueError, FileNotFoundError, KeyError) as e:
         print(f"An error occurred: {e}")

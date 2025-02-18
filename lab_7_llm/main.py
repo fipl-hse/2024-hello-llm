@@ -28,6 +28,11 @@ class RawDataImporter(AbstractRawDataImporter):
     A class that imports the HuggingFace dataset.
     """
 
+    def __init__(self) -> None:
+        """Initialize an instance of RawDataImporter."""
+        super().__init__("trixdade/reviews_russian")
+        self._data: pd.DataFrame | None = None
+
     @report_time
     def obtain(self) -> None:
         """
@@ -40,6 +45,9 @@ class RawDataImporter(AbstractRawDataImporter):
         self._data = dataset.to_pandas()
         if not isinstance(self._data, pd.DataFrame) or self._data.empty:
             raise ValueError("Dataset could not be loaded or is empty.")
+
+    @property
+    def data(self):
         return self._data
 
 
@@ -260,7 +268,7 @@ class LLMPipeline(AbstractLLMPipeline):
             print(f"Tokens: {outputs[0]}")
             print(f"Decoded: {batch_predictions[0]}")
 
-        self.dataset.data["predicted_summary"] = pd.Series(predictions)
+        self.dataset.data.loc[:, "predicted_summary"] = pd.Series(predictions)
         return self.dataset.data
 
     @torch.no_grad()
@@ -335,4 +343,5 @@ class TaskEvaluator(AbstractTaskEvaluator):
                 metric_result = metric.compute(predictions=predictions, references=references)
                 results["bleu"] = metric_result["bleu"]
 
+        print("Метрики:", results)
         return results
