@@ -4,7 +4,9 @@ Starter for demonstration of laboratory work.
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 import sys
 from pathlib import Path
+
 import pandas as pd
+
 from core_utils.llm.metrics import Metrics
 from lab_7_llm.main import (
     LLMPipeline,

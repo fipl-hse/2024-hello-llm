@@ -48,6 +48,12 @@ class RawDataImporter(AbstractRawDataImporter):
 
     @property
     def data(self):
+        """
+        Returns the dataset stored in `_data`.
+
+        Returns:
+            pd.DataFrame: The dataset as a pandas DataFrame.
+        """
         return self._data
 
 
