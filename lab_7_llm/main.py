@@ -278,8 +278,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         data = pd.read_csv(self._data_path)
         calculated_metrics = {}
 
-        predictions = data[ColumnNames.PREDICTION.value].tolist()
-        references = data[ColumnNames.TARGET.value].tolist()
+        predictions = data[ColumnNames.PREDICTION.value].to_list()
+        references = data[ColumnNames.TARGET.value].to_list()
         for metric in self._metrics:
             computed_metric = metric.compute(predictions=predictions,
                                              references=references)
