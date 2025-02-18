@@ -30,9 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const responseData = await response.json();
-            responseField.innerText = `Ответ от сервера: ${responseData.infer}`;
+            responseField.innerText = `The answer: ${responseData.infer}`;
         } catch (error) {
-            responseField.innerText = `Ошибка: ${error.message}`;
+            responseField.innerText = Error: ${error.message}`;
         }
     });
 });
