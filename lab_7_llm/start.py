@@ -5,7 +5,6 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 
 from sphinx.addnodes import index
-
 import pandas as pd
 
 from config.constants import PROJECT_ROOT
