@@ -131,7 +131,7 @@ module = [
     'evaluate',
     'fastapi',
     'ghapi.all',
-    'memory_profiler',
+    'peft',
     'pydantic',
     'torch.*',
     'transformers'
@@ -153,8 +153,10 @@ disable_error_code = [
 [[tool.mypy.overrides]]
 module = [
     'core_utils.llm.llm_pipeline',
+    'core_utils.llm.sft_pipeline',
     'lab_7_llm.service',
     'lab_7_llm.main',
+    'lab_8_sft.service',
 ]
 disable_error_code = [
     'no-any-unimported'
