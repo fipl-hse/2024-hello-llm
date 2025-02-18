@@ -57,7 +57,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        dataset_info = {
+
+        return {
             'dataset_number_of_samples': self._raw_data.shape[0],
             'dataset_columns': self._raw_data.shape[1],
             'dataset_duplicates': self._raw_data.duplicated().sum(),
@@ -66,8 +67,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_sample_max_len': self._raw_data['text'].dropna(how='all').map(len).max()
 
         }
-
-        return dataset_info
 
     @report_time
     def transform(self) -> None:
@@ -181,7 +180,7 @@ class LLMPipeline(AbstractLLMPipeline):
         tokens = {"input_ids": ids, "attention_mask": ids}
         model_summary = summary(self._model, input_data=tokens, device=self._device, verbose=0)
 
-        model_properties = {
+        return {
             "input_shape": {
                 "attention_mask": list(model_summary.input_size['attention_mask']),
                 "input_ids": list(model_summary.input_size['input_ids'])},
@@ -192,8 +191,6 @@ class LLMPipeline(AbstractLLMPipeline):
             "size": model_summary.total_param_bytes,
             "max_context_length": model_config.max_length
         }
-
-        return model_properties
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -206,17 +203,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        # if not self._model:
-        #     return None
-        #
-        # inputs = self._tokenizer(sample, return_tensors="pt", padding=True, truncation=True)
-        #
-        # with torch.no_grad():
-        #     logits = self._model(**inputs).logits
-        #
-        # return str(logits.argmax().item())
 
-        # mark8
         return self._infer_batch([sample])[0]
 
     @report_time
