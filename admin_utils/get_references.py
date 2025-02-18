@@ -116,23 +116,13 @@ def get_task(model: str, main_params: MainParams, inference_params: InferencePar
     if "test_" in model:
         model = model.replace("test_", "")
 
-    nmt_model = [
-        "Helsinki-NLP/opus-mt-en-fr",
-        "Helsinki-NLP/opus-mt-ru-en",
-        "Helsinki-NLP/opus-mt-ru-es",
-        "t5-small",
-    ]
+    nmt_model = get_nmt_models()
 
     generation_model = ["VMware/electra-small-mrqa", "timpal0l/mdeberta-v3-base-squad2"]
 
     classification_models = get_classification_models()
 
-    nli_model = [
-        "cointegrated/rubert-base-cased-nli-threeway",
-        "cointegrated/rubert-tiny-bilingual-nli",
-        "cross-encoder/qnli-distilroberta-base",
-        "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
-    ]
+    nli_model = get_nli_models()
 
     summarization_model = get_summurization_models()
 
@@ -170,7 +160,7 @@ def collect_combinations(references: dict[str, dict[str, list[str]]]) -> list[tu
         references (dict[str, dict[str, list[str]]]): references of combinations
 
     Returns:
-        list[tuple(str, str, str)]: list of combinations
+        list[tuple[str, str, str]]: list of combinations
     """
     combinations = []
     for model_name, datasets in sorted(references.items()):
@@ -187,6 +177,7 @@ def prepare_result_section(
     Fill results section with combination.
 
     Args:
+        results (dict[str, dict[str, dict]]): dictionary with results
         model_name (str): model name
         dataset_name (str): dataset name
         metric (str): metric name

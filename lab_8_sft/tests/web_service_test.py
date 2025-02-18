@@ -29,7 +29,7 @@ class WebServiceTest(unittest.TestCase):
 
     @pytest.mark.lab_8_sft
     @pytest.mark.mark10
-    def test_e2e_ideal(self):
+    def test_e2e_ideal(self) -> None:
         """
         Ideal service scenario
         """

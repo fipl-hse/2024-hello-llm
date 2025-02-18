@@ -45,7 +45,7 @@ class SFTParams:
     max_fine_tuning_steps: int
     device: str
     finetuned_model_path: Path
-    learning_rate: float = 1e-4
+    learning_rate: float = 1e-3
     target_modules: list[str] | None = None
 
 

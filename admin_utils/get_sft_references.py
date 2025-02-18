@@ -51,6 +51,8 @@ def get_target_modules(model_name: str) -> list[str] | None:
     if model_name in (
         "dmitry-vorobiev/rubert_ria_headlines",
         "XSY/albert-base-v2-imdb-calssification",
+        "mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization",
+        "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization",
     ):
         return ["query", "key", "value", "dense"]
     if model_name in (
@@ -76,7 +78,7 @@ def get_task(
         model (str): name of model
         main_params (MainParams): Parameters from main
         inference_params (InferenceParams): Parameters for inference
-        inference_params (SFTParams): Parameters for fine-tuning
+        sft_params (SFTParams): Parameters for fine-tuning
 
     Returns:
         Any: Metric for a specific task
@@ -92,8 +94,6 @@ def get_task(
     if model in classification_models:
         return get_result_for_classification(inference_params, sft_params, main_params)
     if model in summarization_models:
-        sft_params.max_fine_tuning_steps = 30
-        sft_params.batch_size = 1
         return get_result_for_summarization(inference_params, sft_params, main_params)
     if model in nli_models:
         return get_result_for_nli(inference_params, sft_params, main_params)
@@ -113,7 +113,7 @@ def main() -> None:
     dist_dir = project_root / "dist"
     dist_dir.mkdir(exist_ok=True)
 
-    dest = dist_dir / "predictions.json"
+    dest = project_root / "admin_utils" / "reference_sft_scores_new.json"
 
     references = get_references(path=references_path)
 
@@ -133,16 +133,23 @@ def main() -> None:
         finetuned_model_path=dist_dir,
         device="cpu",
     )
+    specific_lr = {
+        "Helsinki-NLP/opus-mt-ru-es": 1e-4,
+        "cointegrated/rubert-tiny-bilingual-nli": 1e-2,
+        "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization": 1e-4,
+        "dmitry-vorobiev/rubert_ria_headlines": 1e-1,
+    }
+
     result = {}
     for model_name, dataset_name, metric in tqdm(sorted(combinations)):
         print(model_name, dataset_name, metric)
-
+        sft_params.learning_rate = specific_lr.get(model_name, 1e-3)
         prepare_result_section(result, model_name, dataset_name, metric)
         sft_params.finetuned_model_path = dist_dir / model_name
         sft_params.target_modules = get_target_modules(model_name)
         main_params = MainParams(model_name, dataset_name, [Metrics(metric)])
-        inference_func = get_task(model_name, main_params, inference_params, sft_params)
-        score = Decimal(inference_func[metric])
+        sft_result = get_task(model_name, main_params, inference_params, sft_params)
+        score = Decimal(sft_result[metric])
         result[model_name][dataset_name][metric] = score.quantize(Decimal("1.00000"), ROUND_FLOOR)
 
     save_reference(dest, result)

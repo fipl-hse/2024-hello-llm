@@ -19,6 +19,7 @@ across
 actions
 adapt
 adaptation
+adapted
 adapters
 add
 adding
@@ -91,6 +92,7 @@ auto
 autoformat
 autoformatting
 autongramlanguagemodel
+autotokenizer
 available
 babelscape
 back-off
@@ -668,6 +670,7 @@ lora
 lora-adapted
 lora-based
 love
+low
 low-rank
 lutz
 mac
@@ -935,6 +938,7 @@ questions
 raises
 random
 range
+rank
 rate
 rather
 raw
@@ -942,6 +946,7 @@ rawdataimporter
 rawdatapreprocessor
 readme
 ready
+real
 real-time
 real-world
 reasons
@@ -1012,6 +1017,7 @@ save
 saving
 say
 sberquad
+scale
 score
 script
 seara
@@ -1119,7 +1125,6 @@ task-specific
 taskdataset
 taskevaluator
 tasks
-tasktokenizeddataset
 tatiana
 tatsu
 tba
@@ -1161,6 +1166,7 @@ token
 tokenization
 tokenize
 tokenized
+tokenizedtaskdataset
 tokenizer
 tokenizers
 tokenizes
@@ -1196,6 +1202,7 @@ truncates
 truncation
 try
 tune
+tuned
 tuning
 tuple
 tutorial
@@ -1285,6 +1292,7 @@ work
 workflow
 working
 working-pipeline
+world
 would
 written
 xfplx
