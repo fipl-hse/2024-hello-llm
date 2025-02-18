@@ -144,6 +144,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = GPTNeoXForCausalLM.from_pretrained(self._model_name)
         self._model: Module
+        self._model.eval()
         self._model.to(device)
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name,
                                                         model_max_length=max_length,
@@ -240,12 +241,12 @@ class LLMPipeline(AbstractLLMPipeline):
                                                       max_length=self._max_length,
                                                       padding=True,
                                                       truncation=True).to(self._device)
-        with torch.no_grad():
-            outputs = self._model.generate(
-                input_ids["input_ids"],
-                attention_mask=input_ids["attention_mask"],
-                max_length=self._max_length
-            )
+
+        outputs = self._model.generate(
+            input_ids["input_ids"],
+            attention_mask=input_ids["attention_mask"],
+            max_length=self._max_length
+        )
 
         return [self._tokenizer.decode(output[input_ids["input_ids"].shape[1] + 1:],
                                        skip_special_tokens=True) for output in outputs]
