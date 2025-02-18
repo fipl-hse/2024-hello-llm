@@ -270,6 +270,8 @@ class LLMPipeline(AbstractLLMPipeline):
             truncation=True,
             return_tensors="pt"
         )
+        if self._model is None:
+            raise ValueError("Model is not initialized properly.")
         output = self._model(**input_tokens)
         predicted_class = torch.argmax(torch.softmax(output.logits, -1), dim=1).numpy()
         return [str(cl) for cl in predicted_class]
