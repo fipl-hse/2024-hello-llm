@@ -14,7 +14,7 @@ import fastapi
 import pandas as pd
 import torch
 from datasets import load_dataset
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
