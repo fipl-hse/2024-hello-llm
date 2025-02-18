@@ -62,7 +62,7 @@ class Query:
 
 
 @app.post("/infer")
-def infer(query: Query):
+def infer(query: Query) -> dict[str, str]:
     """
     Creates a main endpoint for model call.
     Args:
