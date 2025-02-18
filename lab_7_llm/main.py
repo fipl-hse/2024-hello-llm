@@ -74,6 +74,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = self._raw_data.rename(columns={"article": ColumnNames.SOURCE.value,
                                                     "abstract": ColumnNames.TARGET.value})
+        self._data = self._data.dropna(subset=[ColumnNames.SOURCE.value, ColumnNames.TARGET.value])
         self._data.reset_index(drop=True, inplace=True)
 
 
