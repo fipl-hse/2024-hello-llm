@@ -16,6 +16,7 @@ from lab_7_llm.main import (
 )
 
 
+
 @report_time
 def main() -> None:
     """
