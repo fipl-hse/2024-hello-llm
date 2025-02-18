@@ -176,7 +176,7 @@ class LLMPipeline(AbstractLLMPipeline):
             raise ValueError("The model has not been correctly initialized")
 
         model_summary = summary(self._model, input_data=input_tensors, verbose=0)
-        model_metadata = {
+        return {
             'input_shape': {key: list(value.shape) for key, value in input_tensors.items()},
             'embedding_size': self._model.config.max_position_embeddings,
             'output_shape': model_summary.summary_list[-1].output_size,
@@ -185,7 +185,6 @@ class LLMPipeline(AbstractLLMPipeline):
             'size': model_summary.total_param_bytes,
             'max_context_length': self._model.config.max_length
         }
-        return model_metadata
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -216,20 +215,17 @@ class LLMPipeline(AbstractLLMPipeline):
         all_predictions = []
         all_targets = []
 
-        for batch in data_loader:
-            texts, targets = batch
-
+        for texts, targets in data_loader:
             samples = list(zip(texts, targets))
             batch_preds = self._infer_batch(samples)
 
             all_predictions.extend(batch_preds)
             all_targets.extend(targets)
 
-        result_df = pd.DataFrame({
+        return pd.DataFrame({
             "target": all_targets,
             "predictions": all_predictions
         })
-        return result_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
