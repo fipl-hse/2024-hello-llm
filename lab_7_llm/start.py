@@ -47,6 +47,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     result = evaluator.run()
+    print(result)
 
     assert result is not None, "Demo does not work correctly"
 
