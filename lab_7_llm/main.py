@@ -112,6 +112,7 @@ class TaskDataset(Dataset):
             tuple[str, ...]: The item to be received
         """
         item = str(self._data.loc[index, ColumnNames.SOURCE.value])
+
         return tuple([item])
 
     @property
