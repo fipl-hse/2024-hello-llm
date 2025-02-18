@@ -38,7 +38,6 @@ def main() -> None:
 
     pipeline.analyze_model()
     sample_inference = pipeline.infer_sample(dataset[0])
-    print(sample_inference)
 
     data_frame = pipeline.infer_dataset()
     predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
