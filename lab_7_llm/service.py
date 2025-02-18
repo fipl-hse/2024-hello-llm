@@ -68,6 +68,6 @@ def infer(query: Query):
     Args:
         query (Query): Passed data for HTML.
     Returns:
-        dictionary: Response obtained as a result of the pipeline.
+        dict: Response obtained as a result of the pipeline.
     """
     return {"infer": pipeline.infer_sample((query.question,))}
