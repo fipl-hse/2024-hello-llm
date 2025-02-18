@@ -5,13 +5,12 @@ Starter for demonstration of laboratory work.
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_7_llm.main import (
+    LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     report_time,
-    LLMPipeline,
     TaskDataset,
 )
-from transformers import AutoModelForTokenClassification, AutoTokenizer
 
 
 @report_time
@@ -35,7 +34,6 @@ def main() -> None:
 
     pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
     pipeline.analyze_model()
-
     result = pipeline.infer_sample(tuple(dataset[0][1]))
     assert result is not None, "Demo does not work correctly"
 

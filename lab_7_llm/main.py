@@ -3,6 +3,9 @@ Laboratory work.
 
 Working with Large Language Models.
 """
+import re
+from cgitb import small
+
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -194,9 +197,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        pattern = "[\w-]+|[-.,!?:;]"
+        pretokenized = sample if len(sample) > 1 else re.findall(pattern=pattern, string=sample[0])
+
         if self._model:
             input_data = self._tokenizer(
-                sample, return_tensors="pt", is_split_into_words=True, padding=True, truncation=True
+                pretokenized,
+                return_tensors="pt",
+                is_split_into_words=True,
+                padding=True,
+                truncation=True,
             )
 
             tokens_words_mapping = input_data.word_ids()
