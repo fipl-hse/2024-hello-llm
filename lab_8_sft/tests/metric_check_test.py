@@ -18,7 +18,7 @@ class MetricCheckTest(unittest.TestCase):
     @pytest.mark.lab_8_sft
     @pytest.mark.mark6
     @pytest.mark.mark8
-    def test_e2e_ideal(self):
+    def test_e2e_ideal(self) -> None:
         """
         Ideal metrics check scenario
         """
