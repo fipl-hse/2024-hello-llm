@@ -191,15 +191,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        if not self._model or not self._tokenizer:
+            return None
 
-        tokens = tokenizer(sample[0], max_length=self._max_length, padding=True,
-                           return_tensors='pt', truncation=True)
+        input_text = sample[0]
+        tokens = self._tokenizer(input_text, return_tensors="pt", max_length=self._max_length, truncation=True)
+        tokens = tokens.to(self._device)
 
-        output = self._model.generate(**tokens, max_length=self._max_length)
-        result = tokenizer.batch_decode(output, skip_special_tokens=True)
+        outputs = self._model.generate(**tokens, max_length=self._max_length)
+        prediction = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        return result[0]
+        return prediction
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
