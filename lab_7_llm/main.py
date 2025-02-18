@@ -287,6 +287,5 @@ class TaskEvaluator(AbstractTaskEvaluator):
                 calculated_metrics[metric.name] = computed_metric['bleu']
             else:
                 calculated_metrics[metric.name] = computed_metric['rougeL']
-            # calculated_metrics[metric.name] = computed_metric['rougeL' if metric.name == 'rouge' else 'bleu']
 
         return calculated_metrics
