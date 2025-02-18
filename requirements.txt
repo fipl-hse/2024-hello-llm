@@ -5,7 +5,7 @@ pandas==2.2.3
 pydantic==2.10.5
 pytest==8.3.4
 rouge-score==0.1.2
-torch==2.5.1
+torch==2.1.2
 torchinfo==1.8.0
 tqdm==4.67.1
 transformers==4.48.0
