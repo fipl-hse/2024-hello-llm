@@ -19,7 +19,7 @@ class ModelWorkingTest(unittest.TestCase):
     @pytest.mark.mark4
     @pytest.mark.mark6
     @pytest.mark.mark8
-    def test_analyze_ideal(self):
+    def test_analyze_ideal(self) -> None:
         """
         Ideal analyze scenario
         """

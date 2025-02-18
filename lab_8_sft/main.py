@@ -82,7 +82,24 @@ class TaskDataset(Dataset):
         """
 
 
-class TaskTokenizedDataset(Dataset):
+def _tokenize_sample(
+    sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
+) -> dict[str, torch.Tensor]:
+    """
+    Tokenize sample.
+
+    Args:
+        sample (pandas.Series): sample from a dataset
+        tokenizer (transformers.models.auto.tokenization_auto.AutoTokenizer): Tokenizer to tokenize
+            original data
+        max_length (int): max length of sequence
+
+    Returns:
+        dict[str, torch.Tensor]: Tokenized sample
+    """
+
+
+class TokenizedTaskDataset(Dataset):
     """
     A class that converts pd.DataFrame to Dataset and works with it.
     """
@@ -93,6 +110,9 @@ class TaskTokenizedDataset(Dataset):
 
         Args:
             data (pandas.DataFrame): Original data
+            tokenizer (transformers.models.auto.tokenization_auto.AutoTokenizer): Tokenizer to
+                tokenize the dataset
+            max_length (int): max length of a sequence
         """
 
     def __len__(self) -> int:
@@ -218,17 +238,3 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-
-
-def _tokenize_sample(
-    sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
-) -> dict[str, torch.Tensor]:
-    """
-    Tokenize sample.
-
-    Args:
-        samples (dict[str, list[str]]): batch of samples from a dataset
-
-    Returns:
-        dict[str, torch.Tensor]: Tokenized sample
-    """

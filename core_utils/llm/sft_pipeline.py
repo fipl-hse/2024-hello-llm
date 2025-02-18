@@ -40,9 +40,9 @@ class AbstractSFTPipeline(ABC):
         Initialize an instance of AbstractLLMPipeline.
 
         Args:
-            model_name (str): The name of the pre-trained model.
-            dataset (torch.utils.data.dataset.Dataset): The dataset used.
-            sft_params (SFTParams) Fine-Tuning parameters.
+            model_name (str): The name of the pre-trained model
+            dataset (torch.utils.data.dataset.Dataset): The dataset used
+            sft_params (SFTParams): Fine-Tuning parameters
         """
         self._model_name = model_name
         self._model = None
