@@ -5,7 +5,7 @@ Starter for demonstration of laboratory work.
 from pathlib import Path
 
 import pandas as pd
-# from sphinx.addnodes import index
+
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
