@@ -310,6 +310,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             value = f1_metric.compute(
                 references=references,
                 predictions=predictions,
-                average='micro')
+                average='micro'
+            )
             metrics_dict[metric.value] = value[metric.value]
         return metrics_dict
