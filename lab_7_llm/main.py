@@ -28,10 +28,6 @@ class RawDataImporter(AbstractRawDataImporter):
     A class that imports the HuggingFace dataset.
     """
 
-    def __init__(self, dataset_name: str) -> None:
-        self._data: pd.DataFrame | None = None
-        self.dataset_name = dataset_name
-
     @report_time
     def obtain(self) -> None:
         """
@@ -40,10 +36,11 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        dataset = load_dataset(self.dataset_name, split="train")
+        dataset = load_dataset("trixdade/reviews_russian", split="train")
         self._data = dataset.to_pandas()
         if not isinstance(self._data, pd.DataFrame) or self._data.empty:
             raise ValueError("Dataset could not be loaded or is empty.")
+        return self._data
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -93,11 +90,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             pd.DataFrame: Preprocessed dataset
         """
+        self._raw_data.rename(columns={"Reviews": "source", "Summary": "target"}, inplace=True)
+
         if "source" not in self._raw_data.columns or "target" not in self._raw_data.columns:
             raise KeyError("Dataset does not contain 'source' and 'target' columns.")
-        self._data = self._raw_data.dropna()
-        self._data.rename(columns={"Reviews": "source", "Summary": "target"}, inplace=True)
-        self._data.reset_index(drop=True, inplace=True)
+
+        self._data = self._raw_data.dropna().reset_index(drop=True)
+
         print("Transformed Data Sample:")
         print(self._data.head())
 
