@@ -44,7 +44,7 @@ def main() -> None:
                            max_length=120,
                            batch_size=64,
                            device='cpu')
-    # print(pipeline.analyze_model())
+    print(pipeline.analyze_model())
 
     sample = pipeline.infer_sample(dataset[1])
     print(sample)
