@@ -33,7 +33,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
     settings = LabSettings(PARENT_DIR / "settings.json")
     dataset = TaskDataset(pd.DataFrame())
 
-    batch_size = 64
+    batch_size = 1
     max_length = 120
     device = 'cpu'
     model_pipeline = LLMPipeline(model_name=settings.parameters.model,
