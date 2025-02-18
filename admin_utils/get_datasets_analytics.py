@@ -2,7 +2,100 @@
 Collect and store dataset analytics.
 """
 # pylint: disable=import-error, too-many-branches, too-many-statements, wrong-import-order
+import sys
+from pathlib import Path
 
+from tqdm import tqdm
+
+from admin_utils.get_model_analytics import get_references, save_reference
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor  # isort:skip
+from reference_lab_classification.main import (  # isort:skip
+    AgNewsDataImporter,
+    AgNewsPreprocessor,
+    CyrillicTurkicDataImporter,
+    CyrillicTurkicPreprocessor,
+    DairAiEmotionDataImporter,
+    DairAiEmotionPreprocessor,
+    GoEmotionsDataImporter,
+    GoEmotionsRawDataPreprocessor,
+    HealthcareDataImporter,
+    HealthcarePreprocessor,
+    ImdbDataImporter,
+    ImdbDataPreprocessor,
+    KinopoiskDataImporter,
+    KinopoiskPreprocessor,
+    LanguageIdentificationDataImporter,
+    LanguageIdentificationPreprocessor,
+    ParadetoxDataImporter,
+    ParadetoxDataPreprocessor,
+    RuDetoxifierDataImporter,
+    RuDetoxifierPreprocessor,
+    RuGoEmotionsRawDataPreprocessor,
+    RuGoRawDataImporter,
+    RuNonDetoxifiedDataImporter,
+    RuNonDetoxifiedPreprocessor,
+    RuParadetoxDataImporter,
+    RuParadetoxPreprocessor,
+    ToxicityDataImporter,
+    ToxicityDataPreprocessor,
+    WikiToxicDataImporter,
+    WikiToxicRawDataPreprocessor,
+)
+from reference_lab_generation.main import (  # isort:skip
+    ClinicalNotesRawDataImporter,
+    ClinicalNotesRawDataPreprocessor,
+    DollyClosedRawDataImporter,
+    DollyClosedRawDataPreprocessor,
+    NoRobotsRawDataImporter,
+    NoRobotsRawDataPreprocessor,
+    SberquadRawDataImporter,
+    SberquadRawDataPreprocessor,
+    WikiOmniaRawDataImporter,
+    WikiOmniaRawDataPreprocessor,
+)
+from reference_lab_nli.main import (  # isort:skip
+    DatasetTypes,
+    GlueDataImporter,
+    NliDataPreprocessor,
+    NliRusDataImporter,
+    NliRusTranslatedDataPreprocessor,
+    QnliDataPreprocessor,
+    RussianSuperGlueDataImporte,
+    XnliDataImporter,
+)
+from reference_lab_nmt.main import (  # isort:skip
+    EnDeRawDataPreprocessor,
+    RuEnRawDataImporter,
+    RuEnRawDataPreprocessor,
+    RuEsRawDataPreprocessor,
+)
+from reference_lab_open_qa.main import (  # isort:skip
+    AlpacaRawDataPreprocessor,
+    DatabricksRawDataPreprocessor,
+    DollyOpenQARawDataImporter,
+    DollyOpenQARawDataPreprocessor,
+    QARawDataImporter,
+    TruthfulQARawDataImporter,
+    TruthfulQARawDataPreprocessor,
+)
+from reference_lab_summarization.main import (  # isort:skip
+    DailymailRawDataImporter,
+    DailymailRawDataPreprocessor,
+    GovReportRawDataPreprocessor,
+    PubMedRawDataPreprocessor,
+    RuCorpusRawDataImporter,
+    RuCorpusRawDataPreprocessor,
+    RuDialogNewsRawDataPreprocessor,
+    RuGazetaRawDataPreprocessor,
+    RuReviewsRawDataImporter,
+    RuReviewsRawDataPreprocessor,
+    ScientificLiteratureRawDataImporter,
+    ScientificLiteratureRawDataPreprocessor,
+    SummarizationRawDataImporter,
+)
 
 def main() -> None:
     """
