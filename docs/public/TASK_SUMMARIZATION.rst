@@ -125,6 +125,19 @@ Datasets
       3. Rename column ``Summary`` to ``target``.
       4. Reset indexes.
 
+Supervised Fine-Tuning (SFT) Parameters
+---------------------------------------
+
+Set the following parameters:
+
+   * **Inference parameters**: ``num_samples=10``, ``max_length=120`` and ``batch_size=3``.
+   * **SFT parameters**: ``max_fine_tuning_steps=50`` and
+     ``target_modules=["query", "key", "value"]``.
+
+.. note:: For the model
+          `dmitry-vorobiev/rubert_ria_headlines
+          <https://huggingface.co/dmitry-vorobiev/rubert_ria_headlines>`__, set the parameter
+          ``target_modules=["query", "key", "value", "dense"]``.
 
 Metrics
 -------

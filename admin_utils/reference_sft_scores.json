@@ -1,0 +1,171 @@
+{
+    "Helsinki-NLP/opus-mt-en-fr": {
+        "enimai/MuST-C-fr": {
+            "bleu": 0.43695
+        }
+    },
+    "Helsinki-NLP/opus-mt-ru-en": {
+        "shreevigneshs/iwslt-2023-en-ru-train-val-split-0.2": {
+            "bleu": 0.30716
+        }
+    },
+    "Helsinki-NLP/opus-mt-ru-es": {
+        "nuvocare/Ted2020_en_es_fr_de_it_ca_pl_ru_nl": {
+            "bleu": 0.27239
+        }
+    },
+    "IlyaGusev/rubertconv_toxic_clf": {
+        "Arsive/toxicity_classification_jigsaw": {
+            "f1": 0.63636
+        },
+        "s-nlp/en_paradetox_toxicity": {
+            "f1": 0.36363
+        }
+    },
+    "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli": {
+        "mnli": {
+            "accuracy": 0.90000
+        }
+    },
+    "UrukHan/t5-russian-summarization": {
+        "CarlBrendt/Summ_Dialog_News": {
+            "bleu": 0.00482,
+            "rouge": 0.08133
+        },
+        "IlyaGusev/gazeta": {
+            "bleu": 0.00134,
+            "rouge": 0.09582
+        },
+        "d0rj/curation-corpus-ru": {
+            "bleu": 0.00000,
+            "rouge": 0.12565
+        }
+    },
+    "XSY/albert-base-v2-imdb-calssification": {
+        "imdb": {
+            "f1": 0.72727
+        }
+    },
+    "aiknowyou/it-emotion-analyzer": {
+        "dair-ai/emotion": {
+            "f1": 0.36363
+        }
+    },
+    "blanchefort/rubert-base-cased-sentiment-rusentiment": {
+        "blinoff/kinopoisk": {
+            "f1": 0.63636
+        }
+    },
+    "cointegrated/rubert-base-cased-nli-threeway": {
+        "cointegrated/nli-rus-translated-v2021": {
+            "accuracy": 0.78000
+        },
+        "xnli": {
+            "accuracy": 0.30999
+        }
+    },
+    "cointegrated/rubert-tiny-bilingual-nli": {
+        "terra": {
+            "accuracy": 0.42999
+        }
+    },
+    "dmitry-vorobiev/rubert_ria_headlines": {
+        "CarlBrendt/Summ_Dialog_News": {
+            "bleu": 0.00126,
+            "rouge": 0.04966
+        },
+        "IlyaGusev/gazeta": {
+            "bleu": 0.00000,
+            "rouge": 0.09219
+        },
+        "d0rj/curation-corpus-ru": {
+            "bleu": 0.00000,
+            "rouge": 0.15152
+        },
+        "trixdade/reviews_russian": {
+            "bleu": 0.00001,
+            "rouge": 0.00000
+        }
+    },
+    "fabriceyhc/bert-base-uncased-ag_news": {
+        "ag_news": {
+            "f1": 1.00000
+        }
+    },
+    "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization": {
+      "cnn_dailymail": {
+            "bleu": 0.04108,
+            "rouge": 0.23686
+        },
+      "ccdv/govreport-summarization": {
+            "bleu": 2.86819e-06,
+            "rouge": 0.07458
+        },
+      "ccdv/pubmed-summarization": {
+            "bleu": 1,
+            "rouge": 1
+        }
+    },
+    "mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization": {
+        "ccdv/govreport-summarization": {
+            "bleu": 0.00000,
+            "rouge": 0.06920
+        },
+        "ccdv/pubmed-summarization": {
+            "bleu": 0.00567,
+            "rouge": 0.12992
+        },
+        "cnn_dailymail": {
+            "bleu": 0.05981,
+            "rouge": 0.22063
+        }
+    },
+    "nandakishormpai/t5-small-machine-articles-tag-generation": {
+        "ccdv/govreport-summarization": {
+            "bleu": 0.00000,
+            "rouge": 0.02879
+        },
+        "ccdv/pubmed-summarization": {
+            "bleu": 0.00048,
+            "rouge": 0.07849
+        },
+        "cnn_dailymail": {
+            "bleu": 0.06624,
+            "rouge": 0.17864
+        }
+    },
+    "s-nlp/russian_toxicity_classifier": {
+        "d0rj/rudetoxifier_data": {
+            "f1": 1.00000
+        },
+        "s-nlp/ru_non_detoxified": {
+            "f1": 0.75000
+        },
+        "s-nlp/ru_paradetox_toxicity": {
+            "f1": 0.72727
+        }
+    },
+    "stevhliu/my_awesome_billsum_model": {
+        "CarlBrendt/Summ_Dialog_News": {
+            "bleu": 0.00351,
+            "rouge": 0.07822
+        },
+        "d0rj/curation-corpus-ru": {
+            "bleu": 0.00072,
+            "rouge": 0.12954
+        },
+        "trixdade/reviews_russian": {
+            "rouge": 0.01052
+        }
+    },
+    "google-t5/t5-small": {
+        "RocioUrquijo/en_de": {
+            "bleu": 0.22482
+        }
+    },
+    "tatiana-merz/turkic-cyrillic-classifier": {
+        "tatiana-merz/cyrillic_turkic_langs": {
+            "f1": 1.00000
+        }
+    }
+}
