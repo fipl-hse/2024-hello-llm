@@ -61,21 +61,18 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
 
-        num_nans = self._raw_data.isnull().any().sum()
-        num_empty_lines = len(
-            self._raw_data[
-                (self._raw_data['text'] == '') | (self._raw_data['labels'] == '')
-            ]
+        raw_data_no_nans = (
+            self._raw_data
+            .replace('', pd.NA)
+            .dropna()
         )
-
-        raw_data_no_nans = self._raw_data.dropna()
         len_counts = raw_data_no_nans['text'].apply(len)
 
         return {
             'dataset_number_of_samples': len(self._raw_data),
             'dataset_columns': len(self._raw_data.columns),
             'dataset_duplicates': self._raw_data.duplicated().sum().item(),
-            'dataset_empty_rows': (num_nans + num_empty_lines).item(),
+            'dataset_empty_rows': len(self._raw_data) - len(raw_data_no_nans),
             'dataset_sample_min_len': len_counts.min().item(),
             'dataset_sample_max_len': len_counts.max().item()
         }
@@ -108,17 +105,21 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "zh": 15
         }
 
-        self._data = self._raw_data.rename(columns={
-            'labels': str(ColumnNames.TARGET),
-            'text': str(ColumnNames.SOURCE)
-        })
+        self._data = (
+            self._raw_data
+            .rename(columns={
+                'labels': str(ColumnNames.TARGET),
+                'text': str(ColumnNames.SOURCE)
+            })
+            .drop_duplicates()
+            .replace('', pd.NA)
+            .dropna()
+            .reset_index(drop=True)
+        )
 
         self._data[str(ColumnNames.TARGET)] = self._data[str(ColumnNames.TARGET)].apply(
             lambda lang: label2id[lang]
         )
-
-        self._data.drop_duplicates(inplace=True)
-        self._data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
