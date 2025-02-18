@@ -159,8 +159,13 @@ class LLMPipeline(AbstractLLMPipeline):
         embeddings_length = self._model.config.decoder.max_position_embeddings
         input_ids = torch.ones(1, embeddings_length, dtype=torch.long)
         attention_mask = torch.ones(1, embeddings_length, dtype=torch.long)
+        decoder_input_ids = torch.ones(1, embeddings_length, dtype=torch.long)
 
-        tokens = {"input_ids": input_ids, "attention_mask": attention_mask}
+        tokens = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "decoder_input_ids": decoder_input_ids
+        }
 
         statistics = summary(
             self._model,
