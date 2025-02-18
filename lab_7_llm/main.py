@@ -256,8 +256,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         predictions = data_frame[ColumnNames.PREDICTION.value]
         references = data_frame[ColumnNames.TARGET.value]
 
-        evaluation_res = {metric.value: load(metric.value).compute(predictions=predictions,
-                                                                   references=references, average='micro')[metric.value]
-                          for metric in self._metrics}
+        evaluation_res = {metric.value: load(metric.value).compute(
+            predictions=predictions, references=references, average='micro')[metric.value] for metric in self._metrics}
 
         return evaluation_res
