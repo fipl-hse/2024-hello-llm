@@ -9,12 +9,12 @@ import pandas as pd
 
 from core_utils.llm.metrics import Metrics
 from lab_7_llm.main import (
+    LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    report_time,
     TaskDataset,
-    LLMPipeline,
     TaskEvaluator,
-    report_time
 )
 
 
