@@ -61,32 +61,23 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
 
-        dataset_number_of_samples = len(self._raw_data)
-        dataset_columns = len(self._raw_data.columns)
-
-        dataset_duplicates = self._raw_data.duplicated().sum()
-
         num_nans = self._raw_data.isnull().any().sum()
         num_empty_lines = len(
             self._raw_data[
                 (self._raw_data['text'] == '') | (self._raw_data['labels'] == '')
             ]
         )
-        dataset_empty_rows = num_nans + num_empty_lines
 
         raw_data_no_nans = self._raw_data.dropna()
-
         len_counts = raw_data_no_nans['text'].apply(len)
-        dataset_sample_min_len = len_counts.min()
-        dataset_sample_max_len = len_counts.max()
 
         return {
-            'dataset_number_of_samples': dataset_number_of_samples,
-            'dataset_columns': dataset_columns,
-            'dataset_duplicates': dataset_duplicates.item(),
-            'dataset_empty_rows': dataset_empty_rows.item(),
-            'dataset_sample_min_len': dataset_sample_min_len.item(),
-            'dataset_sample_max_len': dataset_sample_max_len.item()
+            'dataset_number_of_samples': len(self._raw_data),
+            'dataset_columns': len(self._raw_data.columns),
+            'dataset_duplicates': self._raw_data.duplicated().sum().item(),
+            'dataset_empty_rows': (num_nans + num_empty_lines).item(),
+            'dataset_sample_min_len': len_counts.min().item(),
+            'dataset_sample_max_len': len_counts.max().item()
         }
 
     @report_time
@@ -286,8 +277,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             raise ValueError('Model is not available')
 
-        batch_list = list(sample_batch[0])
-        tokens = self._tokenizer(batch_list,
+        tokens = self._tokenizer(*sample_batch,
                                  max_length=self._max_length,
                                  padding=True,
                                  truncation=True,
@@ -314,6 +304,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
+        self._metrics_computers = [load(str(metric)) for metric in self._metrics]
 
     @report_time
     def run(self) -> dict | None:
@@ -326,14 +317,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         predictions_df = pd.read_csv(self._data_path)
 
         metrics_dict = {}
-        for metric in self._metrics:
-            metric_computer = load(str(metric)) # надо посмотреть, как load обрабатывает список
+        for computer in self._metrics_computers:
 
-            score = metric_computer.compute(
+            metrics_dict |= computer.compute(
                 references=predictions_df[str(ColumnNames.TARGET)],
                 predictions=predictions_df[str(ColumnNames.PREDICTION)],
                 average='micro'
             )
-            metrics_dict[list(score.keys())[0]] = list(score.values())[0]
 
         return metrics_dict if metrics_dict else None

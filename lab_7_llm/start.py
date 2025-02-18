@@ -5,6 +5,8 @@ Starter for demonstration of laboratory work.
 import random
 from pathlib import Path
 
+from setuptools.errors import ExecError
+
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
 from lab_7_llm.main import (
