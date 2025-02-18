@@ -47,7 +47,7 @@ templates = Jinja2Templates(directory=str(ASSETS_PATH))
 
 class Text(BaseModel):
     """
-    Class for user's text
+    Class for user's input
     """
     question: str
 
