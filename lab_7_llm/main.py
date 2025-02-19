@@ -157,28 +157,23 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         embeddings_length = self._model.config.decoder.max_position_embeddings
-        input_ids = torch.ones(1, embeddings_length, dtype=torch.long)
-        attention_mask = torch.ones(1, embeddings_length, dtype=torch.long)
-        decoder_input_ids = torch.ones(1, embeddings_length, dtype=torch.long)
+        tensor = torch.ones(1, embeddings_length, dtype=torch.long)
 
-        tokens = {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "decoder_input_ids": decoder_input_ids
-        }
+        ids = {"input_ids": tensor,
+               "token_type_ids": tensor,
+               "attention_mask": tensor}
 
-        statistics = summary(
-            self._model,
-            input_data=tokens,
-            verbose=False
-        )
+        statistics = summary(self._model,
+                             input_data=ids,
+                             decoder_input_ids=tensor,
+                             verbose=False)
 
         model_info = {
             "input_shape": list(statistics.input_size['input_ids']),
             "embedding_size": embeddings_length,
             "output_shape": statistics.summary_list[-1].output_size,
             "num_trainable_params": statistics.trainable_params,
-            "vocab_size": self._model.config.vocab_size,
+            "vocab_size": self._model.config.decoder.vocab_size,
             "size": statistics.total_param_bytes,
             "max_context_length": self._model.config.max_length
         }
@@ -199,31 +194,13 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model or not self._tokenizer:
             return None
 
-        input_text = sample[0]
-        encoder_tokens = self._tokenizer(
-            input_text,
-            return_tensors="pt",
-            max_length=self._max_length,
-            truncation=True,
-            padding="max_length"
-        )
-        encoder_tokens = {k: v.to(self._device) for k, v in encoder_tokens.items()}
+        tokens = self._tokenizer(sample[0], max_length=120, padding=True,
+                                 return_tensors='pt', truncation=True)
 
-        # Подготовка decoder_input_ids (начальный токен для генерации)
-        decoder_input_ids = torch.tensor([[self._tokenizer.cls_token_id]], device=self._device)
+        output = self._model.generate(**tokens)
+        result = self._tokenizer.batch_decode(output, skip_special_tokens=True)
 
-        # Генерация текста
-        outputs = self._model.generate(
-            **encoder_tokens,  # input_ids и attention_mask для encoder
-            decoder_input_ids=decoder_input_ids,  # decoder_input_ids для decoder
-            max_length=self._max_length + 50,  # Увеличиваем max_length для генерации
-            num_beams=5,  # Используем beam search для улучшения качества генерации
-            early_stopping=True,  # Останавливаем генерацию, если модель завершает текст
-            use_cache=True  # Используем кэш для ускорения генерации
-        )
-        prediction = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-        return prediction
+        return result[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
