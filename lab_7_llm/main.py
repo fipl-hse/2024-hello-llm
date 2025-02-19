@@ -37,7 +37,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = load_dataset(self._hf_name, split='test').to_pandas()
+        self._raw_data = load_dataset(self._hf_name, split='train').to_pandas()
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError("Downloaded dataset is not a Pandas DataFrame")
@@ -55,13 +55,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        num_samples = len(self._raw_data)
-        num_columns = len(self._raw_data.columns)
-        num_duplicates = self._raw_data.duplicated().sum()
-        num_empty_rows = (self._raw_data.isnull().all(axis=1)).sum()
-        non_empty_data = self._raw_data.dropna()
-        min_sample_len = non_empty_data['Reviews'].astype(str).str.len().min()
-        max_sample_len = non_empty_data['Reviews'].astype(str).str.len().max()
+        num_samples = len(self._data)
+        num_columns = len(self._data.columns)
+        num_duplicates = self._data.duplicated().sum()
+        num_empty_rows = (self._data.isnull().all(axis=1)).sum()
+        non_empty_data = self._data.dropna()
+        min_sample_len = non_empty_data['source'].astype(str).str.len().min()
+        max_sample_len = non_empty_data['source'].astype(str).str.len().max()
 
         return {
             "dataset_number_of_samples": num_samples,
@@ -176,13 +176,16 @@ class LLMPipeline(AbstractLLMPipeline):
                 "decoder_input_ids": torch.zeros((1, self._max_length), dtype=torch.long)
             }
         )
+
         return {
             "input_shape": model_summary.input_size,
-            "embedding_size": model_summary.summary_list[0].num_params,
-            "output_shape": model_summary.summary_list[-1].output_size,
+            "embedding_size": sum(
+                layer.num_params for layer in model_summary.summary_list if "Embedding" in layer.class_name),
+            "output_shape": model_summary.summary_list[-1].output_size if model_summary.summary_list else (
+            1, self._max_length, self._tokenizer.vocab_size),
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._tokenizer.vocab_size,
-            "size": model_summary.total_param_bytes,
+            "size": sum(layer.num_params for layer in model_summary.summary_list),
             "max_context_length": self._max_length,
         }
 
@@ -197,14 +200,21 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        inputs = self._tokenizer(sample[0],
-                                 return_tensors="pt",
-                                 padding=True,
-                                 truncation=True).to(self._device)
+        if self._model is None or self._tokenizer is None:
+            return None
+
+        inputs = self._tokenizer(
+            sample[0],
+            return_tensors="pt",
+            padding=True,
+            truncation=True
+        ).to(self._device)
+
         inputs["input_ids"] = inputs["input_ids"].long()
 
         outputs = self._model.generate(**inputs, max_length=self._max_length)
-        return self._tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return self._tokenizer.decode(outputs[0],
+                                      skip_special_tokens=True) if outputs is not None else None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -214,16 +224,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        predictions = []
+        predictions: list[str] = []
 
         for sample in self._dataset:
             pred = self.infer_sample(sample)
-            predictions.append(pred)
+            predictions.append(pred if pred is not None else "")
 
         result_df = self._dataset.data.copy()
         result_df["predictions"] = predictions
 
-        return result_df
+        return pd.DataFrame(result_df)
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -253,7 +263,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         self._data_path = data_path
-        self._metrics = [load(metric) for metric in metrics]
+        self._metrics = [load(metric.value) for metric in metrics]
 
     @report_time
     def run(self) -> Union[dict, None]:
@@ -263,10 +273,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self._data_path)
+        data_frame = pd.read_csv(self._data_path)
 
-        predictions = df['predictions'].tolist()
-        references = df['target'].tolist()
+        predictions = data_frame['predictions'].tolist()
+        references = data_frame['target'].tolist()
 
         results = {}
         for metric in self._metrics:

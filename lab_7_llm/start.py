@@ -62,7 +62,7 @@ def main() -> None:
         predictions_path = Path("predictions.csv")
         predictions.to_csv(predictions_path, index=False)
 
-        metrics = ["rouge"]
+        metrics = [Metrics.ROUGE]
         evaluator = TaskEvaluator(predictions_path, metrics)
         results = evaluator.run()
         print("Evaluation Results:", results)
