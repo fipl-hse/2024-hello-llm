@@ -192,7 +192,8 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         data_loader = DataLoader(batch_size=self._batch_size,
-                                 dataset=self._dataset)
+                                 dataset=self._dataset,
+                                 collate_fn=lambda x: x)
         predictions = []
         for batch in data_loader:
             sample = self._infer_batch(batch)
@@ -214,8 +215,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         inputs = self._tokenizer(list(list(zip(*sample_batch))[0]),
                                  return_tensors="pt", padding=True,
-                                 truncation=True,
-                                 collate_fn=lambda x: x)
+                                 truncation=True)
         outputs = self._model(**inputs)
         return [str(pred.item()) for pred in outputs.logits.argmax(dim=1)]
 
