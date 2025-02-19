@@ -24,10 +24,10 @@ def main() -> None:
     Run the translation pipeline.
     """
     try:
-        importer = RawDataImporter()
+        importer = RawDataImporter("trixdade/reviews_russian")
         importer.obtain()
 
-        raw_data = importer.data
+        raw_data = importer._raw_data
 
         if raw_data is None or raw_data.empty:
             print("Warning: No data obtained. Exiting early.")
@@ -62,7 +62,7 @@ def main() -> None:
         predictions_path = Path("predictions.csv")
         predictions.to_csv(predictions_path, index=False)
 
-        metrics = [Metrics("rouge")]
+        metrics = ["rouge"]
         evaluator = TaskEvaluator(predictions_path, metrics)
         results = evaluator.run()
         print("Evaluation Results:", results)

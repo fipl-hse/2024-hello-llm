@@ -12,7 +12,8 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
+from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -28,11 +29,6 @@ class RawDataImporter(AbstractRawDataImporter):
     A class that imports the HuggingFace dataset.
     """
 
-    def __init__(self) -> None:
-        """Initialize an instance of RawDataImporter."""
-        super().__init__("trixdade/reviews_russian")
-        self._data: pd.DataFrame | None = None
-
     @report_time
     def obtain(self) -> None:
         """
@@ -41,41 +37,16 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._data = load_dataset("trixdade/reviews_russian", split="train").to_pandas()
+        self._raw_data = load_dataset(self._hf_name, split='test').to_pandas()
 
-        if not isinstance(self._data, pd.DataFrame) or self._data.empty:
-            raise ValueError("Dataset could not be loaded or is empty.")
-
-    @property
-    def data(self):
-        """
-        Returns the dataset stored in `_data`.
-
-        Returns:
-            pd.DataFrame: The dataset as a pandas DataFrame.
-        """
-        return self._data
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError("Downloaded dataset is not a Pandas DataFrame")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
     """
     A class that analyzes and preprocesses a dataset.
     """
-
-    def __init__(self, raw_data: DataFrame) -> None:
-        if raw_data is None:
-            raise ValueError("Raw data cannot be None")
-        self._raw_data = raw_data
-        self._data = None
-
-    @property
-    def data(self) -> pd.DataFrame:
-        """
-        Property to access the preprocessed dataset.
-        """
-        if self._data is None:
-            raise ValueError("Data has not been processed yet. Call transform() first.")
-        return self._data
 
     def analyze(self) -> dict:
         """
@@ -84,20 +55,22 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        cleaned_dataset = self._data.dropna()
+        num_samples = len(self._raw_data)
+        num_columns = len(self._raw_data.columns)
+        num_duplicates = self._raw_data.duplicated().sum()
+        num_empty_rows = (self._raw_data.isnull().all(axis=1)).sum()
+        non_empty_data = self._raw_data.dropna()
+        min_sample_len = non_empty_data['Reviews'].astype(str).str.len().min()
+        max_sample_len = non_empty_data['Reviews'].astype(str).str.len().max()
 
-        dataset_stats = {
-            "dataset_number_of_samples": len(self._data) if self._data is not None else 0,
-            "dataset_columns": len(self._data.columns) if self._data is not None else 0,
-            "dataset_duplicates": self._data.duplicated().sum(),
-            "dataset_empty_rows": self._data.isnull().sum().sum(),
-            "dataset_sample_min_len": cleaned_dataset[
-                "source"].str.len().min() if "source" in cleaned_dataset else None,
-            "dataset_sample_max_len": cleaned_dataset[
-                "source"].str.len().max() if "source" in cleaned_dataset else None,
+        return {
+            "dataset_number_of_samples": num_samples,
+            "dataset_columns": num_columns,
+            "dataset_duplicates": num_duplicates,
+            "dataset_empty_rows": num_empty_rows,
+            "dataset_sample_min_len": min_sample_len,
+            "dataset_sample_max_len": max_sample_len,
         }
-
-        return dataset_stats
 
     @report_time
     def transform(self) -> None:
@@ -107,15 +80,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             pd.DataFrame: Preprocessed dataset
         """
-        self._raw_data.rename(columns={"Reviews": "source", "Summary": "target"}, inplace=True)
-
-        if "source" not in self._raw_data.columns or "target" not in self._raw_data.columns:
-            raise KeyError("Dataset does not contain 'source' and 'target' columns.")
-
-        self._data = self._raw_data.dropna().reset_index(drop=True)
-
-        print("Transformed Data Sample:")
-        print(self._data.head())
+        self._data = self._raw_data.rename(columns={'Reviews': 'source', 'Summary': 'target'})
+        self._data.reset_index(drop=True, inplace=True)
 
 
 class TaskDataset(Dataset):
@@ -151,8 +117,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        row = self._data.iloc[index]
-        return row["source"], row["target"]
+        return self._data.iloc[index]['source'], self._data.iloc[index]['target']
 
     @property
     def data(self) -> DataFrame:
@@ -188,12 +153,14 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+        self._model_name = model_name
+        self._dataset = dataset
+        self._device = device
+        self._batch_size = batch_size
+        self._max_length = max_length
+
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
-        self.dataset = dataset
-        self.max_length = max_length
-        self.batch_size = batch_size
-        self.device = device
 
     def analyze_model(self) -> dict:
         """
@@ -202,16 +169,21 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        config = self._model.config
+        model_summary = summary(
+            self._model,
+            input_data={
+                "input_ids": torch.zeros((1, self._max_length), dtype=torch.long),
+                "decoder_input_ids": torch.zeros((1, self._max_length), dtype=torch.long)
+            }
+        )
         return {
-            "model_parameters": sum(p.numel() for p in self._model.parameters()),
-            "trainable_parameters": sum(p.numel() for p in self._model.parameters()
-                                        if p.requires_grad),
-            "device": self.device,
-            "num_layers": getattr(config, "num_hidden_layers", "Unknown"),
-            "vocab_size": getattr(config, "vocab_size", "Unknown"),
-            "hidden_size": getattr(config, "hidden_size", "Unknown"),
-            "attention_heads": getattr(config, "num_attention_heads", "Unknown"),
+            "input_shape": model_summary.input_size,
+            "embedding_size": model_summary.summary_list[0].num_params,
+            "output_shape": model_summary.summary_list[-1].output_size,
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": self._tokenizer.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self._max_length,
         }
 
     @report_time
@@ -225,24 +197,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        input_text = sample[0]
-        inputs = self._tokenizer(
-            input_text, return_tensors="pt",
-            truncation=True,
-            max_length=self.max_length
-        ).to(self.device)
-        tokens = self._tokenizer.convert_ids_to_tokens(inputs['input_ids'][0].tolist())
-        print(f"Tokenized input: {tokens}")
+        inputs = self._tokenizer(sample[0],
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True).to(self._device)
+        inputs["input_ids"] = inputs["input_ids"].long()
 
-        with torch.no_grad():
-            prediction = str(
-                self._tokenizer.decode(
-                    self._model.generate(**inputs, max_length=self.max_length)[0],
-                    skip_special_tokens=True
-                )
-            )
-        print(f"Input: {input_text}, Prediction: {prediction}")
-        return prediction if prediction else None
+        outputs = self._model.generate(**inputs, max_length=self._max_length)
+        return self._tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -252,36 +214,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        dataloader = DataLoader(self.dataset,
-                                batch_size=self.batch_size,
-                                shuffle=False
-                                )
         predictions = []
 
-        for batch in dataloader:
-            input_texts = [sample[0] for sample in batch]
-            inputs = self._tokenizer(
-                input_texts, return_tensors="pt",
-                padding=True, truncation=True,
-                max_length=self.max_length
-            ).to(self.device)
-            with torch.no_grad():
-                outputs = self._model.generate(
-                    **inputs,
-                    max_length=self.max_length,
-                    num_beams=5,
-                    repetition_penalty=1.2,
-                    early_stopping=True,
-                    forced_bos_token_id=self._tokenizer.bos_token_id
-                )
-            batch_predictions = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
-            predictions.extend(batch_predictions)
+        for sample in self._dataset:
+            pred = self.infer_sample(sample)
+            predictions.append(pred)
 
-            print(f"Tokens: {outputs[0]}")
-            print(f"Decoded: {batch_predictions[0]}")
+        result_df = self._dataset.data.copy()
+        result_df["predictions"] = predictions
 
-        self.dataset.data.loc[:, "predicted_summary"] = pd.Series(predictions)
-        return self.dataset.data
+        return result_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -294,16 +236,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
-        input_texts = [sample[0] for sample in sample_batch]
-        inputs = self._tokenizer(
-            input_texts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=self.max_length
-        ).to(self.device)
-        outputs = self._model.generate(**inputs, max_length=self.max_length)
-        return list(self._tokenizer.batch_decode(outputs, skip_special_tokens=True))
+        return [self.infer_sample(sample) for sample in sample_batch]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -319,8 +252,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        self.data_path = data_path
-        self.metrics = metrics
+        self._data_path = data_path
+        self._metrics = [load(metric) for metric in metrics]
 
     @report_time
     def run(self) -> Union[dict, None]:
@@ -330,30 +263,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        data = pd.read_csv(self.data_path)
+        df = pd.read_csv(self._data_path)
 
-        if 'predicted_summary' not in data.columns or 'target' not in data.columns:
-            raise ValueError("CSV file must contain 'predicted_summary' and 'target' columns.")
+        predictions = df['predictions'].tolist()
+        references = df['target'].tolist()
 
         results = {}
+        for metric in self._metrics:
+            results[metric.name] = metric.compute(predictions=predictions, references=references)
 
-        for metric_name in self.metrics:
-            if metric_name == "rouge":
-                metric = load("rouge")
-                metric_result = metric.compute(
-                    predictions=data['predicted_summary'].tolist(),
-                    references=data['target'].tolist(),
-                    rouge_types=["rougeL"],
-                    use_aggregator=True
-                )
-                results["rougeL"] = metric_result["rougeL"]
-
-            elif metric_name == "bleu":
-                metric = load("bleu")
-                predictions = [pred.split() for pred in data["predicted_summary"].tolist()]
-                references = [[ref.split()] for ref in data["target"].tolist()]
-                metric_result = metric.compute(predictions=predictions, references=references)
-                results["bleu"] = metric_result["bleu"]
-
-        print("Метрики:", results)
         return results
