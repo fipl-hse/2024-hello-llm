@@ -200,13 +200,25 @@ class LLMPipeline(AbstractLLMPipeline):
             return None
 
         input_text = sample[0]
-        tokens = self._tokenizer(input_text, return_tensors="pt", max_length=self._max_length, truncation=True)
-        tokens = tokens.to(self._device)
+        encoder_tokens = self._tokenizer(
+            input_text,
+            return_tensors="pt",
+            max_length=self._max_length,
+            truncation=True,
+            padding="max_length"
+        )
+        encoder_tokens = {k: v.to(self._device) for k, v in encoder_tokens.items()}
 
+        # Подготовка decoder_input_ids (начальный токен для генерации)
+        decoder_input_ids = torch.tensor([[self._tokenizer.cls_token_id]], device=self._device)
+
+        # Генерация текста
         outputs = self._model.generate(
-            **tokens,
-            max_length=self._max_length + 50,
-            decoder_input_ids=tokens["input_ids"]
+            **encoder_tokens,  # input_ids и attention_mask для encoder
+            decoder_input_ids=decoder_input_ids,  # decoder_input_ids для decoder
+            max_length=self._max_length + 50,  # Увеличиваем max_length для генерации
+            num_beams=5,  # Используем beam search для улучшения качества генерации
+            early_stopping=True  # Останавливаем генерацию, если модель завершает текст
         )
         prediction = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
 
