@@ -171,7 +171,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_config = self._model.config
         input_ids = torch.ones(
-            (1, model_config.max_position_embeddings), dtype=torch.long, device=self._device
+            [1, model_config.max_position_embeddings], dtype=torch.long, device=self._device
         )
 
         input_data = {"input_ids": input_ids, "attention_mask": input_ids}
@@ -238,7 +238,10 @@ class LLMPipeline(AbstractLLMPipeline):
 
         new_sample_batch = []
         for sample in sample_batch:
-            pretokenized = sample if len(sample) > 1 else re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0])
+            if len(sample) > 1:
+                pretokenized = sample
+            else:
+                pretokenized = re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0])
             new_sample_batch.append(pretokenized)
 
         input_data = self._tokenizer(
@@ -252,26 +255,23 @@ class LLMPipeline(AbstractLLMPipeline):
         all_words_ids = []
         for sent in range(len(new_sample_batch)):
             tokens_words_mapping = input_data.word_ids(sent)
-            label_ids = []
-            prev_token = None
+            label_ids = [None]
 
             for word_id in tokens_words_mapping:
-                if word_id is not None and word_id != prev_token:
-                    prev_token = word_id
+                if word_id is not None and word_id != label_ids[-1]:
                     label_ids.append(tokens_words_mapping.index(word_id))
 
+            label_ids.remove(None)
             all_words_ids.append(label_ids)
 
         with torch.no_grad():
             logits = self._model(**input_data).logits
 
-        pred = torch.argmax(logits, dim=2)
-        all_labels = [list(map(int, sample)) for sample in pred]
+        all_labels = [list(map(int, sample)) for sample in torch.argmax(logits, dim=2)]
 
         res = []
         for index, word_ids in enumerate(all_words_ids):
-            labels = all_labels[index]
-            res.append(str([labels[word_id] for word_id in word_ids]))
+            res.append(str([all_labels[index][word_id] for word_id in word_ids]))
 
         return res
 

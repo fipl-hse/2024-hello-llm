@@ -26,8 +26,14 @@ def main() -> None:
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
+    if importer.raw_data is None:
+        return None
+
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
+
+    if preprocessor.data is None:
+        return None
 
     dataset = TaskDataset(preprocessor.data)
 
@@ -47,7 +53,6 @@ def main() -> None:
     evaluator = TaskEvaluator(path, settings.parameters.metrics)
     result = evaluator.run()
     assert result is not None, "Demo does not work correctly"
-
 
 
 if __name__ == "__main__":
