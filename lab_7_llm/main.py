@@ -10,8 +10,9 @@ from typing import Iterable, Sequence
 import datasets
 import pandas as pd
 import torch
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -146,6 +147,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
+        self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                         model_max_length=max_length)
 
@@ -190,18 +192,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        if not self._model or not self._tokenizer:
-            return None
-
-        tokens = self._tokenizer(sample[0], max_length=120, padding=True,
-                                 return_tensors='pt', truncation=True)
-
-        output = self._model.generate(input_ids=tokens['input_ids'],
-                                      attention_mask=tokens['attention_mask'],
-                                      max_length=self._max_length)
-        result = self._tokenizer.batch_decode(output, skip_special_tokens=True)
-
-        return result[0]
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -211,6 +202,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        predictions = []
+
+        with torch.no_grad():
+            for batch in data_loader:
+                batch_predictions = self._infer_batch(batch)
+                predictions.extend(batch_predictions)
+
+        result_df = pd.DataFrame(self._dataset.data)
+        result_df[ColumnNames.PREDICTION.value] = predictions
+
+        return result_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -223,6 +226,22 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        inputs = self._tokenizer(
+            list(sample_batch[0]),
+            padding=True,
+            truncation=True,
+            return_tensors="pt"
+        ).to(self._device)
+
+        generated_ids = self._model.generate(
+            input_ids=inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
+            max_length=self._max_length
+        )
+
+        decoded_predictions = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+
+        return [prediction.strip() for prediction in decoded_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -238,6 +257,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self._metrics = metrics
 
     @report_time
     def run(self) -> dict | None:
@@ -247,3 +268,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data_to_evaluate = pd.read_csv(self.data_path)
+
+        predictions = data_to_evaluate[ColumnNames.PREDICTION.value]
+        targets = data_to_evaluate[ColumnNames.TARGET.value]
+
+        evaluation = {}
+        for metric in self._metrics:
+            scores = load(metric.value, seed=77).compute(predictions=predictions,
+                                                         references=targets)
+            if metric.value == "rouge":
+                evaluation[metric.value] = scores["rougeL"]
+            else:
+                evaluation[metric.value] = scores[metric.value]
+
+        return evaluation
