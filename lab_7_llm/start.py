@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from core_utils.llm.metrics import Metrics
+from config.constants import PROJECT_ROOT
+from config.lab_settings import LabSettings
 from lab_7_llm.main import (
     LLMPipeline,
     RawDataImporter,
@@ -23,55 +24,38 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    try:
-        importer = RawDataImporter("trixdade/reviews_russian")
-        importer.obtain()
+    settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
 
-        raw_data = importer._raw_data
+    importer = RawDataImporter(settings.parameters.dataset)
+    importer.obtain()
 
-        if raw_data is None or raw_data.empty:
-            print("Warning: No data obtained. Exiting early.")
-            return
+    if not isinstance(importer.raw_data, pd.DataFrame):
+        raise TypeError('The downloaded dataset is not pd.DataFrame')
 
-        preprocessor = RawDataPreprocessor(raw_data)
+    preprocessor = RawDataPreprocessor(importer.raw_data)
+    preprocessor.analyze()
+    preprocessor.transform()
 
-        preprocessor.transform()
+    dataset = TaskDataset(preprocessor.data.head(100))
 
-        dataset_analysis = preprocessor.analyze()
-        print("Dataset analysis:")
-        for field, value in dataset_analysis.items():
-            print(field, value, sep=': ')
+    device = "cpu"
+    batch_size = 64
+    max_length = 120
 
-        dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
+    pipeline.analyze_model()
+    pipeline.infer_sample(dataset[0])
 
-        model = LLMPipeline(
-            model_name="stevhliu/my_awesome_billsum_model",
-            dataset=dataset,
-            max_length=512,
-            batch_size=8,
-            device="cpu"
-        )
+    predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    predictions_path.parent.mkdir(exist_ok=True)
+    dataset_inference = pipeline.infer_dataset()
+    dataset_inference.to_csv(predictions_path, index=False)
 
-        model_analysis = model.analyze_model()
-        print("Model analysis:")
-        for field, value in model_analysis.items():
-            print(field, value, sep=': ')
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    metric = evaluator.run()
 
-        predictions = model.infer_dataset()
-
-        predictions_path = Path("predictions.csv")
-        predictions.to_csv(predictions_path, index=False)
-
-        metrics = [Metrics.ROUGE]
-        evaluator = TaskEvaluator(predictions_path, metrics)
-        results = evaluator.run()
-        print("Evaluation Results:", results)
-
-        assert results is not None, "Demo does not work correctly"
-
-    except (ValueError, FileNotFoundError, KeyError) as e:
-        print(f"An error occurred: {e}")
-        sys.exit(1)
+    result = metric
+    assert result is not None, "Demo does not work correctly"
 
 
 if __name__ == "__main__":

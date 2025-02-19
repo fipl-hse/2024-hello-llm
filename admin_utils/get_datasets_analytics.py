@@ -1,8 +1,9 @@
 """
 Collect and store dataset analytics.
 """
-# pylint: disable=import-error, too-many-branches, too-many-statements, wrong-import-order
+# pylint: disable=import-error, too-many-branches, too-many-statements, wrong-import-order, duplicate-code
 import sys
+from logging import warning
 from pathlib import Path
 
 from tqdm import tqdm
@@ -56,6 +57,11 @@ from reference_lab_generation.main import (  # isort:skip
     WikiOmniaRawDataImporter,
     WikiOmniaRawDataPreprocessor,
 )
+from reference_lab_ner.main import (  # isort:skip
+    Conll2003DataImporter,
+    NERRawDataPreprocessor,
+    WikineuralDataImporter,
+)
 from reference_lab_nli.main import (  # isort:skip
     DatasetTypes,
     GlueDataImporter,
@@ -97,6 +103,7 @@ from reference_lab_summarization.main import (  # isort:skip
     SummarizationRawDataImporter,
 )
 
+
 def main() -> None:
     """
     Run the collect dataset analytics.
@@ -111,11 +118,10 @@ def main() -> None:
         for dataset_name in dataset_pack.keys():
             datasets_raw.append(dataset_name)
 
-    datasets_to_analyze = set(datasets_raw)
-
     result = {}
-    for dataset_name in tqdm(datasets_to_analyze):
+    for dataset_name in tqdm(sorted(set(datasets_raw))):
         importer: AbstractRawDataImporter
+        print(f"Processing {dataset_name} ...")
         if dataset_name == "seara/ru_go_emotions":
             importer = RuGoRawDataImporter(dataset_name)
         elif dataset_name == "imdb":
@@ -189,8 +195,13 @@ def main() -> None:
             importer = ToxicityDataImporter(dataset_name)
         elif dataset_name == "s-nlp/en_paradetox_toxicity":
             importer = ParadetoxDataImporter(dataset_name)
+        elif dataset_name == "eriktks/conll2003":
+            importer = Conll2003DataImporter(dataset_name)
+        elif dataset_name == "Babelscape/wikineural":
+            importer = WikineuralDataImporter(dataset_name)
         else:
             importer = RawDataImporter(dataset_name)
+            warning(f"Using default importer for {dataset_name}")
 
         importer.obtain()
 
@@ -278,8 +289,11 @@ def main() -> None:
             preprocessor = ToxicityDataPreprocessor(importer.raw_data)
         elif dataset_name == "s-nlp/en_paradetox_toxicity":
             preprocessor = ParadetoxDataPreprocessor(importer.raw_data)
+        elif dataset_name in ("eriktks/conll2003", "Babelscape/wikineural"):
+            preprocessor = NERRawDataPreprocessor(importer.raw_data)
         else:
             preprocessor = RawDataPreprocessor(importer.raw_data)
+            warning(f"Using default preprocessor for {dataset_name}")
         try:
             dataset_analysis = preprocessor.analyze()
         except Exception as e:
