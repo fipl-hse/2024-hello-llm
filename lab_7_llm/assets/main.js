@@ -18,7 +18,7 @@ button.addEventListener('click', async () => {
         resultDiv.textContent = result.infer;
     } else {
         alert('Ошибка HTTP: ' + response.status);
-        resultDiv.textContent = 'Ошибка HTTP: ${response.status}';
+        resultDiv.textContent = `Ошибка HTTP: ${await response.status}`;
     }
 
 });

@@ -79,4 +79,28 @@ async def infer(query: Query) -> JSONResponse:
         JSONResponse instance in {"infer": prediction} format
     """
     prediction = pipeline.infer_sample((query.question, ))
-    return JSONResponse(content={'infer': prediction})
+
+    id2label = {
+        2: 'ar',
+        12: 'bg',
+        4: 'de',
+        10: 'el',
+        13: 'en',
+        8: 'es',
+        14: 'fr',
+        9: 'hi',
+        5: 'it',
+        0: 'ja',
+        1: 'nl',
+        3: 'pl',
+        6: 'pt',
+        16: 'ru',
+        18: 'sw',
+        17: 'th',
+        7: 'tr',
+        11: 'ur',
+        19: 'vi',
+        15: 'zh'
+                }
+
+    return JSONResponse(content={'infer': id2label[int(prediction)]})
