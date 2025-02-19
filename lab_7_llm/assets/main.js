@@ -5,7 +5,7 @@ summarizeButton.addEventListener('click', async () => {
     const summaryResult = document.getElementById('result');
 
     if (!inputText.trim()) {
-        summaryResult.textContent = 'Please enter some text to summarize.';
+        summaryResult.textContent = 'Please enter some text to summarize';
         return;
     }
 
@@ -25,10 +25,17 @@ summarizeButton.addEventListener('click', async () => {
         }
 
         const data = await response.json();
-        summaryResult.textContent = data.infer || "We couldn't summarize your text :(";
+
+        const trimmedInfer = (data.infer || '').trim();
+
+        if (trimmedInfer === "") {
+            summaryResult.textContent = 'We could not summarize your text :('; //
+        } else {
+            summaryResult.textContent = trimmedInfer; //
+        }
 
     } catch (error) {
-        summaryResult.textContent = 'An error occurred during summarizing the text :(';
-        console.error('Error: ${error.message}');
+        summaryResult.textContent = 'An error occurred during text summarization :(';
+        console.error(`Error: ${error.message}`);
     }
 });

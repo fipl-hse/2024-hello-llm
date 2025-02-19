@@ -73,7 +73,6 @@ async def root(request: Request) -> HTMLResponse:
     Returns:
         TemplateResponse: An HTMLResponse object containing the rendered `index.html` template
     """
-
     templates = Jinja2Templates(directory=app_path)
     return templates.TemplateResponse('index.html', {'request': request})
 
