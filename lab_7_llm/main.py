@@ -4,7 +4,7 @@ Laboratory work.
 Working with Large Language Models.
 """
 import re
-from cgitb import small
+from itertools import chain
 
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
@@ -14,6 +14,7 @@ import fastapi
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForTokenClassification, AutoTokenizer
@@ -122,7 +123,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.iloc[index].array)
+        return tuple(self._data.iloc[index]['source'])
 
     @property
     def data(self) -> pd.DataFrame:
@@ -197,34 +198,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        pattern = "[\w-]+|[-.,!?:;]"
-        pretokenized = sample if len(sample) > 1 else re.findall(pattern=pattern, string=sample[0])
-
         if self._model:
-            input_data = self._tokenizer(
-                pretokenized,
-                return_tensors="pt",
-                is_split_into_words=True,
-                padding=True,
-                truncation=True,
-            )
+            return self._infer_batch(sample_batch=[sample])[0]
 
-            tokens_words_mapping = input_data.word_ids()
-            label_ids = []
-            prev_token = None
-            for word_id in tokens_words_mapping:
-                if word_id is not None and word_id != prev_token:
-                    prev_token = word_id
-                    label_ids.append(tokens_words_mapping.index(word_id))
-
-            with torch.no_grad():
-                logits = self._model(**input_data).logits
-
-            pred = torch.argmax(logits, dim=2)
-            labels = [int(t) for t in pred[0]]
-
-            final_labels = [int(labels[label_id]) for label_id in label_ids]
-            return str(final_labels)
         return
 
     @report_time
@@ -235,6 +211,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size, collate_fn=lambda x: x)
+
+        data = {'target': self._dataset.data['target'].tolist(), 'predictions': []}
+        for batch in dataloader:
+            pred = self._infer_batch(batch)
+            data['predictions'].extend(pred)
+
+        return pd.DataFrame(data=data)
+
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -248,6 +233,46 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: Model predictions as strings
         """
 
+        new_sample_batch = []
+        for sample in sample_batch:
+            pattern = "[\w-]+|[-.,!?:;]"
+            pretokenized = sample if len(sample) > 1 else re.findall(pattern=pattern, string=sample[0])
+            new_sample_batch.append(pretokenized)
+
+        input_data = self._tokenizer(
+            new_sample_batch,
+            return_tensors="pt",
+            is_split_into_words=True,
+            padding=True,
+            truncation=True,
+        )
+
+        all_words_ids = []
+        for sent in range(len(new_sample_batch)):
+            tokens_words_mapping = input_data.word_ids(sent)
+            label_ids = []
+            prev_token = None
+
+            for word_id in tokens_words_mapping:
+                if word_id is not None and word_id != prev_token:
+                    prev_token = word_id
+                    label_ids.append(tokens_words_mapping.index(word_id))
+
+            all_words_ids.append(label_ids)
+
+        with torch.no_grad():
+            logits = self._model(**input_data).logits
+
+        pred = torch.argmax(logits, dim=2)
+        all_labels = [list(map(int, sample)) for sample in pred]
+
+        res = []
+        for index, word_ids in enumerate(all_words_ids):
+            labels = all_labels[index]
+            final_labels = [labels[word_id] for word_id in word_ids]
+            res.append(str(final_labels))
+
+        return res
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
@@ -262,6 +287,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -271,3 +298,22 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        df = pd.read_csv(self._data_path)
+        res = {}
+        for metric in self._metrics:
+            evaluation = load(str(metric))
+
+            list_pred = df['predictions'].str.findall('\d').tolist()
+            list_ref = df['target'].str.findall('\d').tolist()
+
+            preds = list(chain.from_iterable([list(map(int, i)) for i in list_pred]))
+            ref = list(chain.from_iterable([list(map(int, i)) for i in list_ref]))
+
+            results = evaluation.compute(
+                references=ref,
+                predictions=preds
+            )
+
+            res.update(results)
+
+        return res
