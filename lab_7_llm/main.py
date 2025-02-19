@@ -158,6 +158,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise ValueError("Incorrect type of model")
+
         embeddings_length = self._model.config.decoder.max_position_embeddings
         tensor = torch.ones(1, embeddings_length, dtype=torch.long)
 
