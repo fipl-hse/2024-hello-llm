@@ -262,7 +262,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        self._metrics = [load(str(metric)) for metric in metrics]
+        super().__init__(metrics)
+        self._metrics = [load(str(metric)) for metric in self._metrics]
         self._data_path = data_path
 
     @report_time
