@@ -201,7 +201,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch([sample])[0]
+        return self._infer_batch([sample[0]])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -238,7 +238,7 @@ class LLMPipeline(AbstractLLMPipeline):
             padding=True,
             truncation=True,
             max_length=self._max_length,
-        ).to(self._device)
+            ).to(self._device)
 
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")

@@ -5,7 +5,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Times New Roman', serif;
     background-color: #d4edc9;
     display: flex;
     justify-content: center;
@@ -20,24 +20,15 @@ body {
     font-size: 50px;
     color: #2c5e1a;
     margin-bottom: 60px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-    animation: glowingTitle 1.5s infinite alternate;
-}
-
-@keyframes glowingTitle {
-    0%, 100% {
-        text-shadow: 0 0 5px rgba(44, 94, 26, 0.5), 0 0 10px rgba(44, 94, 26, 0.3);
-    }
-    50% {
-        text-shadow: 0 0 10px rgba(44, 94, 26, 1), 0 0 20px rgba(44, 94, 26, 0.8);
-    }
+    font-weight: bold;
+    text-decoration: underline;
 }
 
 .address-bar, .response-box {
     width: 80%;
     max-width: 600px;
     border-radius: 10px;
-    font-family: Arial, sans-serif;
+    font-family: 'Times New Roman', serif;
     transition: box-shadow 0.3s ease;
 }
 
