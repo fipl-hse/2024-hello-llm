@@ -128,7 +128,6 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
-    _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -157,6 +156,9 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         model_config = self._model.config
         model_properties = {}
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("type of the model should be Module")
 
         model_properties['max_context_length'] = model_config.max_length
         model_properties['vocab_size'] = model_config.vocab_size
