@@ -6,7 +6,6 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 import re
 from itertools import chain
-
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -167,6 +166,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
+
         model_config = self._model.config
         input_ids = torch.ones(
             (1, model_config.max_position_embeddings), dtype=torch.long, device=self._device
@@ -236,9 +238,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         new_sample_batch = []
         for sample in sample_batch:
-            pretokenized = (
-                sample if len(sample) > 1 else re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0])
-            )
+            pretokenized = sample if len(sample) > 1 else re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0])
             new_sample_batch.append(pretokenized)
 
         input_data = self._tokenizer(
@@ -313,6 +313,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
             results = evaluation.compute(references=ref, predictions=preds)
 
-            res.update(results)
+            res.update({str(metric): round(results.get(str(metric)), 2)})
 
         return res
