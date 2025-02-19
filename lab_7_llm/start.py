@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 
 from config.lab_settings import LabSettings
-from core_utils.llm.metrics import Metrics
 from core_utils.llm.time_decorator import report_time
 from lab_7_llm.main import (
     LLMPipeline,
@@ -38,7 +37,7 @@ def main() -> None:
     max_length = 120
     device = 'cpu'
 
-    dataset = TaskDataset(preprocessor.data.head(100))
+    dataset = TaskDataset(preprocessor.data.head(10))
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length,
