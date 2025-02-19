@@ -5,6 +5,7 @@ Starter for demonstration of laboratory work.
 import json
 from pathlib import Path
 
+from config.lab_settings import LabSettings
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.time_decorator import report_time
 from lab_7_llm.main import (
@@ -21,10 +22,10 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    with open(Path(__file__).parent / "settings.json", encoding="utf-8") as f:
-        settings = json.load(f)
+    settings_path = Path(__file__).parent / "settings.json"
+    settings = LabSettings(settings_path)
 
-    importer = RawDataImporter(settings['parameters']['dataset'])
+    importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
     if importer.raw_data is None:
@@ -38,7 +39,7 @@ def main() -> None:
     device = 'cpu'
 
     dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(settings['parameters']['model'],
+    pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length,
                            batch_size,
@@ -50,7 +51,8 @@ def main() -> None:
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
     predictions.to_csv(predictions_path, index=False)
-    metrics = [Metrics(metric) for metric in settings['parameters']['metrics']]
+
+    metrics = [Metrics(metric) for metric in settings.parameters.metrics]
     evaluator = TaskEvaluator(predictions_path, metrics)
     result = evaluator.run()
     print(result)
