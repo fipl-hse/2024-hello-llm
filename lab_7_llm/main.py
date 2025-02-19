@@ -154,7 +154,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForTokenClassification.from_pretrained(self._model_name).to(device)
+        self._model = AutoModelForTokenClassification.from_pretrained(self._model_name)
+        self._model.to(self._device).eval()
         self._tokenizer = AutoTokenizer.from_pretrained(
             self._model_name,
         )
@@ -200,7 +201,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if self._model:
             return self._infer_batch(sample_batch=[sample])[0]
 
-        return
+        return None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -235,9 +236,8 @@ class LLMPipeline(AbstractLLMPipeline):
 
         new_sample_batch = []
         for sample in sample_batch:
-            pattern = "[\w-]+|[-.,!?:;]"
             pretokenized = (
-                sample if len(sample) > 1 else re.findall(pattern=pattern, string=sample[0])
+                sample if len(sample) > 1 else re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0])
             )
             new_sample_batch.append(pretokenized)
 
@@ -271,8 +271,7 @@ class LLMPipeline(AbstractLLMPipeline):
         res = []
         for index, word_ids in enumerate(all_words_ids):
             labels = all_labels[index]
-            final_labels = [labels[word_id] for word_id in word_ids]
-            res.append(str(final_labels))
+            res.append(str([labels[word_id] for word_id in word_ids]))
 
         return res
 
@@ -301,13 +300,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self._data_path)
+        dataframe = pd.read_csv(self._data_path)
         res = {}
         for metric in self._metrics:
             evaluation = load(str(metric))
 
-            list_pred = df["predictions"].str.findall("\d").tolist()
-            list_ref = df["target"].str.findall("\d").tolist()
+            list_pred = dataframe["predictions"].str.findall(r"\d").tolist()
+            list_ref = dataframe["target"].str.findall(r"\d").tolist()
 
             preds = list(chain.from_iterable([list(map(int, i)) for i in list_pred]))
             ref = list(chain.from_iterable([list(map(int, i)) for i in list_ref]))
