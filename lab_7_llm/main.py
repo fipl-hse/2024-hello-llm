@@ -10,9 +10,9 @@ from typing import Iterable, Sequence, Union
 import pandas as pd
 import torch
 from datasets import load_dataset
-from torch.nn import Module
 from evaluate import load
 from pandas import DataFrame
+from torch.nn import Module
 from torch.utils.data import Dataset
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -61,8 +61,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         num_duplicates = self._raw_data.duplicated().sum()
         num_empty_rows = (self._raw_data.isnull().all(axis=1)).sum()
         non_empty_data = self._raw_data.dropna()
-        min_sample_len = non_empty_data['source'].astype(str).str.len().min()
-        max_sample_len = non_empty_data['source'].astype(str).str.len().max()
+        min_sample_len = non_empty_data['Reviews'].astype(str).str.len().min()
+        max_sample_len = non_empty_data['Reviews'].astype(str).str.len().max()
 
         return {
             "dataset_number_of_samples": num_samples,
