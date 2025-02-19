@@ -51,7 +51,6 @@ def main() -> None:
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
     predictions.to_csv(predictions_path, index=False)
-
     metrics = [Metrics(metric) for metric in settings.parameters.metrics]
     evaluator = TaskEvaluator(predictions_path, metrics)
     result = evaluator.run()
