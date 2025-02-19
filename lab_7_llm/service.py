@@ -1,6 +1,8 @@
 """
 Web service for model inference.
 """
+from dataclasses import dataclass
+
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from pathlib import Path
 
@@ -9,7 +11,6 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from dataclasses import dataclass
 
 from config.lab_settings import LabSettings
 from lab_7_llm.main import LLMPipeline, TaskDataset
