@@ -214,7 +214,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         inputs = self._tokenizer(list(list(zip(*sample_batch))[0]),
                                  return_tensors="pt", padding=True,
-                                 truncation=True)
+                                 truncation=True,
+                                 collate_fn=lambda x: x)
         outputs = self._model(**inputs)
         return [str(pred.item()) for pred in outputs.logits.argmax(dim=1)]
 
