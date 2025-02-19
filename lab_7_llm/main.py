@@ -10,6 +10,7 @@ from typing import Iterable, Sequence, Union
 import pandas as pd
 import torch
 from datasets import load_dataset
+from torch.nn import Module
 from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import Dataset
@@ -55,11 +56,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        num_samples = len(self._data)
-        num_columns = len(self._data.columns)
-        num_duplicates = self._data.duplicated().sum()
-        num_empty_rows = (self._data.isnull().all(axis=1)).sum()
-        non_empty_data = self._data.dropna()
+        num_samples = self._raw_data.shape[0]
+        num_columns = len(self._raw_data.columns)
+        num_duplicates = self._raw_data.duplicated().sum()
+        num_empty_rows = (self._raw_data.isnull().all(axis=1)).sum()
+        non_empty_data = self._raw_data.dropna()
         min_sample_len = non_empty_data['source'].astype(str).str.len().min()
         max_sample_len = non_empty_data['source'].astype(str).str.len().max()
 
@@ -169,20 +170,24 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        model_summary = summary(
-            self._model,
-            input_data={
-                "input_ids": torch.zeros((1, self._max_length), dtype=torch.long),
-                "decoder_input_ids": torch.zeros((1, self._max_length), dtype=torch.long)
-            }
-        )
+        if isinstance(self._model, Module):
+            model_summary = summary(
+                self._model,
+                input_data={
+                    "input_ids": torch.zeros((1, self._max_length), dtype=torch.long),
+                    "decoder_input_ids": torch.zeros((1, self._max_length), dtype=torch.long)
+                }
+            )
+        else:
+            print("Model is not of type 'Module'")
 
         return {
             "input_shape": model_summary.input_size,
             "embedding_size": sum(
-                layer.num_params for layer in model_summary.summary_list if "Embedding" in layer.class_name),
-            "output_shape": model_summary.summary_list[-1].output_size if model_summary.summary_list else (
-            1, self._max_length, self._tokenizer.vocab_size),
+                layer.num_params for layer in model_summary.summary_list
+                if "Embedding" in layer.class_name),
+            "output_shape": model_summary.summary_list[-1].output_size
+            if model_summary.summary_list else (1, self._max_length, self._tokenizer.vocab_size),
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._tokenizer.vocab_size,
             "size": sum(layer.num_params for layer in model_summary.summary_list),
