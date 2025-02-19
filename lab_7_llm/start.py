@@ -33,11 +33,11 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
 
-    batch_size = 1
+    batch_size = 64
     max_length = 120
     device = 'cpu'
 
-    dataset = TaskDataset(preprocessor.data.head(10))
+    dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length,
