@@ -2,6 +2,8 @@
 Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
+from pathlib import Path
+
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_7_llm.main import (
@@ -10,9 +12,8 @@ from lab_7_llm.main import (
     RawDataPreprocessor,
     report_time,
     TaskDataset,
-    TaskEvaluator
+    TaskEvaluator,
 )
-from pathlib import Path
 
 
 @report_time
@@ -40,7 +41,7 @@ def main() -> None:
     inference = pipeline.infer_dataset()
     output_folder = "dist"
     Path(output_folder).mkdir(parents=True, exist_ok=True)
-    path = Path('dist/predictions.csv')
+    path = Path("dist/predictions.csv")
     inference.to_csv(path)
 
     evaluator = TaskEvaluator(path, settings.parameters.metrics)

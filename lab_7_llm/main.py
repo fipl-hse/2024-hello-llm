@@ -3,19 +3,18 @@ Laboratory work.
 
 Working with Large Language Models.
 """
+# pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 import re
 from itertools import chain
 
-# pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import fastapi
 import pandas as pd
 import torch
 from datasets import load_dataset
 from evaluate import load
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
@@ -123,7 +122,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data.iloc[index]['source'])
+        return tuple(self._data.iloc[index]["source"])
 
     @property
     def data(self) -> pd.DataFrame:
@@ -211,15 +210,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size, collate_fn=lambda x: x)
+        dataloader = DataLoader(
+            dataset=self._dataset, batch_size=self._batch_size, collate_fn=lambda x: x
+        )
 
-        data = {'target': self._dataset.data['target'].tolist(), 'predictions': []}
+        data = {"target": self._dataset.data["target"].tolist(), "predictions": []}
         for batch in dataloader:
             pred = self._infer_batch(batch)
-            data['predictions'].extend(pred)
+            data["predictions"].extend(pred)
 
         return pd.DataFrame(data=data)
-
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -236,7 +236,9 @@ class LLMPipeline(AbstractLLMPipeline):
         new_sample_batch = []
         for sample in sample_batch:
             pattern = "[\w-]+|[-.,!?:;]"
-            pretokenized = sample if len(sample) > 1 else re.findall(pattern=pattern, string=sample[0])
+            pretokenized = (
+                sample if len(sample) > 1 else re.findall(pattern=pattern, string=sample[0])
+            )
             new_sample_batch.append(pretokenized)
 
         input_data = self._tokenizer(
@@ -274,6 +276,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return res
 
+
 class TaskEvaluator(AbstractTaskEvaluator):
     """
     A class that compares prediction quality using the specified metric.
@@ -303,16 +306,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric in self._metrics:
             evaluation = load(str(metric))
 
-            list_pred = df['predictions'].str.findall('\d').tolist()
-            list_ref = df['target'].str.findall('\d').tolist()
+            list_pred = df["predictions"].str.findall("\d").tolist()
+            list_ref = df["target"].str.findall("\d").tolist()
 
             preds = list(chain.from_iterable([list(map(int, i)) for i in list_pred]))
             ref = list(chain.from_iterable([list(map(int, i)) for i in list_ref]))
 
-            results = evaluation.compute(
-                references=ref,
-                predictions=preds
-            )
+            results = evaluation.compute(references=ref, predictions=preds)
 
             res.update(results)
 
