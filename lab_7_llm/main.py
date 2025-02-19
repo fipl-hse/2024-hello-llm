@@ -160,7 +160,6 @@ class LLMPipeline(AbstractLLMPipeline):
         tensor = torch.ones(1, embeddings_length, dtype=torch.long)
 
         ids = {"input_ids": tensor,
-               "token_type_ids": tensor,
                "attention_mask": tensor}
 
         statistics = summary(self._model,
