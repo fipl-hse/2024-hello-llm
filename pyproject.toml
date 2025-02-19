@@ -38,7 +38,9 @@ max-line-length = 100
 ignore = ['D004']
 ignore-path = [
     'venv*',
-    'build/'
+    'build/',
+    'config/website/test_sphinx_project/_build/',
+    'dist/',
 ]
 
 [tool.pydocstyle]
