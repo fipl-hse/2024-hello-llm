@@ -218,7 +218,8 @@ class LLMPipeline(AbstractLLMPipeline):
             decoder_input_ids=decoder_input_ids,  # decoder_input_ids для decoder
             max_length=self._max_length + 50,  # Увеличиваем max_length для генерации
             num_beams=5,  # Используем beam search для улучшения качества генерации
-            early_stopping=True  # Останавливаем генерацию, если модель завершает текст
+            early_stopping=True,  # Останавливаем генерацию, если модель завершает текст
+            use_cache=True  # Используем кэш для ускорения генерации
         )
         prediction = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
 
