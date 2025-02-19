@@ -45,7 +45,7 @@ def main() -> None:
                            max_length, batch_size, device)
     _model_params = pipeline.analyze_model()
 
-    sample = preprocessed_dataset[random.randint(0, len(preprocessed_dataset))]
+    sample = preprocessed_dataset[random.randint(0, len(preprocessed_dataset) - 1)]
     _sample_prediction = pipeline.infer_sample(sample)
 
     dataset_predictions = pipeline.infer_dataset()
