@@ -11,6 +11,12 @@ class DoNotKnowLenDataset:
     """
 
     def __init__(self, data: Sequence[tuple[str, str, int, int]]) -> None:
+        """
+        Initialize an instance of DoNotKnowLenDataset.
+
+        Args:
+            data (Sequence[tuple[str, str, int, int]]): Raw data
+        """
         self._data = data
 
 
@@ -20,6 +26,13 @@ class HaveLengthDataset(DoNotKnowLenDataset):
     """
 
     def __len__(self) -> int:
+        """
+        Returns number of samples in the dataset.
+
+
+        Returns:
+            int: Length of the dataset
+        """
         return len(self._data)
 
 
@@ -29,6 +42,15 @@ class IterableDataset(DoNotKnowLenDataset):
     """
 
     def __getitem__(self, item: int) -> tuple[str, str, int, int]:
+        """
+        Returns an sample from dataset by index.
+
+        Args:
+            item (int): index of a sample
+
+        Returns:
+            tuple[str, str, int, int]: Sample from the dataset
+        """
         return self._data[item]
 
 
