@@ -228,11 +228,9 @@ Datasets
 Supervised Fine-Tuning (SFT) Parameters
 ---------------------------------------
 
-Set the following parameters:
-
-   * **Inference parameters**: ``num_samples=10``, ``max_length=120`` and ``batch_size=3``.
-   * **SFT parameters**: ``max_fine_tuning_steps=50`` and
-     ``target_modules=["query", "key", "value", "dense"]``.
+.. note:: Set the parameter ``target_modules=["query", "key", "value", "dense"]`` for the
+          `XSY/albert-base-v2-imdb-calssification <https://hugging
+          face.co/XSY/albert-base-v2-imdb-calssification>`__ model as SFT parameter.
 
 Metrics
 -------

@@ -136,9 +136,6 @@
         "d0rj/curation-corpus-ru": {
             "bleu": 0.00000,
             "rouge": 0.14431
-        },
-        "trixdade/reviews_russian": {
-            "rouge": 0.00000
         }
     },
     "tatiana-merz/turkic-cyrillic-classifier": {
