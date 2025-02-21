@@ -54,6 +54,8 @@ and
 andreikashchikhin
 andrey
 anli
+another
+answer
 answers
 apidoc
 apis
@@ -127,6 +129,7 @@ bigram
 bigrams
 bilingual
 billsum
+bitchy
 blanchefort
 bleu
 blinoff
@@ -138,6 +141,7 @@ breakpoint
 bridge
 browning
 build
+built-in
 burton
 but
 button
@@ -167,6 +171,7 @@ changes
 changing
 changing-code
 check
+checkbox
 checking
 choice
 choosing
@@ -176,6 +181,7 @@ classdef
 classes
 classification
 classification-label
+classificationllmpipeline
 classificationsftpipeline
 classify
 cleaning
@@ -201,6 +207,7 @@ columns
 com
 combination
 combinations
+combine
 command
 commit
 committing
@@ -237,10 +244,12 @@ contribute
 control
 conversion
 convert
+converted
 core
 cores
 corncob
 corpus
+correct
 correctly
 corresponding
 count
@@ -277,6 +286,7 @@ deduped
 deep
 deep-learning
 def
+defeated
 define
 defined
 defining
@@ -289,6 +299,7 @@ description
 desired
 detail
 detect
+detection
 detections
 determine
 deutsch
@@ -353,6 +364,7 @@ employed
 empty
 en
 enable
+enabled
 encode
 encoded
 encoding
@@ -361,6 +373,8 @@ end
 endpoint
 engine
 enimai
+ensure
+ensuring
 entry
 entrypoint
 enumerate
@@ -384,6 +398,7 @@ evaluating
 evaluation
 evaluator
 event
+exactly
 exam
 examiner
 example
@@ -391,6 +406,7 @@ except
 exception
 exe
 execution
+expect
 expected
 expensive
 experience
@@ -411,6 +427,8 @@ farthest
 fast
 fastapi
 features
+feed
+feel
 fetch
 few
 field
@@ -473,6 +491,7 @@ generate
 generated
 generation
 generation-label
+generationllmpipeline
 generationresultdto
 generator
 generatorrulestudent
@@ -523,6 +542,7 @@ highly
 how
 however
 html
+htmlresponse
 https
 huge
 huggingface
@@ -546,6 +566,7 @@ importer
 improve
 in
 inception
+include
 inclusively
 incomplete
 incorrect
@@ -558,6 +579,7 @@ inference
 inferenceparams
 inferences
 infers
+information
 inherits
 init
 initialisation
@@ -648,6 +670,7 @@ level-labs
 levow
 library
 life
+lifecycle
 like
 limit
 lionelchg
@@ -669,6 +692,7 @@ look
 lora
 lora-adapted
 lora-based
+loraconfig
 love
 low
 low-rank
@@ -695,6 +719,7 @@ maximum
 may
 mdeberta
 mean
+mechanisms
 memory
 mentors
 merge
@@ -737,6 +762,7 @@ must
 mypy
 n-gram
 name
+namely
 names
 namespace
 nandakishormpai
@@ -746,6 +772,7 @@ need
 needed
 needs
 ner
+nerllmpipeline
 neural
 new
 next
@@ -756,6 +783,7 @@ ngrams
 nl
 nli
 nli-label
+nlillmpipeline
 nlisftpipeline
 nlp
 nmt
@@ -772,6 +800,7 @@ noticed
 now
 num
 number
+numeric
 numerical
 nuvocare
 object
@@ -792,6 +821,7 @@ only
 open
 optimization
 optimizing
+option
 options
 opus-mt-ru-en
 or
@@ -799,6 +829,7 @@ ord
 order
 org
 other
+otherwise
 our
 out
 out-of-vocabulary
@@ -870,6 +901,7 @@ precision
 precisions
 prediction
 predictions
+preparation
 prepare
 preprocess
 preprocessed
@@ -877,6 +909,8 @@ preprocesses
 preprocessing
 preprocessor
 presence
+presented
+pretrained
 previous
 previously
 primary
@@ -898,6 +932,7 @@ programming
 proj
 projectconfig
 prompt
+properly
 properties
 property
 protected
@@ -969,6 +1004,7 @@ replace
 repo
 report
 repository
+representation
 representations
 represents
 request
@@ -989,6 +1025,7 @@ retrieved
 retrieves
 retrieving
 return
+returned
 returns
 rewrite
 ria
@@ -1135,6 +1172,7 @@ template
 templateresponse
 templates
 templating
+tensor
 test
 tests
 text
@@ -1251,9 +1289,11 @@ ve
 vec
 venv
 vernon
+versa
 version
 versus
 very
+vice
 vmware
 vocab
 vocabulary
@@ -1300,5 +1340,6 @@ xlm
 xnli
 xsy
 xx
+yet
 you
 your
