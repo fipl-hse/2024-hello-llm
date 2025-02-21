@@ -23,10 +23,11 @@ def run_metrics_check(
     """
     Evaluate metrics from a lab.
 
-    Arguments:
-         task_evaluator: task for evaluation
+    Args:
          lab_path (Path): path to lab
          pipeline_main (Callable): main from this lab
+         reference_file_name (str): name of the file with references
+         task_evaluator (Type[TaskEvaluator]): task for evaluation
     """
 
     pipeline_main()
@@ -61,7 +62,7 @@ class MetricCheckTest(unittest.TestCase):
     @pytest.mark.lab_7_llm
     @pytest.mark.mark8
     @pytest.mark.mark10
-    def test_e2e_ideal(self):
+    def test_e2e_ideal(self) -> None:
         """
         Ideal metrics check scenario
         """
