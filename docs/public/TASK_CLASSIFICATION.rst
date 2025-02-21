@@ -225,6 +225,13 @@ Datasets
       3. Rename column ``comment`` to ``source``.
       4. Reset indexes.
 
+Supervised Fine-Tuning (SFT) Parameters
+---------------------------------------
+
+.. note:: Set the parameter ``target_modules=["query", "key", "value", "dense"]`` for the
+          `XSY/albert-base-v2-imdb-calssification <https://hugging
+          face.co/XSY/albert-base-v2-imdb-calssification>`__ model as SFT parameter.
+
 Metrics
 -------
 

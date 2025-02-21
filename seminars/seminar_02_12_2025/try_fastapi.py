@@ -31,9 +31,12 @@ app.mount("/static", StaticFiles(directory=f"{APP_FOLDER}/static"), name="static
 
 # 4. Define endpoints
 @app.get("/")
-async def handle_root_endpoint() -> dict:
+async def handle_root_endpoint() -> dict[str, str]:
     """
     Root endpoint of application.
+
+    Returns:
+        dict[str, str]: Body od the responce
     """
     return {"response": "Hello, LLM!"}
 
@@ -42,6 +45,12 @@ async def handle_root_endpoint() -> dict:
 async def handle_get_request(request: Request) -> HTMLResponse:
     """
     Endpoint to demonstrate the case when no dynamic data is loaded.
+
+        Args:
+         request (Request): A Request
+
+    Returns:
+        HTMLResponse: A response
     """
     templates = Jinja2Templates(directory=f"{APP_FOLDER}/templates")
     return templates.TemplateResponse("index.html", {"request": request})
@@ -51,6 +60,12 @@ async def handle_get_request(request: Request) -> HTMLResponse:
 async def handle_get_with_static_request(request: Request) -> HTMLResponse:
     """
     Endpoint to demonstrate the case when dynamic data is loaded.
+
+        Args:
+         request (Request): A Request
+
+    Returns:
+        HTMLResponse: A response
     """
     templates = Jinja2Templates(directory=f"{APP_FOLDER}/templates")
     return templates.TemplateResponse(
