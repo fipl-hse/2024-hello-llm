@@ -74,17 +74,16 @@ Datasets
 Supervised Fine-Tuning (SFT) Parameters
 ---------------------------------------
 
-Set the following parameters:
-
-   * **Inference parameters**: ``num_samples=10``, ``max_length=120`` and ``batch_size=3``.
-   * **SFT parameters**: ``max_fine_tuning_steps=50``.
-
-.. note:: For the models
+.. note:: Set the parameter
+          ``target_modules=["k_proj", "v_proj", "q_proj", "out_proj"]`` for the
           `Helsinki-NLP/opus-mt-en-fr <https://huggingface.co/Helsinki-NLP/opus-mt-en-fr>`__,
           `Helsinki-NLP/opus-mt-ru-en <https://huggingface.co/Helsinki-NLP/opus-mt-ru-en>`__,
           `Helsinki-NLP/opus-mt-ru-es <https://huggingface.co/Helsinki-NLP/opus-mt-ru-es>`__
-          set the parameter
-          ``target_modules=["k_proj", "v_proj", "q_proj", "out_proj"]``.
+          models.
+
+.. note:: Set the parameter ``learning_rate=1e-4`` for the
+          `Helsinki-NLP/opus-mt-ru-es <https://huggingface.co/Helsinki-NLP/opus-mt-ru-es>`__
+          model as SFT parameter.
 
 Metrics
 -------

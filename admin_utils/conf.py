@@ -37,6 +37,7 @@ exclude_patterns = ["venv/*", "docs/private/*"]
 
 nitpick_ignore = [
     ("py:class", "transformers.models.auto.tokenization_auto.AutoTokenizer"),
+    ("py:class", "peft.tuners.lora.config.LoraConfig"),
 ]
 
 language = "en"

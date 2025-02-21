@@ -82,7 +82,7 @@ class TaskDataset(Dataset):
         """
 
 
-def _tokenize_sample(
+def tokenize_sample(
     sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
 ) -> dict[str, torch.Tensor]:
     """
@@ -147,11 +147,11 @@ class LLMPipeline(AbstractLLMPipeline):
         Initialize an instance of LLMPipeline.
 
         Args:
-            model_name (str): The name of the pre-trained model
-            dataset (TaskDataset): The dataset used
-            max_length (int): The maximum length of generated sequence
-            batch_size (int): The size of the batch inside DataLoader
-            device (str): The device for inference
+            model_name (str): The name of the pre-trained model.
+            dataset (TaskDataset): The dataset to be used for translation.
+            max_length (int): The maximum length of generated sequence.
+            batch_size (int): The size of the batch inside DataLoader.
+            device (str): The device for inference.
         """
 
     def analyze_model(self) -> dict:
