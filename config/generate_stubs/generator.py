@@ -122,7 +122,12 @@ def cleanup_code(source_code_path: Path) -> str:
             decl = []  # type: ignore
 
         if source_code_path.name == "service.py" and isinstance(decl, ast.Assign):
-            decl = ast.parse("app, pipeline = None, None")  # type: ignore
+            if source_code_path.parent.name == "lab_7_llm":
+                decl = ast.parse("app, pipeline = None, None")  # type: ignore
+            elif source_code_path.parent.name == "lab_8_sft":
+                decl = ast.parse(  # type: ignore
+                    "app, pre_trained_pipeline, fine_tuned_pipeline = None, None, None"
+                )
 
         if isinstance(decl, (ast.Import, ast.ImportFrom)):
             if (module_name := getattr(decl, "module", None)) is None:

@@ -38,7 +38,7 @@ class WebServiceTest(unittest.TestCase):
         input_text = "What is the capital of France?"
 
         for model_type in range(2):
-            payload = {"question": input_text, "base_model": bool(model_type)}
+            payload = {"question": input_text, "is_base_model": bool(model_type)}
             response = self._client.post(url, json=payload)
 
             self.assertEqual(200, response.status_code)

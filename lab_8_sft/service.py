@@ -15,10 +15,10 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     """
     Initialize core application.
 
-    Run: uvicorn reference_service.server:app --reload
+    Run: uvicorn lab_8_sft.service:app --reload
 
     Returns:
-        tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
+        tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
     """
 
 
