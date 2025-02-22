@@ -270,8 +270,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         results = {}
         for metric_item in self._metrics:
             scores = metric_item.compute(predictions=predictions,
-                                         references=targets,
-                                         average="micro")
+                                         references=targets)
 
             key = metric_item.__class__.__name__.lower()
             results[key] = scores.get(key)

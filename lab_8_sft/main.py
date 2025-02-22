@@ -10,8 +10,9 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -232,16 +233,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        inputs = self._tokenizer(sample[0],
-                                 return_tensors="pt",
-                                 max_length=self._max_length,
-                                 truncation=True).to(self._device)
-        output = self._model.generate(
-            **inputs,
-            max_length=self._max_length
-        )
-
-        return self._tokenizer.decode(output[0], skip_special_tokens=True)
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -251,6 +243,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(batch_size=self._batch_size,
+                                dataset=self._dataset)
+
+        predictions = []
+        for batch in dataloader:
+            preds = self._infer_batch(batch)
+            predictions.extend(preds)
+
+        results = pd.DataFrame(self._dataset.data)
+        results[ColumnNames.PREDICTION.value] = predictions
+        return results
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -263,6 +266,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        inputs = self._tokenizer(list(sample_batch[0]),
+                                 return_tensors="pt",
+                                 truncation=True,
+                                 padding=True,
+                                 max_length=self._max_length
+                                 ).to(self._device)
+        outputs = self._model.generate(
+            **inputs,
+            max_length=self._max_length
+        )
+
+        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -278,6 +293,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self._data_path = data_path
+        self._metrics = {
+            metric.value: load(metric.value, seed=77)
+            if metric == Metrics.ROUGE else load(metric.value)
+            for metric in metrics
+        }
 
     def run(self) -> dict | None:
         """
@@ -286,6 +307,19 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        dataframe = pd.read_csv(self._data_path)
+
+        results = {}
+        for metric_name, module in self._metrics.items():
+            scores = module.compute(predictions=dataframe[ColumnNames.PREDICTION.value],
+                                    references=dataframe[ColumnNames.TARGET.value])
+
+            if metric_name == Metrics.ROUGE.value:
+                results[metric_name] = scores.get("rougeL")
+            else:
+                results[metric_name] = scores.get(metric_name)
+
+        return results
 
 
 class SFTPipeline(AbstractSFTPipeline):
