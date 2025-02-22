@@ -2,7 +2,7 @@
   "parameters": {
     "model": "stevhliu/my_awesome_billsum_model",
     "dataset": "trixdade/reviews_russian",
-    "metrics": ["rouge"]
+    "metrics": ["bleu", "rouge"]
   },
   "target_score": 8
 }

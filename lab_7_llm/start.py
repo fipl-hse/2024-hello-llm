@@ -3,10 +3,6 @@ Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 import sys
-from pathlib import Path
-
-import pandas as pd
-
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_7_llm.main import (
@@ -24,37 +20,53 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(PROJECT_ROOT / 'lab_7_llm' / 'settings.json')
+    settings = LabSettings(PROJECT_ROOT / "lab_7_llm" / "settings.json")
 
+    # mark4
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
-
-    if not isinstance(importer.raw_data, pd.DataFrame):
-        raise TypeError('The downloaded dataset is not pd.DataFrame')
+    if importer.raw_data is None:
+        return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    preprocessor.analyze()
+    dataset_analysis = preprocessor.analyze()
+    print("Dataset analysis:")
+    for field, value in dataset_analysis.items():
+        print(field, value, sep=': ')
+
     preprocessor.transform()
-
     dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings.parameters.model,
+                           dataset,
+                           max_length=120,
+                           batch_size=1,
+                           device="cpu")
+    length = 1024
+    long_text_sample = "a" * length
+    summary = pipeline.infer_sample(long_text_sample)
+    print(f"Length of the summary of a sample with length {length}: {len(summary)}")
+    model_analysis = pipeline.analyze_model()
+    print("Model analysis:")
+    for field, value in model_analysis.items():
+        print(field, value, sep=': ')
 
-    device = "cpu"
-    batch_size = 64
-    max_length = 120
+    pipeline = LLMPipeline(settings.parameters.model,
+                           dataset,
+                           max_length=120,
+                           batch_size=64,
+                           device="cpu")
 
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
-    pipeline.analyze_model()
-    pipeline.infer_sample(dataset[0])
-
-    predictions_path = PROJECT_ROOT / 'lab_7_llm' / 'dist' / 'predictions.csv'
+    predictions_dataframe = pipeline.infer_dataset()
+    predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
-    dataset_inference = pipeline.infer_dataset()
-    dataset_inference.to_csv(predictions_path, index=False)
+    predictions_dataframe.to_csv(predictions_path)
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
-    metric = evaluator.run()
+    result = evaluator.run()
+    print("Evaluation results:")
+    for metric, value in result.items():
+        print(metric, value, sep=': ')
 
-    result = metric
     assert result is not None, "Demo does not work correctly"
 
 
