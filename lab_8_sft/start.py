@@ -32,11 +32,10 @@ def main() -> None:
     preprocessor.transform()
     task_dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model,
-                           task_dataset,
-                           max_length=120,
-                           batch_size=1,
-                           device="cpu")
+    batch_size = 1
+    max_length = 120
+    device = "cpu"
+    pipeline = LLMPipeline(settings.parameters.model, task_dataset, max_length, batch_size, device)
     pipeline.analyze_model()
 
     sample = pipeline.infer_sample(task_dataset[0])
