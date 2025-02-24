@@ -1,7 +1,7 @@
 """
 Collect and store dataset analytics.
 """
-# pylint: disable=import-error, too-many-branches, too-many-statements, wrong-import-order
+# pylint: disable=import-error, too-many-branches, too-many-statements, wrong-import-order, duplicate-code
 import sys
 from logging import warning
 from pathlib import Path

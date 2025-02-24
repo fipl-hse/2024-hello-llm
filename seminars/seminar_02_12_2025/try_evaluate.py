@@ -66,7 +66,7 @@ class TaskDataset(Dataset):  # type: ignore
             index (int): Index of sample in dataset
 
         Returns:
-            tuple[str, ...]: The item to be received
+            str: The item to be received
         """
         return str(self._data["neutral"].iloc[index])
 
