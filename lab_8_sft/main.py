@@ -4,8 +4,27 @@ Laboratory work.
 Fine-tuning Large Language Models for a downstream task.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, duplicate-code, unused-argument, too-many-arguments
+import re
 from pathlib import Path
 from typing import Iterable, Sequence
+
+import pandas as pd
+import torch
+from datasets import load_dataset
+from evaluate import load
+from pandas import DataFrame
+from torch.utils.data import DataLoader, Dataset
+from torchinfo import summary
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from config.lab_settings import SFTParams
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.sft_pipeline import AbstractSFTPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -18,6 +37,9 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
+        self._raw_data = load_dataset(self._hf_name, split='if_test').to_pandas()
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -32,12 +54,31 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: dataset key properties.
         """
+        dataset_number_of_samples = self._raw_data.shape[0]
+        dataset_columns = self._raw_data.shape[1]
+        dataset_duplicates = len(self._raw_data[self._raw_data.duplicated()])
+        dataframe = self._raw_data.replace('', pd.NA)
+        dataset_empty_rows = len(dataframe[dataframe.isna().any(axis=1)])
+        cleaned = self._raw_data.replace('', pd.NA).dropna().drop_duplicates()
+        dataset_sample_min_len = int(cleaned['ru'].str.len().min())
+        dataset_sample_max_len = int(cleaned['ru'].str.len().max())
+        return {'dataset_number_of_samples': dataset_number_of_samples,
+                'dataset_columns': dataset_columns,
+                'dataset_duplicates': dataset_duplicates,
+                'dataset_empty_rows': dataset_empty_rows,
+                'dataset_sample_min_len': dataset_sample_min_len,
+                'dataset_sample_max_len': dataset_sample_max_len}
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        dataframe = self._raw_data.copy()
+        dataframe = dataframe.drop(columns=['ru_annotated', 'styles'])
+        dataframe = dataframe.rename(columns={"ru": "source", "en": "target"})
+        dataframe = dataframe.reset_index(drop=True)
+        self._data = dataframe
 
 
 class TaskDataset(Dataset):
@@ -52,6 +93,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -60,6 +102,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -71,6 +114,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return (self._data.iloc[index][ColumnNames.SOURCE.value],
+                self._data.iloc[index][ColumnNames.TARGET.value])
 
     @property
     def data(self) -> DataFrame:
@@ -80,6 +125,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 def tokenize_sample(
