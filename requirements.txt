@@ -11,10 +11,11 @@ protobuf==5.29.3
 pydantic==2.10.6
 pytest==8.3.4
 rouge-score==0.1.2
+sacremoses==0.1.1
 sentencepiece==0.2.0
 tiktoken==0.8.0
 toml==0.10.2
-torch==2.5.1
+torch==2.1.2
 torchinfo==1.8.0
 transformers==4.48.2
 

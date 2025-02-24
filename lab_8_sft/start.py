@@ -40,7 +40,12 @@ def main() -> None:
     dataset = TaskDataset(preprocessor.data.head(100))
     print(dataset[0])
 
-    result = dataset[0]
+    pipeline = LLMPipeline(settings['parameters']['model'], dataset, 120, 64, 'cpu')
+    analysis = pipeline.analyze_model()
+    print(analysis)
+    print(pipeline.infer_sample(dataset[0]))
+
+    result = analysis
     assert result is not None, "Finetuning does not work correctly"
 
 

@@ -15,7 +15,7 @@ from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -185,7 +185,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
-
+    _model: torch.nn.Module
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
@@ -199,6 +199,14 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader.
             device (str): The device for inference.
         """
+        super().__init__(model_name=model_name,
+                         dataset=dataset,
+                         max_length=max_length,
+                         batch_size=batch_size,
+                         device=device)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._model.to(self._device)
 
     def analyze_model(self) -> dict:
         """
@@ -207,6 +215,26 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        vocab_size = self._model.config.vocab_size
+        embeddings_length = self._model.config.max_position_embeddings
+        ids = torch.ones(1, embeddings_length, dtype=torch.long)
+        input_data = {"input_ids": ids, "decoder_input_ids": ids}
+
+        statistics = summary(self._model, input_data=input_data, device=self._device, verbose=0)
+        output_shape = statistics.summary_list[-1].output_size
+
+        max_context_length = self._model.config.max_length
+        input_shape = [1, max_context_length]
+        trainable_params = statistics.trainable_params
+        total_param_bytes = statistics.total_param_bytes
+
+        return {'embedding_size': embeddings_length,
+                'input_shape': input_shape,
+                'max_context_length': max_context_length,
+                'num_trainable_params': trainable_params,
+                'output_shape': output_shape,
+                'size': total_param_bytes,
+                'vocab_size': vocab_size}
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -219,6 +247,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            return None
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -228,6 +259,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataset_answers = []
+        dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        for batch in dataloader:
+            answers = self._infer_batch(batch)
+            dataset_answers.extend(answers)
+        return pd.DataFrame({'predictions': dataset_answers,
+                             'target': self._dataset.data['target'].to_list()})
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -240,6 +278,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        inputs = self._tokenizer(sample_batch[0],
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True,
+                                 max_length=self._max_length)
+        generate_ids = self._model.generate(**inputs, max_length=self._max_length)
+        output = self._tokenizer.batch_decode(generate_ids, skip_special_tokens=True)
+        return [response for response in output]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
