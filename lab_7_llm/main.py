@@ -6,12 +6,16 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+from datasets import load_dataset
 
 
 class RawDataImporter(AbstractRawDataImporter):
     """
     A class that imports the HuggingFace dataset.
     """
+
+    def __init__(self, hf_name: str | None) -> None:
+        super().__init__(hf_name)
 
     @report_time
     def obtain(self) -> None:
@@ -21,6 +25,19 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        if self._hf_name is None:
+            raise ValueError("A Hugging Face dataset name must be provided.")
+
+        try:
+            # Load the dataset and convert it to a pandas DataFrame
+            dataset = load_dataset(self._hf_name)
+            self._raw_data = dataset['train'].to_pandas()
+        except Exception as e:
+            raise ValueError(f"Failed to load dataset: {e}")
+
+        # Check if the loaded data is a DataFrame
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError(f"Expected a pandas DataFrame but got {type(self._raw_data)}")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
