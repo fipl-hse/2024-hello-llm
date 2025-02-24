@@ -15,15 +15,19 @@ from lab_7_llm.start import main
 
 
 def run_metrics_check(
-    lab_path: Path, pipeline_main: Callable, task_evaluator: Type[TaskEvaluator] = TaskEvaluator
+    lab_path: Path,
+    pipeline_main: Callable,
+    reference_file_name: str = "reference_scores.json",
+    task_evaluator: Type[TaskEvaluator] = TaskEvaluator,
 ) -> None:
     """
     Evaluate metrics from a lab.
 
-    Arguments:
-         task_evaluator: task for evaluation
+    Args:
          lab_path (Path): path to lab
          pipeline_main (Callable): main from this lab
+         reference_file_name (str): name of the file with references
+         task_evaluator (Type[TaskEvaluator]): task for evaluation
     """
 
     pipeline_main()
@@ -34,7 +38,7 @@ def run_metrics_check(
     task_evaluator = task_evaluator(data_path=predictions_path, metrics=settings.parameters.metrics)
     result = task_evaluator.run()
 
-    references = ReferenceScores()
+    references = ReferenceScores(reference_file_name)
 
     res = {}
     for metric in settings.parameters.metrics:
@@ -58,7 +62,7 @@ class MetricCheckTest(unittest.TestCase):
     @pytest.mark.lab_7_llm
     @pytest.mark.mark8
     @pytest.mark.mark10
-    def test_e2e_ideal(self):
+    def test_e2e_ideal(self) -> None:
         """
         Ideal metrics check scenario
         """

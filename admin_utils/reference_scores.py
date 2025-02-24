@@ -23,11 +23,13 @@ class ReferenceScores:
     Manager of reference scores.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, reference_file_name: str) -> None:
         """
         Initialize ReferenceScores.
+        Args:
+            reference_file_name (str): name of the file with references
         """
-        config_path = Path(__file__).parent / "reference_scores.json"
+        config_path = Path(__file__).parent / reference_file_name
 
         with config_path.open(encoding="utf-8") as config_file:
             self._dto = json.load(config_file)
