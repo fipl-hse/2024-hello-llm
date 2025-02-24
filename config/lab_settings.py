@@ -35,6 +35,21 @@ class InferenceParams:
 
 
 @dataclass
+class SFTParams:
+    """
+    Fine-tuning parameters.
+    """
+
+    max_length: int
+    batch_size: int
+    max_fine_tuning_steps: int
+    device: str
+    finetuned_model_path: Path
+    learning_rate: float
+    target_modules: list[str] | None = None
+
+
+@dataclass
 class LabSettingsModel:
     """
     DTO for storing labs settings.
@@ -57,7 +72,7 @@ class LabSettings:
         Initialize LabSettings.
 
         Args:
-            config_path (Path): Path to configuration
+            config_path (pathlib.Path): Path to configuration
         """
         super().__init__()
         with config_path.open(encoding="utf-8") as config_file:
