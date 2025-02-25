@@ -45,12 +45,11 @@ def main() -> None:
     pipeline.analyze_model()
 
     inference = pipeline.infer_dataset()
-    output_folder = PROJECT_ROOT / "lab_7_llm" / "dist"
-    Path(output_folder).mkdir(parents=True, exist_ok=True)
-    path = Path("dist/predictions.csv")
-    inference.to_csv(path)
+    output_path = Path(__file__).parent / "dist" / "predictions.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    inference.to_csv(output_path, index=False)
 
-    evaluator = TaskEvaluator(path, settings.parameters.metrics)
+    evaluator = TaskEvaluator(output_path, settings.parameters.metrics)
     result = evaluator.run()
     print(result)
     assert result is not None, "Demo does not work correctly"

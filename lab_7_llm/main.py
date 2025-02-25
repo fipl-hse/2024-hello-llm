@@ -271,7 +271,10 @@ class LLMPipeline(AbstractLLMPipeline):
             with torch.no_grad():
                 logits = self._model(**input_data).logits
 
-        all_labels = [list(map(int, sample)) for sample in torch.argmax(logits, dim=2)]
+        all_labels = [
+            list(map(int, sample)) for sample in torch.argmax(logits, dim=2)
+            if sample is not None
+        ]
 
         res = []
         for index, word_ids in enumerate(all_words_ids):
@@ -279,7 +282,6 @@ class LLMPipeline(AbstractLLMPipeline):
                 str(
                     [
                         all_labels[index][word_id[1]] for word_id in word_ids
-                        if word_id[1] is not None and index is not None
                     ]
                 )
             )
