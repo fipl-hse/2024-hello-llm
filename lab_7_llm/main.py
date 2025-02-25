@@ -170,8 +170,12 @@ class LLMPipeline(AbstractLLMPipeline):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
         model_config = self._model.config
+
+        if not isinstance(model_config.max_position_embeddings, int):
+            raise TypeError("Expected model_config.max_position_embeddings to be int type")
+
         input_ids = torch.ones(
-            [1, int(model_config.max_position_embeddings)], dtype=torch.long, device=self._device
+            [1, model_config.max_position_embeddings], dtype=torch.long, device=self._device
         )
 
         input_data = {"input_ids": input_ids, "attention_mask": input_ids}
@@ -241,7 +245,7 @@ class LLMPipeline(AbstractLLMPipeline):
             if len(sample) > 1:
                 new_sample_batch.append(sample)
             else:
-                new_sample_batch.append(tuple(re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0])))
+                new_sample_batch.append(tuple(re.findall(r"[\w-]+|[-.,!?:;]", sample[0])))
 
         input_data = self._tokenizer(
             new_sample_batch,
@@ -271,7 +275,14 @@ class LLMPipeline(AbstractLLMPipeline):
 
         res = []
         for index, word_ids in enumerate(all_words_ids):
-            res.append(str([all_labels[index][word_id[1]] for word_id in word_ids]))
+            res.append(
+                str(
+                    [
+                        all_labels[index][word_id[1]] for word_id in word_ids
+                        if word_id[1] is not None
+                    ]
+                )
+            )
 
         return res
 
