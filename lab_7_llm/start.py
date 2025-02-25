@@ -35,7 +35,7 @@ def main() -> None:
     if preprocessor.data is None:
         return None
 
-    dataset = TaskDataset(preprocessor.data)
+    dataset = TaskDataset(preprocessor.data.head(100))
 
     device = "cpu"
     batch_size = 64
@@ -52,6 +52,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(path, settings.parameters.metrics)
     result = evaluator.run()
+    print(result)
     assert result is not None, "Demo does not work correctly"
 
 
