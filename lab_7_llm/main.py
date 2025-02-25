@@ -276,7 +276,7 @@ class LLMPipeline(AbstractLLMPipeline):
         ]
 
         if not isinstance(all_labels, list):
-            raise TypeError("Expected all_labels to be list")
+            raise TypeError("Expected all_labels not to be None type")
 
         res = []
         for index, word_ids in enumerate(all_words_ids):
