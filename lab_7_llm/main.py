@@ -283,8 +283,10 @@ class LLMPipeline(AbstractLLMPipeline):
             res.append(
                 str(
                     [
-                        all_labels[index][word_id[1]] for word_id in word_ids
-                        if all(identifier is not None for identifier in word_id) and
+                        all_labels[index][word_id[1]]
+                        for word_id in word_ids
+                        if isinstance(word_id, (tuple, list)) and len(word_id) > 1 and
+                           all(identifier is not None for identifier in word_id) and
                            index is not None
                     ]
                 )
