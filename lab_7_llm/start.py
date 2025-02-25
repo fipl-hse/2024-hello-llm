@@ -45,9 +45,9 @@ def main() -> None:
     pipeline.analyze_model()
 
     inference = pipeline.infer_dataset()
-    output_folder = "dist"
+    output_folder = PROJECT_ROOT / "lab_7_llm" / "dist"
     Path(output_folder).mkdir(parents=True, exist_ok=True)
-    path = Path(PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv")
+    path = Path("dist/predictions.csv")
     inference.to_csv(path)
 
     evaluator = TaskEvaluator(path, settings.parameters.metrics)

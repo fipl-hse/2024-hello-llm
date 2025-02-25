@@ -279,7 +279,7 @@ class LLMPipeline(AbstractLLMPipeline):
                 str(
                     [
                         all_labels[index][word_id[1]] for word_id in word_ids
-                        if word_id[1] is not None
+                        if word_id[1] is not None and index is not None
                     ]
                 )
             )
