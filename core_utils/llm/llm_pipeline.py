@@ -17,6 +17,7 @@ try:
 except ImportError:
     print('Library "torch" not installed. Failed to import.')
     Dataset = None  # type: ignore
+    Tensor = None  # type: ignore
 
 
 class HFModelLike(Protocol):
