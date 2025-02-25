@@ -269,27 +269,19 @@ class LLMPipeline(AbstractLLMPipeline):
 
         if self._model is not None:
             with torch.no_grad():
-                logits = self._model(**input_data).logits
-
-        all_labels = [
-            list(map(int, sample)) for sample in torch.argmax(logits, dim=2)
-        ]
-
-        if not isinstance(all_labels, list):
-            raise TypeError("Expected all_labels not to be None type")
+                all_labels = [
+                    list(map(int, sample))
+                    for sample in torch.argmax(self._model(**input_data).logits, dim=2)
+                ]
 
         res = []
         for index, word_ids in enumerate(all_words_ids):
-            res.append(
-                str(
-                    [
-                        all_labels[index][word_id[1]]
-                        for word_id in word_ids
-                        if word_id[1] is not None and
-                           index < len(all_labels)
-                    ]
-                )
-            )
+            current_labels = []
+            for word_id in word_ids:
+                if word_id[1] is not None:
+                    if index < len(all_labels):
+                        current_labels.append(all_labels[index][word_id[1]])
+            res.append(str(current_labels))
 
         return res
 
