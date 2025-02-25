@@ -55,6 +55,8 @@ def main() -> None:
     print(result)
     assert result is not None, "Demo does not work correctly"
 
+    return None
+
 
 if __name__ == "__main__":
     main()

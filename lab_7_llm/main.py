@@ -171,7 +171,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_config = self._model.config
         input_ids = torch.ones(
-            [1, model_config.max_position_embeddings], dtype=torch.long, device=self._device
+            [1, int(model_config.max_position_embeddings)], dtype=torch.long, device=self._device
         )
 
         input_data = {"input_ids": input_ids, "attention_mask": input_ids}
@@ -241,7 +241,7 @@ class LLMPipeline(AbstractLLMPipeline):
             if len(sample) > 1:
                 new_sample_batch.append(sample)
             else:
-                new_sample_batch.append(re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0]))
+                new_sample_batch.append(tuple(re.findall(pattern=r"[\w-]+|[-.,!?:;]", string=sample[0])))
 
         input_data = self._tokenizer(
             new_sample_batch,
@@ -263,8 +263,9 @@ class LLMPipeline(AbstractLLMPipeline):
             label_ids.remove((None, None))
             all_words_ids.append(label_ids)
 
-        with torch.no_grad():
-            logits = self._model(**input_data).logits
+        if self._model is not None:
+            with torch.no_grad():
+                logits = self._model(**input_data).logits
 
         all_labels = [list(map(int, sample)) for sample in torch.argmax(logits, dim=2)]
 
