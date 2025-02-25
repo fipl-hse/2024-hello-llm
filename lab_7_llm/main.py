@@ -273,8 +273,10 @@ class LLMPipeline(AbstractLLMPipeline):
 
         all_labels = [
             list(map(int, sample)) for sample in torch.argmax(logits, dim=2)
-            if sample is not None
         ]
+
+        if not isinstance(all_labels, list):
+            raise TypeError("Expected all_labels to be list")
 
         res = []
         for index, word_ids in enumerate(all_words_ids):
