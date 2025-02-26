@@ -10,6 +10,7 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
 from torch.nn import Module
 from torch.utils.data import DataLoader, Dataset
@@ -246,6 +247,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
+
         batch = [sample]
         prediction = self._infer_batch(batch)[0]
         if prediction and isinstance(prediction, str):
