@@ -9,13 +9,13 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
-from pandas import DataFrame
-from torch.utils.data import DataLoader, Dataset
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-
-from torchinfo import summary
 from datasets import load_dataset
+from pandas import DataFrame
 from torch.nn import Module
+from torch.utils.data import DataLoader, Dataset
+from torchinfo import summary
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -307,6 +307,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._metrics = [load(str(metric)) for metric in self._metrics]
+        self._data_path = data_path
 
     def run(self) -> dict | None:
         """
@@ -315,6 +318,17 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data = pd.read_csv(self._data_path)
+        calculated_metrics = {}
+
+        predictions = data[ColumnNames.PREDICTION.value].to_list()
+        references = data[ColumnNames.TARGET.value].to_list()
+
+        for metric in self._metrics:
+            calculated_metrics[metric.name] = metric.compute(predictions=predictions,
+                                                             references=references)
+
+        return calculated_metrics
 
 
 class SFTPipeline(AbstractSFTPipeline):

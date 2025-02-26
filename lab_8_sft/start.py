@@ -7,10 +7,11 @@ from pathlib import Path
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
+    LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    LLMPipeline,
+    TaskEvaluator,
 )
 
 
@@ -45,8 +46,14 @@ def main() -> None:
     _sample_prediction = pipeline.infer_sample(dataset[0])
     predictions = pipeline.infer_dataset()
 
-    print(_sample_prediction)
-    result = predictions
+    predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
+    predictions_path.parent.mkdir(parents=True, exist_ok=True)
+    predictions.to_csv(predictions_path, index=False)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
+    print(result)
+
     assert result is not None, "Finetuning does not work correctly"
 
 
