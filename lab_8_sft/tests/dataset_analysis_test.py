@@ -9,8 +9,8 @@ import pytest
 
 from admin_utils.reference_scores import ReferenceAnalysisScores
 from config.lab_settings import LabSettings
-from lab_7_llm.main import RawDataImporter, RawDataPreprocessor
-from lab_7_llm.start import main
+from lab_8_sft.main import RawDataImporter, RawDataPreprocessor
+from lab_8_sft.start import main
 
 
 class DatasetWorkingTest(unittest.TestCase):
@@ -18,11 +18,10 @@ class DatasetWorkingTest(unittest.TestCase):
     Tests analyse function
     """
 
-    @pytest.mark.lab_7_llm
+    @pytest.mark.lab_8_sft
     @pytest.mark.mark4
     @pytest.mark.mark6
     @pytest.mark.mark8
-    @pytest.mark.mark10
     def test_analyze_ideal(self) -> None:
         """
         Ideal analyze scenario

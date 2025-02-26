@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 import torch  # type: ignore
-from datasets import Dataset
+from torch.utils.data.dataset import Dataset
 
 class EvalPrediction:
     logits: torch.Tensor  # type: ignore
@@ -17,10 +17,10 @@ class TrainingArguments:
         output_dir: Path,
         learning_rate: float,
         per_device_train_batch_size: int,
-        per_device_eval_batch_size: int,
         max_steps: int,
-        label_names: list[str],
         use_cpu: bool,
+        save_strategy: str,
+        load_best_model_at_end: bool,
     ): ...
 
 class Trainer:
