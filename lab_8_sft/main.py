@@ -327,8 +327,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
         references = data[ColumnNames.TARGET.value].to_list()
 
         for metric in self._metrics:
-            calculated_metrics[metric.name] = metric.compute(predictions=predictions,
-                                                             references=references)
+            calculated_metrics.update(metric.compute(predictions=predictions,
+                                                     references=references,
+                                                     average='micro'))
 
         return calculated_metrics
 
