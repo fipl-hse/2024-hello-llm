@@ -69,7 +69,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = self._raw_data.\
             rename(columns={'text': str(ColumnNames.SOURCE),
-                            'labels': str(ColumnNames.TARGET)})\
+                            'label': str(ColumnNames.TARGET)})\
             .drop_duplicates()\
             .reset_index(drop=True)
 
