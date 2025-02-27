@@ -210,8 +210,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                 decoder_input_ids=input_data, verbose=False)
 
         return {
-            "input_shape": {"input_ids": list(input_ids.size()),
-                            "attention_mask": list(input_ids.size())},
+            "input_shape": list(model_summary.input_size['input_ids']),
             "embedding_size": self._model.config.n_positions,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,

@@ -1,7 +1,6 @@
 """
 Fine-tuning starter.
 """
-# pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_8_sft.main import (
@@ -13,6 +12,7 @@ from lab_8_sft.main import (
     TaskEvaluator
 )
 
+# pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 
 @report_time
 def main() -> None:
