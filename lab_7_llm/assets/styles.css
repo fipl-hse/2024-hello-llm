@@ -1,0 +1,32 @@
+body {
+    background-color: #fff4e1;
+}
+
+h1 {
+    font-family: "Georgia";
+    color: #179c11;
+    font-size: 30px;
+}
+
+label {
+    font-family: "Courier New";
+    font-size: 20px
+}
+
+button {
+    background: #179c11;
+    transition: all 0.3s ease-out;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        0 2px 2px rgba(0,0,0,0.3),
+        0 0 4px 1px rgba(0,0,0,0.2);
+    font-family: "Georgia";
+}
+
+form[id*="predictionForm"] {
+    box-shadow: 0 0 5px 2px rgba(0,0,0,.35);
+}
+
+div {
+    font-size: 25px
+}
