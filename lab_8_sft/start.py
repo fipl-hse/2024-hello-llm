@@ -41,7 +41,7 @@ def main() -> None:
     print(sample_inference)
 
     data_frame = pipeline.infer_dataset()
-    predictions_path = PROJECT_ROOT / "lab_7_llm" / "dist" / "predictions.csv"
+    predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
     data_frame.to_csv(predictions_path)
 
