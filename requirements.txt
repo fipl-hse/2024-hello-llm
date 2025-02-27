@@ -2,6 +2,7 @@ datasets==3.2.0
 evaluate==0.4.3
 fastapi==0.115.6
 pandas==2.2.3
+peft==0.14.0
 protobuf==5.29.3
 rouge-score==0.1.2
 scikit-learn==1.6.1
