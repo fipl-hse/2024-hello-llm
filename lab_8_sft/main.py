@@ -12,6 +12,7 @@ from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
