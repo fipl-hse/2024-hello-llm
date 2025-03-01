@@ -21,7 +21,7 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(PROJECT_ROOT / 'lab_8_llm' / 'settings.json')
+    settings = LabSettings(PROJECT_ROOT / 'lab_8_sft' / 'settings.json')
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
@@ -54,7 +54,7 @@ def main() -> None:
 
     infer_data = pipeline.infer_dataset()
 
-    predictions = PROJECT_ROOT / "lab_8_llm" / "dist" / "predictions.csv"
+    predictions = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
     predictions.parent.mkdir(exist_ok=True)
     infer_data.to_csv(predictions)
 
