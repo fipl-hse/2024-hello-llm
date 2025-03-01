@@ -36,7 +36,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
-        dataset = load_dataset(self._hf_name, split="test")
+        dataset = load_dataset(self._hf_name, split="train")
         self._raw_data = pd.DataFrame(dataset)
 
 
