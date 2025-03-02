@@ -312,7 +312,8 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self._max_length
         )
 
-        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        decoded_outputs: list[str] = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        return decoded_outputs
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
