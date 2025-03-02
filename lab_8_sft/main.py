@@ -376,16 +376,18 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if not self._finetuned_model_path or not self._learning_rate or not self._batch_size:
+            return
+
         training_args = TrainingArguments(
             output_dir=self._finetuned_model_path,
             per_device_train_batch_size=self._batch_size,
-            max_steps=self._max_sft_steps
+            max_steps=self._max_sft_steps,
+            learning_rate=self._learning_rate,
+            use_cpu=bool(self._device == "cpu"),
+            save_strategy="no",
+            load_best_model_at_end=False
         )
-
-        if self._learning_rate:
-            training_args.learning_rate = self._learning_rate
-        if self._batch_size:
-            training_args.per_device_train_batch_size = self._batch_size
 
         trainer = Trainer(
             model=self._model,
