@@ -8,12 +8,12 @@ from transformers import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
+from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     SFTPipeline,
-    report_time,
     TaskDataset,
     TaskEvaluator,
     TokenizedTaskDataset,

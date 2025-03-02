@@ -235,6 +235,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("model is not properly initialized")
+
         dummy_inputs = torch.ones((1,
                                   self._model.config.d_model),
                                   dtype=torch.long)
@@ -344,13 +347,14 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         results = {}
         for metric_name, module in self._metrics.items():
+            metric_enum = Metrics(metric_name)
             scores = module.compute(predictions=dataframe[ColumnNames.PREDICTION.value],
                                     references=dataframe[ColumnNames.TARGET.value])
 
-            if metric_name == Metrics.ROUGE.value:
-                results[metric_name] = scores.get("rougeL")
+            if metric_enum == Metrics.ROUGE.value:
+                results[metric_enum] = scores.get("rougeL")
             else:
-                results[metric_name] = scores.get(metric_name)
+                results[metric_enum] = scores.get(metric_enum)
 
         return results
 
@@ -393,11 +397,13 @@ class SFTPipeline(AbstractSFTPipeline):
         Fine-tune model.
         """
         training_args = TrainingArguments(
-            output_dir=self._finetuned_model_path,
+            output_dir=str(self._finetuned_model_path),
             max_steps=self._max_fine_tuning_steps,
             per_device_train_batch_size=self._batch_size,
             learning_rate=self._learning_rate,
             save_strategy="no",
+            use_cpu=True,
+            load_best_model_at_end=False
         )
 
         trainer = Trainer(
