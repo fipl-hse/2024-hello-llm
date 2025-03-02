@@ -1,16 +1,20 @@
 """
 Fine-tuning starter.
 """
+from pathlib import Path
+
+from transformers import AutoTokenizer
+
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from config.constants import PROJECT_ROOT
-from config.lab_settings import LabSettings
+from config.lab_settings import LabSettings, SFTParams
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     report_time,
     TaskDataset,
-    TaskEvaluator,
+    TaskEvaluator, TokenizedTaskDataset, SFTPipeline,
 )
 
 
@@ -20,6 +24,7 @@ def main() -> None:
     Run the translation pipeline.
     """
     settings = LabSettings(PROJECT_ROOT / "lab_8_sft" / "settings.json")
+
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
     if importer.raw_data is None:
@@ -28,21 +33,21 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis_before = preprocessor.analyze()
     print("dataset properties before preprocessing:", analysis_before)
-
     preprocessor.transform()
+
     task_dataset = TaskDataset(preprocessor.data.head(100))
 
-    batch_size = 1
-    max_length = 120
-    device = "cpu"
-    pipeline = LLMPipeline(settings.parameters.model, task_dataset, max_length, batch_size, device)
+    pipeline = LLMPipeline(settings.parameters.model,
+                           task_dataset,
+                           max_length=120,
+                           batch_size=64,
+                           device="cpu")
     pipeline.analyze_model()
 
     sample = pipeline.infer_sample(task_dataset[0])
     print("sample inference result:", sample)
 
     predictions_df = pipeline.infer_dataset()
-
     predictions_file = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
     predictions_file.parent.mkdir(exist_ok=True)
     predictions_df.to_csv(predictions_file)
@@ -50,6 +55,49 @@ def main() -> None:
     evaluator = TaskEvaluator(predictions_file, settings.parameters.metrics)
     result = evaluator.run()
     print("evaluation results:", result)
+
+    sft_params = SFTParams(
+        max_length=120,
+        batch_size=3,
+        max_fine_tuning_steps=50,
+        device="cpu",
+        finetuned_model_path=Path().parent / f"{settings.parameters.model}_finetuned",
+        learning_rate=1e-3,
+        target_modules=None
+    )
+
+    num_samples = 10
+    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
+    base_tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenized_dataset = TokenizedTaskDataset(
+        preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
+        tokenizer=base_tokenizer,
+        max_length=sft_params.max_length
+    )
+
+    sft_pipeline = SFTPipeline(model_name=settings.parameters.model,
+                               dataset=tokenized_dataset,
+                               sft_params=sft_params)
+    sft_pipeline.run()
+
+    base_tokenizer.save_pretrained(sft_params.finetuned_model_path)
+
+    pipeline_ft = LLMPipeline(
+        str(sft_params.finetuned_model_path),
+        TaskDataset(preprocessor.data.head(num_samples)),
+        max_length=120,
+        batch_size=64,
+        device="cpu"
+    )
+    pipeline_ft.analyze_model()
+
+    predictions_dataframe = pipeline.infer_dataset()
+    predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    predictions_dataframe.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
 
     assert result is not None, "Finetuning does not work correctly"
 
