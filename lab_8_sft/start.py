@@ -4,7 +4,7 @@ Fine-tuning starter.
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
 
-from transformers import AutoTokenizer
+from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
@@ -125,7 +125,6 @@ def main() -> None:
     for metric, value in result.items():
         print(metric, value, sep=': ')
 
-    result = True
     assert result is not None, "Finetuning does not work correctly"
 
 
