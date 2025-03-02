@@ -332,7 +332,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         super().__init__(metrics)
         self._data_path = data_path
         self._metrics = {
-            metric.value: load(metric.value, seed=77)
+            metric: load(metric.value, seed=77)
             if metric == Metrics.ROUGE else load(metric.value)
             for metric in metrics
         }
@@ -397,11 +397,14 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("model is not properly initialized")
+
         training_args = TrainingArguments(
-            output_dir=str(self._finetuned_model_path),
+            output_dir=self._finetuned_model_path,
             max_steps=self._max_fine_tuning_steps,
-            per_device_train_batch_size=self._batch_size,
-            learning_rate=self._learning_rate,
+            per_device_train_batch_size=self._batch_size if self._batch_size else None,
+            learning_rate=self._learning_rate if self._learning_rate else None,
             save_strategy="no",
             use_cpu=True,
             load_best_model_at_end=False
