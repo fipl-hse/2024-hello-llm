@@ -15,8 +15,12 @@ from pandas import DataFrame
 from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, Trainer, TrainingArguments
-from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -376,10 +380,10 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if any([not self._finetuned_model_path,
-                not self._learning_rate,
-                not self._batch_size,
-                not self._max_sft_steps]):
+        if any([self._finetuned_model_path is None,
+                self._learning_rate is None,
+                self._batch_size is None,
+                self._max_sft_steps is None]):
             return
 
         training_args = TrainingArguments(
