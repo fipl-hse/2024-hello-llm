@@ -12,7 +12,7 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from peft import LoraConfig, get_peft_model
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, Trainer, TrainingArguments
@@ -211,11 +211,11 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader.
             device (str): The device for inference.
         """
-        self._model_name = model_name
-        self._dataset = dataset
-        self._max_length = max_length
-        self._batch_size = batch_size
-        self._device = device
+        super().__init__(model_name=model_name,
+                         dataset=dataset,
+                         max_length=max_length,
+                         batch_size=batch_size,
+                         device=device)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(
@@ -299,7 +299,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True)
 
         logits = self._model(**inputs).logits
-        return [str(i) for i in torch.argmax(logits, axis=1).tolist()]
+        return [str(i) for i in torch.argmax(logits, dim=1).tolist()]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -348,6 +348,8 @@ class SFTPipeline(AbstractSFTPipeline):
     A class that initializes a model, fine-tuning.
     """
 
+    _model: torch.nn.Module
+
     def __init__(self, model_name: str, dataset: Dataset, sft_params: SFTParams) -> None:
         """
         Initialize an instance of ClassificationSFTPipeline.
@@ -357,8 +359,10 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
-        self._dataset = dataset
+        super().__init__(model_name, dataset)
+        self._model = AutoModelForSequenceClassification.from_pretrained(
+            self._model_name
+        )
         self._batch_size = sft_params.batch_size
         self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
         self._device = sft_params.device
@@ -373,15 +377,15 @@ class SFTPipeline(AbstractSFTPipeline):
         Fine-tune model.
         """
         training_args = TrainingArguments(
-            output_dir=str(self._finetuned_model_path),
-            learning_rate=self._learning_rate,
+            output_dir=self._finetuned_model_path,
             per_device_train_batch_size=self._batch_size,
-            num_train_epochs=self._max_sft_steps // self._batch_size,
-            push_to_hub=False,
-            report_to="none",
-            eval_strategy="no",
-            save_strategy="no"
+            max_steps=self._max_sft_steps
         )
+
+        if self._learning_rate:
+            training_args.learning_rate = self._learning_rate
+        if self._batch_size:
+            training_args.per_device_train_batch_size = self._batch_size
 
         trainer = Trainer(
             model=self._model,
