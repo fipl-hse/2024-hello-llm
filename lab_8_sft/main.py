@@ -192,7 +192,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        return self._data[index]
+        return dict(self._data[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
