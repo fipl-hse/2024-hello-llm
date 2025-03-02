@@ -148,7 +148,7 @@ def tokenize_sample(
                                  truncation=True)
 
     tokenized_sample["labels"] = sample[ColumnNames.TARGET.value]
-    return tokenized_sample
+    return dict(tokenized_sample)
 
 
 class TokenizedTaskDataset(Dataset):
@@ -380,10 +380,13 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if any([self._finetuned_model_path is None,
-                self._learning_rate is None,
-                self._batch_size is None,
-                self._max_sft_steps is None]):
+        if self._finetuned_model_path is None:
+            return
+        if self._learning_rate is None:
+            return
+        if self._batch_size is None:
+            return
+        if self._max_sft_steps is None:
             return
 
         training_args = TrainingArguments(
