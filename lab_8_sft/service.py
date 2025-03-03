@@ -8,6 +8,7 @@ except ImportError:
     print('Library "fastapi" not installed. Failed to import.')
     FastAPI = None
 
+
 from lab_8_sft.main import LLMPipeline
 
 

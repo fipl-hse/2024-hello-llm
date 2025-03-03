@@ -7,6 +7,30 @@ Fine-tuning Large Language Models for a downstream task.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import pandas as pd
+import torch
+from datasets import load_dataset
+from evaluate import load
+from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
+from torch.utils.data import DataLoader, Dataset
+from torchinfo import summary
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+)
+
+from config.lab_settings import SFTParams
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.sft_pipeline import AbstractSFTPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
+
 
 class RawDataImporter(AbstractRawDataImporter):
     """
@@ -18,6 +42,12 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
+
+        dataset = load_dataset(self._hf_name, split='test', revision='v2.0', trust_remote_code=True)
+        self._raw_data = pd.DataFrame(dataset)
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError("The downloaded dataset is not a pandas DataFrame.")
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -32,6 +62,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: dataset key properties.
         """
+        ds_properties = {
+            'dataset_number_of_samples': self._raw_data.shape[0],
+            'dataset_columns': self._raw_data.shape[1],
+            'dataset_duplicates': self._raw_data.duplicated().sum(),
+            'dataset_empty_rows': self._raw_data.isnull().all(axis=1).sum(),
+            'dataset_sample_min_len': self._raw_data['text'].dropna(how='all').map(len).min(),
+            'dataset_sample_max_len': self._raw_data['text'].dropna(how='all').map(len).max()
+        }
+
+        return ds_properties
 
     @report_time
     def transform(self) -> None:
