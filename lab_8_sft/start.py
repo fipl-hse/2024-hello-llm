@@ -32,9 +32,14 @@ def main() -> None:
         return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    analysis = preprocessor.analyze()
+    # analysis = preprocessor.analyze()
+    preprocessor.transform()
 
-    result = analysis
+    dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=64, device='cpu')
+
+    print(pipeline.analyze_model())
+    result = pipeline.infer_sample(dataset[1])
     assert result is not None, "Finetuning does not work correctly"
 
 
