@@ -43,8 +43,8 @@ def main() -> None:
     preprocessor.transform()
     num_samples = 10
     dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(settings.parameters.model,
-                           dataset,
+    pipeline = LLMPipeline(model_name=settings.parameters.model,
+                           dataset=dataset,
                            max_length=120,
                            batch_size=64,
                            device="cpu")
@@ -96,8 +96,8 @@ def main() -> None:
 
     num_samples = 10
     pipeline = LLMPipeline(
-        settings.parameters.model,
-        TaskDataset(preprocessor.data.head(num_samples)),
+        model_name=LAB_FOLDER / "dist" / settings.parameters.model,
+        dataset=TaskDataset(preprocessor.data.head(num_samples)),
         max_length=120,
         batch_size=64,
         device="cpu"
