@@ -23,7 +23,7 @@ class DatasetWorkingTest(unittest.TestCase):
     @pytest.mark.mark6
     @pytest.mark.mark8
     @pytest.mark.mark10
-    def test_analyze_ideal(self) -> None:
+    def test_analyze_ideal(self):
         """
         Ideal analyze scenario
         """

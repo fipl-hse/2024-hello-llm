@@ -1,5 +1,5 @@
 """
-Laboratory work.
+Laboratory work. no meow I hate pycharm so much and venv is the worst ting to exist also
 
 Working with Large Language Models.
 """

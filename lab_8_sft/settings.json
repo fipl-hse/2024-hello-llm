@@ -1,8 +1,0 @@
-{
-  "parameters": {
-    "model": "",
-    "dataset": "",
-    "metrics": []
-  },
-  "target_score": 0
-}

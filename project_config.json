@@ -2,37 +2,30 @@
     "labs": [
         {
             "name": "lab_7_llm",
-            "coverage": 83
-        },
-        {
-            "name": "lab_8_sft",
-            "coverage": 83
+            "coverage": 85
         }
     ],
     "addons": [
         {
-            "name": "admin_utils",
-            "coverage": 0
+            "name": "admin_utils"
         },
         {
-            "name": "config",
-            "coverage": 0
+            "name": "config"
         },
         {
-            "name": "seminars",
-            "coverage": 0
+            "name": "seminars"
         },
         {
-            "name": "core_utils",
-            "coverage": 0
+            "name": "core_utils"
         }
     ],
     "repository": {
         "admins": [
             "demid5111",
             "SalnikovIgor",
-            "artyomtugaryov",
-            "Vasilisa-Blyudova"
+            "EIzharikov",
+            "Vasilisa-Blyudova",
+            "artyomtugaryov"
         ],
         "pr_name_regex": "Laboratory work #\\d, \\w+ \\w+ - 2\\dFPL\\d",
         "pr_name_example": "Laboratory work #1, Andrei Kashchikhin - 21FPL2"

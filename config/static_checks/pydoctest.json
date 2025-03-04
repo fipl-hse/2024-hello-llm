@@ -1,12 +1,6 @@
 {
     "parser": "google",
-    "include_paths": [ "../../**/*.py" ],
-    "exclude_paths": [
-        "**/*_stub.py",
-        "**/service.py",
-        "**/web_service_test.py",
-        "../../venv/**/*.py"
-    ],
+    "include_paths": [ "**/*.py" ],
     "fail_on_missing_docstring": true,
     "fail_on_missing_summary": true,
     "fail_on_raises_section": false,

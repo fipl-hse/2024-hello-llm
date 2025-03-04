@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import simplejson as json
-from tqdm import tqdm
 
 try:
     from pandas import DataFrame
@@ -51,7 +50,7 @@ def main() -> None:
     """
     batch_size = 64
     max_length = 120
-    device = "cuda"
+    device = "cpu"
 
     references_path = Path(__file__).parent / "reference_scores.json"
     dest = Path(__file__).parent / "reference_model_analytics.json"
@@ -59,7 +58,7 @@ def main() -> None:
     references = get_references(path=references_path)
     result = {}
 
-    for model in tqdm(sorted(references)):
+    for model, _ in references.items():
         print(model)
         pipeline = LLMPipeline(model, TaskDataset(DataFrame([])), max_length, batch_size, device)
         model_analysis = pipeline.analyze_model()

@@ -1,9 +1,9 @@
 import abc
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Mapping
 
 import torch
 
-class Dataset(Iterable, torch.utils.data.Dataset, metaclass=abc.ABCMeta):  # type: ignore
+class Dataset(Iterable, torch.utils.data.Dataset, metaclass=abc.ABCMeta):
     def remove_columns(self, arg: list) -> Dataset: ...
     def rename_column(self, old_name: str, new_name: str) -> Dataset: ...
     def add_column(self, name: str, values: list[int]) -> Dataset: ...
