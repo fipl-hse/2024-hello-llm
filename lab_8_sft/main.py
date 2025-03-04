@@ -288,6 +288,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     def run(self) -> dict | None:
         """
@@ -296,6 +298,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data = pd.read_csv(self._data_path)
+        predictions = data['prediction'].tolist()
+        references = data['target'].tolist()
+        evaluation = {}
+        for metric in self._metrics:
+            metric_evaluator = load(metric.value)
+            calculated = metric_evaluator.compute(predictions=predictions, references=references)
+            if metric.value == Metrics.ROUGE.value:
+                evaluation[metric.value] = float(calculated['rougeL'])
+            else:
+                evaluation[metric.value] = float(calculated[metric.value])
+        return evaluation
 
 
 class SFTPipeline(AbstractSFTPipeline):

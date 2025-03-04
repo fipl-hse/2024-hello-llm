@@ -13,7 +13,10 @@ from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
+    TaskEvaluator,
+    TokenizedTaskDataset,
 )
 
 
@@ -42,10 +45,16 @@ def main() -> None:
                            max_length=120,
                            batch_size=64,
                            device='cpu')
+    data_frame = pipeline.infer_dataset()
+    predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    data_frame.to_csv(predictions_path)
 
-    summary = pipeline.analyze_model()
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
 
-    result = pipeline.infer_sample(dataset[1])
+    print(evaluator.run())
+
+    result = evaluator.run()
     assert result is not None, "Finetuning does not work correctly"
 
 
