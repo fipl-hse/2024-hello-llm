@@ -1,11 +1,20 @@
 """
 Fine-tuning starter.
 """
+import json
+
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
-import json
+
 from config.constants import PROJECT_ROOT
-from lab_8_sft.main import (RawDataImporter, RawDataPreprocessor, report_time, TaskDataset, LLMPipeline, TaskEvaluator)
+from lab_8_sft.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    report_time,
+    TaskDataset,
+    TaskEvaluator,
+)
 
 
 @report_time
