@@ -272,18 +272,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        data_loader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
-        predictions = []
+        loader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        collected_preds = []
 
         with torch.no_grad():
-            for batch in data_loader:
-                batch_predictions = self._infer_batch(batch)
-                predictions.extend(batch_predictions)
+            for batch in loader:
+                batch_preds = self._infer_batch(batch)
+                collected_preds.extend(batch_preds)
 
-        result_df = pd.DataFrame(self._dataset.data)
-        result_df[ColumnNames.PREDICTION.value] = predictions
+        df_results = pd.DataFrame(self._dataset.data)
+        df_results[ColumnNames.PREDICTION.value] = collected_preds
 
-        return result_df
+        return df_results
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
