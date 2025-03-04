@@ -12,17 +12,17 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from torch.nn import Module
 from peft import get_peft_model, LoraConfig
+from torch.nn import Module
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
-    AutoModelForSequenceClassification,
     AutoModelForSeq2SeqLM,
+    AutoModelForSequenceClassification,
     AutoTokenizer,
+    T5TokenizerFast,
     Trainer,
     TrainingArguments,
-    T5TokenizerFast,
 )
 
 from config.lab_settings import SFTParams

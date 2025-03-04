@@ -19,6 +19,7 @@ from lab_8_sft.main import (
     TokenizedTaskDataset,
 )
 
+
 @report_time
 def main() -> None:
     """
@@ -36,7 +37,7 @@ def main() -> None:
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=64, device='cpu')
+    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=1, device='cpu')
 
     # print(pipeline.analyze_model())
     _sample_infer = pipeline.infer_sample(dataset[1])
