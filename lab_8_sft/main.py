@@ -310,7 +310,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         evaluation_res = {metric.value: load(metric.value).compute(
             predictions=predictions,
-            references=references)[metric.value] for metric in self._metrics}
+            references=references)["rougeL" if metric.value == "rouge" else metric.value]
+                          for metric in self._metrics}
 
         return evaluation_res
 
