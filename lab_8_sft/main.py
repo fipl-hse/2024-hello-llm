@@ -242,7 +242,7 @@ class LLMPipeline(AbstractLLMPipeline):
                 embedding_size = None
 
         return {
-            'input_shape': {key: list(value.shape) for key, value in input_data.items()},
+            'input_shape': list(input_data['input_ids'].shape),
             'embedding_size': embedding_size,
             'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
