@@ -19,13 +19,14 @@ from lab_8_sft.main import (
     TokenizedTaskDataset,
 )
 
+LAB_FOLDER = PROJECT_ROOT / "lab_8_sft"
 
 @report_time
 def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(PROJECT_ROOT / "lab_8_sft" / "settings.json")
+    settings = LabSettings(LAB_FOLDER / "settings.json")
 
     # mark4
     importer = RawDataImporter(settings.parameters.dataset)
@@ -61,7 +62,7 @@ def main() -> None:
     pipeline.infer_dataset()
 
     predictions_dataframe = pipeline.infer_dataset()
-    predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
+    predictions_path = LAB_FOLDER / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
     predictions_dataframe.to_csv(predictions_path)
 
@@ -71,13 +72,12 @@ def main() -> None:
     for metric, value in result.items():
         print(metric, value, sep=': ')
 
-
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
         max_fine_tuning_steps=5,
         learning_rate=1e-3,
-        finetuned_model_path = Path().parent / f"{settings.parameters.model}_finetuned",
+        finetuned_model_path=LAB_FOLDER / "dist" / settings.parameters.model,
         device="cpu"
     )
 
@@ -115,7 +115,7 @@ def main() -> None:
     pipeline.infer_dataset()
 
     predictions_dataframe = pipeline.infer_dataset()
-    predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
+    predictions_path = LAB_FOLDER / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
     predictions_dataframe.to_csv(predictions_path)
 

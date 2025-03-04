@@ -75,9 +75,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.replace("", pd.NA).dropna()
-        self._data = self._raw_data.rename(columns={"text": ColumnNames.SOURCE.value,
-                                                    "label": ColumnNames.TARGET.value})
+        self._data = (
+            self._raw_data
+            .replace("", pd.NA)
+            .dropna()
+        )
+        self._data = (self._raw_data
+                      .rename(columns={"text": ColumnNames.SOURCE.value,
+                                      "label": ColumnNames.TARGET.value}))
         self._data.reset_index(drop=True, inplace=True)
 
 
@@ -222,10 +227,8 @@ class LLMPipeline(AbstractLLMPipeline):
                          device=device)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self._model.to(self._device)
-        self._tokenizer = AutoTokenizer.from_pretrained(
-            model_name.replace("_finetuned", "").replace("\\", "/"),
-            model_max_length=max_length
-        )
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                        model_max_length=max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -380,13 +383,10 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if self._finetuned_model_path is None:
-            return
-        if self._learning_rate is None:
-            return
-        if self._batch_size is None:
-            return
-        if self._max_sft_steps is None:
+        if (self._finetuned_model_path is None
+                or self._learning_rate is None
+                or self._batch_size is None
+                or self._max_sft_steps is None):
             return
 
         training_args = TrainingArguments(
