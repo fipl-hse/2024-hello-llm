@@ -14,13 +14,14 @@ class EvalPrediction:
 class TrainingArguments:
     def __init__(
         self,
-        output_dir: Path,
+        output_dir: Path | str,
         learning_rate: float,
         per_device_train_batch_size: int,
         max_steps: int,
         use_cpu: bool,
         save_strategy: str,
         load_best_model_at_end: bool,
+        remove_unused_columns: bool = True,
     ): ...
 
 class Trainer:
@@ -28,7 +29,7 @@ class Trainer:
         self,
         model: torch.nn.Module,
         args: TrainingArguments,
-        train_dataset: Dataset,
+        train_dataset: Dataset | list[dict[str, Any]],
     ): ...
     def save_model(self, path: Path) -> None: ...
     def train(self) -> None: ...
