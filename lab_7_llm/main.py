@@ -1,5 +1,5 @@
 """
-Laboratory work.
+Laboratory work. meow
 
 Working with Large Language Models.
 """
