@@ -7,7 +7,7 @@ from pathlib import Path
 import json
 from config.constants import PROJECT_ROOT
 from core_utils.llm.time_decorator import report_time
-from lab_8_sft.main import (RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline)
+from lab_8_sft.main import (RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline, TaskEvaluator)
 
 
 @report_time
@@ -32,7 +32,16 @@ def main() -> None:
     pipeline = LLMPipeline(config_file['parameters']['model'], dataset, max_length=120,
                            batch_size=1, device='cpu')
 
-    result = pipeline.analyze_model()
+    print(pipeline.analyze_model())
+
+    predictions_path = Path(PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv')
+    if not predictions_path.parent.exists():
+        predictions_path.parent.mkdir()
+
+    pipeline.infer_dataset().to_csv(predictions_path, index=False)
+
+    evaluator = TaskEvaluator(predictions_path, config_file['parameters']['metrics'])
+    result = evaluator.run()
     print(result)
     assert result is not None, "Finetuning does not work correctly"
 

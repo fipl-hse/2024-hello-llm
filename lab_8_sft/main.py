@@ -118,9 +118,8 @@ class TaskDataset(Dataset):
         return self._data
 
 
-def tokenize_sample(
-    sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
-) -> dict[str, torch.Tensor]:
+def tokenize_sample(sample: pd.Series, tokenizer: AutoTokenizer,
+                    max_length: int) -> dict[str, torch.Tensor]:
     """
     Tokenize sample.
 
@@ -235,13 +234,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        tokens = tokenizer(sample[0], sample[1], padding=True, truncation=True,
-                           return_tensors='pt')
-        output = self._model(**tokens).logits
-
-        return [str(prediction.item()) for prediction in list(torch.argmax(output, dim=1))][0]
-
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -251,6 +244,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        loader = DataLoader(self._dataset, self._batch_size)
+        predictions = []
+        for batch in loader:
+            predictions.extend(self._infer_batch(batch))
+        res = pd.DataFrame(self._dataset.data)
+        res[ColumnNames.PREDICTION.value] = predictions
+        return res[[ColumnNames.TARGET.value, ColumnNames.PREDICTION.value]]
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -263,7 +263,12 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokens = tokenizer(sample_batch[0], sample_batch[1], padding=True, truncation=True,
+                           return_tensors='pt')
+        output = self._model(**tokens).logits
 
+        return [str(prediction.item()) for prediction in list(torch.argmax(output, dim=1))]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -279,6 +284,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     def run(self) -> dict | None:
         """
@@ -287,6 +294,14 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data = pd.read_csv(self._data_path)
+        predictions = data[ColumnNames.PREDICTION.value]
+        references = data[ColumnNames.TARGET.value]
+        scores = {}
+        for metric in self._metrics:
+            scores[str(metric)] = load(str(metric)).compute(predictions=predictions,
+                                                            references=references)[str(metric)]
+        return scores
 
 
 class SFTPipeline(AbstractSFTPipeline):
