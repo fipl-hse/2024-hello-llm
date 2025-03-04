@@ -272,6 +272,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         results_df = pd.DataFrame(self._dataset.data)
         results_df[ColumnNames.PREDICTION.value] = all_predictions
+
         return results_df
 
     @torch.no_grad()
@@ -331,7 +332,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        print(self._metrics2module)
         outputs_df = pd.read_csv(self.data_path)
         predictions = outputs_df[ColumnNames.PREDICTION.value]
         targets = outputs_df[ColumnNames.TARGET.value]
@@ -339,7 +339,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
         targets = targets.astype(int)
         for metric, module in self._metrics2module.items():
             metric_result = module.compute(predictions=predictions, references=targets, average="micro")
-            print(f"Result for metric {metric}: {metric_result}")
             evaluation[metric] = metric_result[metric]
 
         return evaluation

@@ -46,6 +46,7 @@ def main() -> None:
     eval_res = evaluation.run()
     print(eval_res)
     result = eval_res
+
     assert result is not None, "Finetuning does not work correctly"
 
 
