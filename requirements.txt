@@ -3,6 +3,7 @@ evaluate==0.4.3
 fastapi==0.115.6
 pandas==2.2.3
 pytest==8.3.4
+peft==0.14.0
 scikit-learn==1.6.1
 torch==2.1.2
 torchinfo==1.8.0
