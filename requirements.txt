@@ -3,6 +3,7 @@ evaluate==0.4.3
 fastapi==0.115.6
 pandas==2.2.3
 peft==0.14.0
+rouge-score==0.1.2
 scikit-learn==1.6.1
 torch==2.5.1
 torchinfo==1.8.0
