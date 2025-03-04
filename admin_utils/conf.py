@@ -35,6 +35,11 @@ intersphinx_mapping = {
 
 exclude_patterns = ["venv/*", "docs/private/*"]
 
+nitpick_ignore = [
+    ("py:class", "transformers.models.auto.tokenization_auto.AutoTokenizer"),
+    ("py:class", "peft.tuners.lora.config.LoraConfig"),
+]
+
 language = "en"
 
 html_theme = "sphinx_rtd_theme"
