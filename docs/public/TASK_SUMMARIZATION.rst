@@ -128,16 +128,25 @@ Datasets
 Supervised Fine-Tuning (SFT) Parameters
 ---------------------------------------
 
-Set the following parameters:
+.. note:: Set the parameter
+          ``target_modules=["query", "key", "value", "dense"]`` for the
+          `mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization
+          <https://huggingface.co/mrm8488/bert-small2bert-small-finetuned-
+          cnn_daily_mail-summarization>`__,
+          `mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization
+          <https://huggingface.co/mrm8488/bert-mini2bert-mini-finetuned-
+          cnn_daily_mail-summarization>`__ and
+          `dmitry-vorobiev/rubert_ria_headlines <https://huggingface.co/dmitry-
+          vorobiev/rubert_ria_headlines>`__ models.
 
-   * **Inference parameters**: ``num_samples=10``, ``max_length=120`` and ``batch_size=3``.
-   * **SFT parameters**: ``max_fine_tuning_steps=50`` and
-     ``target_modules=["query", "key", "value"]``.
-
-.. note:: For the model
+.. note:: Set the parameter ``learning_rate=1e-4`` for the
+          `mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization
+          <https://huggingface.co/mrm8488/bert-mini2bert-mini-finetuned-
+          cnn_daily_mail-summarization>`__ model and
+          ``learning_rate=1e-1`` for the
           `dmitry-vorobiev/rubert_ria_headlines
-          <https://huggingface.co/dmitry-vorobiev/rubert_ria_headlines>`__, set the parameter
-          ``target_modules=["query", "key", "value", "dense"]``.
+          <https://huggingface.co/dmitry-vorobiev/rubert_ria_headlines>`__
+          as SFT parameter.
 
 Metrics
 -------

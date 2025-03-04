@@ -1,7 +1,7 @@
 """
 Collect and store model analytics.
 """
-# pylint: disable=import-error, wrong-import-order, duplicate-code
+# pylint: disable=import-error, wrong-import-order, duplicate-code, too-many-locals
 from decimal import Decimal, ROUND_FLOOR
 from pathlib import Path
 from typing import Any
@@ -122,7 +122,7 @@ def main() -> None:
     inference_params = InferenceParams(
         num_samples=10,
         max_length=120,
-        batch_size=3,
+        batch_size=64,
         predictions_path=dist_dir / "predictions.csv",
         device="cpu",
     )
@@ -130,11 +130,13 @@ def main() -> None:
         max_fine_tuning_steps=50,
         batch_size=3,
         max_length=120,
+        learning_rate=1e-3,
         finetuned_model_path=dist_dir,
         device="cpu",
     )
     specific_lr = {
         "Helsinki-NLP/opus-mt-ru-es": 1e-4,
+        "Helsinki-NLP/opus-mt-en-fr": 1.25e-2,
         "cointegrated/rubert-tiny-bilingual-nli": 1e-2,
         "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization": 1e-4,
         "dmitry-vorobiev/rubert_ria_headlines": 1e-1,
