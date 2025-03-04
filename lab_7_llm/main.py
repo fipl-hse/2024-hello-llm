@@ -1,6 +1,5 @@
 """
 Laboratory work. no meow I hate pycharm so much and venv is the worst ting to exist also
-python shows 3.10 but python -V shows 3.11.9 I am tired aaaaaaaaaaaaa
 
 Working with Large Language Models.
 """
