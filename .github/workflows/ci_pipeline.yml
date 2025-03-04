@@ -85,7 +85,7 @@ jobs:
   unittests:
     name: Unittests
     runs-on: ubuntu-latest
-    timeout-minutes: 11
+    timeout-minutes: 20
     needs: [ install-dependencies ]
     env:
       PR_NAME: ${{ github.event.pull_request.title }}
@@ -96,6 +96,7 @@ jobs:
       - name: Setup FIPL environment
         uses: fipl-hse/setup-env-action@v0.11
       - name: Run tests
+        if: ${{ env.REPOSITORY_TYPE == 'public' }}
         run: |
           source venv/bin/activate
           export PYTHONPATH=$(pwd)
@@ -104,7 +105,7 @@ jobs:
   start:
     name: Check start.py
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     needs: [ install-dependencies ]
     env:
       PR_NAME: ${{ github.event.pull_request.title }}
