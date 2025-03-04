@@ -1,0 +1,30 @@
+.input-line {
+    width: 99%;
+    height: 100px;
+    padding: 10px 5px;
+    text-align: center
+}
+
+.button-class {
+    padding: 10px 20px;
+    font-size: 14px;
+    background-color: #3ea4edb3;
+    margin: 10px;
+    border-color: #3ea4ed85;
+    color: #ffffff;
+    display: flex;
+    margin: 0 auto;
+}
+
+.output-line {
+    padding: 10px 5px;
+    font-size: 15px;
+    color: #333;
+    border: 0.1px solid black;
+    width: 99%;
+    text-align: center;
+}
+
+.header {
+    text-align: center;
+}
