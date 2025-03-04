@@ -47,7 +47,7 @@ except ImportError:
     print('Library "evaluate" not installed. Failed to import.')
 
 
-class TaskDataset(Dataset):
+class TaskDataset(Dataset):  # type: ignore
     """
     Dataset with translation data.
     """
