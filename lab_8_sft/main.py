@@ -46,7 +46,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Import dataset.
         """
 
-        dataset = load_dataset(self._hf_name, split='test', revision='v2.0', trust_remote_code=True)
+        dataset = load_dataset(self._hf_name, split='test', revision='v2.0', trust_remote_code=True, timeout=60)
         self._raw_data = pd.DataFrame(dataset)
 
         if not isinstance(self._raw_data, pd.DataFrame):
