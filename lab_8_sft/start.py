@@ -64,7 +64,7 @@ def main() -> None:
     evaluator = TaskEvaluator(predictions_file, metric_list)
     result = evaluator.run()
     print("Evaluation scores:", result)
-    result = None
+
     assert result is not None, "Finetuning does not work correctly"
 
 
