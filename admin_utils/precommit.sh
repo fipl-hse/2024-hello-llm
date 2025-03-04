@@ -8,6 +8,7 @@ DIRS_TO_CHECK=(
   "seminars"
   "core_utils"
   "lab_7_llm"
+  "lab_8_sft"
   "reference_lab_classification"
   "reference_lab_classification_sft"
   "reference_lab_generation"
@@ -30,6 +31,7 @@ if [[ "$1" == "fix" ]]; then
     isort .
     autoflake -vv .
     python -m black "${DIRS_TO_CHECK[@]}"
+    python config/generate_stubs/generate_labs_stubs.py
 fi
 
 python -m pylint "${DIRS_TO_CHECK[@]}"
