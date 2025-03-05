@@ -75,9 +75,6 @@ def main() -> None:
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
 
     result = evaluator.run()
-    print("Evaluation metrics:")
-    for metric, value in result.items():
-        print(metric, value, sep=': ')
 
     assert result is not None, "Finetuning does not work correctly"
 
