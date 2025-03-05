@@ -126,8 +126,8 @@ def get_task(model: str, inference_params: InferenceParams, samples: list) -> di
 
     Args:
         model (str): name of model
-        inference_params (InferenceParams): Samples for inference
-        samples (list): Parameters from inference
+        inference_params (InferenceParams): Parameters from inference
+        samples (list): Samples for inference
 
     Returns:
         dict: Results with model predictions
