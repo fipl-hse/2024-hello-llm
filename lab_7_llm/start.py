@@ -69,6 +69,7 @@ def main() -> None:
         print(metric, value, sep=': ')
 
     assert result is not None, "Demo does not work correctly"
+    return None
 
 
 if __name__ == "__main__":
