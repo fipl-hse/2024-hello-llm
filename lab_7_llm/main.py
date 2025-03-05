@@ -235,6 +235,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
     """
     A class that compares prediction quality using the specified metric.
     """
+
     def __init__(self, data_path: Path, metrics: Iterable[Metrics]) -> None:
         """
         Initialize an instance of Evaluator.
@@ -244,10 +245,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         super().__init__(metrics)
-        self.data_path = data_path
-        self._metrics2module = {}
-        for metric in self._metrics:
-            self._metrics2module[metric.value] = load(metric.value, seed=666)
+        self._metrics = metrics
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -257,18 +256,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        data_frame = pd.read_csv(self.data_path)
-
-        predictions = data_frame[ColumnNames.PREDICTION.value]
-        references = data_frame[ColumnNames.TARGET.value]
-
-        evaluation_res = {}
-        for metric_name, module in self._metrics2module.items():
-            scores = module.compute(predictions=predictions, references=references)
-
-            if metric_name == Metrics.ROUGE.value:
-                evaluation_res[metric_name] = scores["rougeL"]
-            else:
-                evaluation_res[metric_name] = scores[metric_name]
-
-        return evaluation_res
+        data = pd.read_csv(self._data_path)
+        calculated_metrics = {}
+        metric_dict = {'bleu': 'bleu', 'rouge': 'rougeL'} # 0.01410 & 0.09541
+        for metric in self._metrics:
+            metric_eval = load(metric.value, seed=666)
+            info = metric_eval.compute(predictions=data['predictions'].to_list(),
+                                       references=data['target'].to_list())
+            if metric.value in metric_dict:
+                calculated_metrics.update({metric.value: info[metric_dict[metric.value]]})
+        return calculated_metrics
