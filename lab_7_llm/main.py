@@ -6,13 +6,24 @@ Working with Large Language Models.
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from pathlib import Path
 from typing import Iterable, Sequence
+from datasets import load_dataset
+import pandas as pd
+from pandas import DataFrame
+import torch
+from torch.utils.data import Dataset
+
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.time_decorator import report_time
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.metrics import Metrics
 
 
 class RawDataImporter(AbstractRawDataImporter):
     """
     A class that imports the HuggingFace dataset.
     """
-
     @report_time
     def obtain(self) -> None:
         """
@@ -21,6 +32,10 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(self._hf_name, split='train').to_pandas()
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError('Downloaded dataset is not pd.DataFrame')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +50,15 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+
+        return {
+            'dataset_number_of_samples': len(self._raw_data),
+            'dataset_columns': len(self._raw_data.columns),
+            'dataset_duplicates': int(self._raw_data.duplicated().sum()),
+            'dataset_empty_rows': int(self._raw_data.isnull().sum().sum()),
+            'dataset_sample_min_len': min(len(sample) for sample in self._raw_data['Reviews']),
+            'dataset_sample_max_len': max(len(sample) for sample in self._raw_data['Reviews']),
+        }
 
     @report_time
     def transform(self) -> None:
