@@ -315,20 +315,14 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         inputs = self._tokenizer(
             list(sample_batch[0]),
-            padding=True,
+            return_tensors="pt",
             truncation=True,
-            return_tensors="pt"
-        ).to(self._device)
-
-        generated_ids = self._model.generate(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-            max_length=self._max_length
+            padding=True,
         )
+        inputs.to(self._device)
 
-        decoded_predictions = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-
-        return [prediction.strip() for prediction in decoded_predictions]
+        decoded_predictions = self._model(**inputs).logits
+        return [str(prediction.argmax().item()) for prediction in decoded_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
