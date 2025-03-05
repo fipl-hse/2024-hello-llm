@@ -42,7 +42,7 @@ def main() -> None:
                            batch_size=1,
                            device='cpu',
                            )
-    summary = pipeline.infer_sample(dataset[0])
+    pipeline.infer_sample(dataset[0])
     model_analysis = pipeline.analyze_model()
     print("Model analysis:")
     for field, value in model_analysis.items():
