@@ -41,7 +41,7 @@ def main() -> None:
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length=120,
-                           batch_size=1,
+                           batch_size=64,
                            device='cpu',
                            )
     pipeline.infer_sample(dataset[0])
