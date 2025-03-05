@@ -25,7 +25,7 @@ def main() -> None:
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
     if importer.raw_data is None:
-        return
+        return None
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     data_analysis = preprocessor.analyze()
@@ -35,6 +35,8 @@ def main() -> None:
 
     # mark6
     preprocessor.transform()
+    if preprocessor.data is None:
+        return None
     dataset = TaskDataset(preprocessor.data)
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,

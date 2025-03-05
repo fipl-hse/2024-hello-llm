@@ -11,9 +11,11 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
+
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -161,6 +163,9 @@ class LLMPipeline(AbstractLLMPipeline):
         input_ids = torch.ones((1, self._model.config.hidden_size),
                                dtype=torch.long, device=self._device)
         input_data = {"input_ids": input_ids, "decoder_input_ids": input_ids}
+
+        if not isinstance(self._model, nn.Module):
+            raise TypeError
         model_summary = summary(self._model, input_data=input_data, verbose=0)
         return {
                 'input_shape': list(model_summary.input_size["input_ids"]),
