@@ -13,6 +13,7 @@ from pydantic.dataclasses import dataclass
 
 from config.lab_settings import LabSettings
 from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
 LAB_FOLDER = Path(__file__).parent
 
@@ -55,8 +56,12 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         device="cpu"
     )
 
+    fine_tuned_model_path = LAB_FOLDER / "dist" / settings.parameters.model
+    if not fine_tuned_model_path.exists():
+        main()
+
     fine_tuned_llm_pipe = LLMPipeline(
-        model_name=str(LAB_FOLDER / "dist" / settings.parameters.model),
+        model_name=str(fine_tuned_model_path),
         dataset=TaskDataset(pd.DataFrame()),
         max_length=120,
         batch_size=1,
