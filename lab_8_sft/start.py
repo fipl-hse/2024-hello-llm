@@ -2,8 +2,6 @@
 Fine-tuning starter.
 """
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
-from pathlib import Path
-
 from transformers import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
@@ -96,7 +94,7 @@ def main() -> None:
 
     num_samples = 10
     pipeline = LLMPipeline(
-        model_name=LAB_FOLDER / "dist" / settings.parameters.model,
+        model_name=str(LAB_FOLDER / "dist" / settings.parameters.model),
         dataset=TaskDataset(preprocessor.data.head(num_samples)),
         max_length=120,
         batch_size=64,
