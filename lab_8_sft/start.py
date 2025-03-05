@@ -39,11 +39,11 @@ def main() -> None:
     predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
 
-    num_samples = 100
+    num_samples = 10
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=5,
+        max_fine_tuning_steps=200,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
         device="cpu",
@@ -62,7 +62,7 @@ def main() -> None:
 
     pipeline = LLMPipeline(
         model_name=str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),
-        dataset=TaskDataset(preprocessor.data.head(100)),
+        dataset=TaskDataset(preprocessor.data.head(10)),
         max_length=120,
         batch_size=64,
         device="cpu"

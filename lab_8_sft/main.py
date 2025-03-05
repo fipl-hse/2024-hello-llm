@@ -15,12 +15,8 @@ from pandas import DataFrame
 from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import (
-    AutoModelForSeq2SeqLM,
-    AutoTokenizer,
-    Trainer,
-    TrainingArguments
-)
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, \
+    Trainer, TrainingArguments
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -320,6 +316,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
+        self._metrics = {
+            metric: load(metric.value, seed=77)
+            if metric == Metrics.ROUGE else load(metric.value)
+            for metric in metrics
+        }
 
     def run(self) -> dict | None:
         """
@@ -362,7 +363,7 @@ class SFTPipeline(AbstractSFTPipeline):
         self._batch_size = sft_params.batch_size
         self._lora_config = LoraConfig(r=4,
                                        lora_alpha=8,
-                                       lora_dropout=0.1,
+                                       lora_dropout=0.5,
                                        target_modules=sft_params.target_modules
                                        )
         self._device = sft_params.device
