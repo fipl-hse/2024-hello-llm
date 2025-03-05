@@ -37,7 +37,7 @@ def main() -> None:
     preprocessor.transform()
     if preprocessor.data is None:
         return None
-    dataset = TaskDataset(preprocessor.data)
+    dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length=120,
