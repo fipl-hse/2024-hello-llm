@@ -36,28 +36,15 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
 
-    analysis = preprocessor.analyze()
-
-    dataset = TaskDataset(preprocessor.data.head(100))
-
-    pipeline = LLMPipeline(settings.parameters.model,
-                           dataset,
-                           max_length=120,
-                           batch_size=64,
-                           device='cpu')
-    data_frame = pipeline.infer_dataset()
-
     predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
-    # data_frame.to_csv(predictions_path)
-    # evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
 
-    num_samples = 10
+    num_samples = 100
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
         max_fine_tuning_steps=5,
-        learning_rate=1e-2,
+        learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
         device="cpu",
         target_modules=["query", "key", "value"]
@@ -73,23 +60,13 @@ def main() -> None:
                                sft_params=sft_params)
     sft_pipeline.run()
 
-    num_samples = 10
     pipeline = LLMPipeline(
-        model_name=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
-        dataset=TaskDataset(preprocessor.data.head(num_samples)),
+        model_name=str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),
+        dataset=TaskDataset(preprocessor.data.head(100)),
         max_length=120,
         batch_size=64,
         device="cpu"
     )
-
-    model_analysis = pipeline.analyze_model()
-    print("Model analysis:")
-    for field, value in model_analysis.items():
-        print(field, value, sep=': ')
-
-    random_sample = tuple(dataset.data.sample(random_state=3)["source"])
-    print("Random text:", random_sample[0])
-    print("Inference result:", pipeline.infer_sample(random_sample))
 
     pipeline.infer_dataset()
 

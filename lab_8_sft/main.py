@@ -15,16 +15,18 @@ from pandas import DataFrame
 from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import (AutoModelForSeq2SeqLM,
-                          AutoTokenizer,
-                          Trainer,
-                          TrainingArguments)
+from transformers import (
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
 from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
@@ -359,8 +361,8 @@ class SFTPipeline(AbstractSFTPipeline):
         self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
         self._batch_size = sft_params.batch_size
         self._lora_config = LoraConfig(r=4,
-                                       lora_alpha=20,
-                                       lora_dropout=0.7,
+                                       lora_alpha=8,
+                                       lora_dropout=0.1,
                                        target_modules=sft_params.target_modules
                                        )
         self._device = sft_params.device
