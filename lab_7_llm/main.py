@@ -54,14 +54,14 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        ds_len = self._raw_data['instruction'].apply(len)
+        cleaned = self._raw_data.replace('', pd.NA).dropna().drop_duplicates()
         return {
             'dataset_number_of_samples': self._raw_data.shape[0],
             'dataset_columns': self._raw_data.shape[-1],
-            'dataset_duplicates': int(self._raw_data.duplicated().sum()),
-            'dataset_empty_rows': int(self._raw_data.replace("", pd.NA).isna().any(axis=1).sum()),
-            'dataset_sample_min_len': int(ds_len.min()),
-            'dataset_sample_max_len': int(ds_len.max())
+            'dataset_duplicates': int(self._raw_data.duplicated().sum().sum()),
+            'dataset_empty_rows': self._raw_data.replace("", pd.NA).isna().sum().sum(),
+            'dataset_sample_min_len': int(self._raw_data['instruction'].str.len().min()),
+            'dataset_sample_max_len': int(self._raw_data['context'].str.len().max())
         }
 
     @report_time
