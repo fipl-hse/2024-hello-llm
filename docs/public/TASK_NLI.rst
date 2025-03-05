@@ -13,7 +13,7 @@ Models
 | huggingface.co/cointegrated/rubert-base-cased-nli-threeway>`__    |      |
 +-------------------------------------------------------------------+------+
 | `cointegrated/rubert-tiny-bilingual-nli                           | RU   |
-| <face.co/cointegrated/rubert-tiny-bilingual-nli>`__               |      |
+| <huggingface.co/cointegrated/rubert-tiny-bilingual-nli>`__        |      |
 +-------------------------------------------------------------------+------+
 | `cross-encoder/qnli-distilroberta-base                            | EN   |
 | <https://huggingface.co/cross-encoder/qnli-distilroberta-base>`__ |      |
@@ -96,6 +96,13 @@ Datasets
       3. Delete duplicates in dataset.
       4. Delete empty rows in dataset.
       5. Reset indexes.
+
+Supervised Fine-Tuning (SFT) Parameters
+---------------------------------------
+
+.. note:: Set the parameter ``learning_rate=1e-2`` for the
+          `cointegrated/rubert-tiny-bilingual-nli <huggingface.co/cointegrated/rubert-tiny-bilingual-nli>`__
+          model as SFT parameter.
 
 Metrics
 -------
