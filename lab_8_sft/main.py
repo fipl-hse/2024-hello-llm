@@ -153,26 +153,18 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
-    tokenized_inputs = tokenizer(
+    tokenized = tokenizer(
         sample[ColumnNames.SOURCE.value],
         padding="max_length",
         truncation=True,
         max_length=max_length,
-        return_tensors="pt",
-    )
-
-    tokenized_labels = tokenizer(
-        sample[ColumnNames.TARGET.value],
-        padding="max_length",
-        truncation=True,
-        max_length=max_length,
-        return_tensors="pt",
+        return_tensors="pt"
     )
 
     return {
-        "input_ids": tokenized_inputs["input_ids"].squeeze(0),
-        "attention_mask": tokenized_inputs["attention_mask"].squeeze(0),
-        "labels": tokenized_labels["input_ids"].squeeze(0),
+        "input_ids": tokenized["input_ids"].squeeze(0),
+        "attention_mask": tokenized["attention_mask"].squeeze(0),
+        "labels": torch.tensor(sample[ColumnNames.TARGET.value], dtype=torch.long)
     }
 
 class TokenizedTaskDataset(Dataset):
@@ -190,6 +182,12 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = data
+        self._tokenizer = tokenizer
+        self._max_length = max_length
+        self._tokenized_data = [
+            tokenize_sample(row, tokenizer, max_length) for _, row in data.iterrows()
+        ]
 
     def __len__(self) -> int:
         """
@@ -198,6 +196,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._tokenized_data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -209,6 +208,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        return self._tokenized_data[index]
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -305,7 +305,6 @@ class LLMPipeline(AbstractLLMPipeline):
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
         """
-        ПЕРЕПИСАТЬ
         Infer single batch.
 
         Args:
@@ -316,15 +315,20 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         inputs = self._tokenizer(
             list(sample_batch[0]),
-            return_tensors="pt",
-            truncation=True,
             padding=True,
+            truncation=True,
+            return_tensors="pt"
+        ).to(self._device)
+
+        generated_ids = self._model.generate(
+            input_ids=inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
             max_length=self._max_length
         )
-        inputs.to(self._device)
 
-        preds = torch.argmax(self._model(**inputs).logits, dim=1)
-        return [str(pred.item()) for pred in preds]
+        decoded_predictions = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+
+        return [prediction.strip() for prediction in decoded_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
