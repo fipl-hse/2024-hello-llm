@@ -26,7 +26,7 @@ class Query:
         question (str): User input text
     """
     question: str
-    use_base_model: bool
+    is_base_model: bool
 
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
@@ -101,6 +101,6 @@ async def infer(query: Query) -> dict[str, str]:
     Returns:
         dict[str, str]: Inference results as a dictionary.
     """
-    if query.use_base_model:
+    if query.is_base_model:
         return {"infer": pre_trained_pipeline.infer_sample((query.question,))}
     return {"infer": fine_tuned_pipeline.infer_sample((query.question,))}

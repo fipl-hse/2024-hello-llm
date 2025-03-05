@@ -25,7 +25,7 @@ submitBtn.addEventListener('click', async () => {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ question: userText, use_base_model: isChecked})
+            body: JSON.stringify({ question: userText, is_base_model: isChecked})
         });
 
         if (!response.ok) {
