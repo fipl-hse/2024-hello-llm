@@ -7,6 +7,7 @@ Fine-tuning Large Language Models for a downstream task.
 from pathlib import Path
 from typing import Iterable, Sequence
 
+import nltk
 import pandas as pd
 import torch
 from datasets import load_dataset
@@ -14,7 +15,7 @@ from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -302,7 +303,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         self.data_path = data_path
-        self.metrics = metrics
+        self._metrics = metrics
 
 
     def run(self) -> dict | None:
@@ -312,21 +313,21 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        data = pd.read_csv(self.data_path)
-        predictions = data[ColumnNames.PREDICTION.value].tolist()
-        references = data[ColumnNames.TARGET.value].tolist()
+        eval_data = pd.read_csv(self.data_path)
 
-        scores = {}
-        for metric in self.metrics:
-            metric_evaluator = load(metric.value)
-            calculated = metric_evaluator.compute(predictions=predictions, references=references)
+        predictions = eval_data[ColumnNames.PREDICTION.value]
+        targets = eval_data[ColumnNames.TARGET.value]
 
-            if metric.value == Metrics.ROUGE.value:
-                scores[metric.value] = float(calculated['rougeL'])
+        eval_results = {}
+        for metric in self._metrics:
+            scores = load(metric.value, seed=77).compute(predictions=predictions,
+                                                         references=targets)
+            if metric.value == "rouge":
+                eval_results[metric.value] = scores["rougeL"]
             else:
-                scores[metric.value] = float(calculated[metric.value])
+                eval_results[metric.value] = scores[metric.value]
 
-        return scores
+        return eval_results
 
 
 class SFTPipeline(AbstractSFTPipeline):
