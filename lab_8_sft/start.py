@@ -4,7 +4,7 @@ Fine-tuning starter.
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-from lab_7_llm.main import (
+from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
