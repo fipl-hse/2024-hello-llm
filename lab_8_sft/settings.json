@@ -1,7 +1,7 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
+    "model": "UrukHan/t5-russian-summarization",
+    "dataset": "CarlBrendt/Summ_Dialog_News",
     "metrics": []
   },
   "target_score": 4
