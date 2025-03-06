@@ -192,6 +192,9 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader.
             device (str): The device for inference.
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -200,6 +203,27 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        dummy_inputs = torch.ones((1,
+                                  self._model.config.max_position_embeddings),
+                                  dtype=torch.long)
+
+        input_data = {'input_ids': dummy_inputs,
+                      'attention_mask': dummy_inputs}
+
+        if isinstance(self._model, torch.nn.Module):
+            model_summary = summary(self._model, input_data=input_data, verbose=0)
+            model_properties = {
+                'input_shape': {k: list(v.shape) for k, v in input_data.items()},
+                'embedding_size': self._model.config.max_position_embeddings,
+                'output_shape': model_summary.summary_list[-1].output_size,
+                'num_trainable_params': model_summary.trainable_params,
+                'vocab_size': self._model.config.vocab_size,
+                'size': model_summary.total_param_bytes,
+                'max_context_length': self._model.config.max_length
+            }
+            return model_properties
+
+        raise TypeError("model is not a valid torch.nn.Module")
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -212,6 +236,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        predictions = self._infer_batch([sample])
+        return predictions[0] if predictions else None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -221,6 +247,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(self._dataset, batch_size=self._batch_size, shuffle=False)
+        all_predictions = []
+        all_targets = []
+        for batch in dataloader:
+            texts, targets = batch
+            batch_samples = list(zip(texts, targets))
+            batch_predictions = self._infer_batch(batch_samples)
+            all_predictions.extend(batch_predictions)
+            all_targets.extend(targets)
+        result_df = pd.DataFrame({
+            ColumnNames.TARGET.value: all_targets,
+            ColumnNames.PREDICTION.value: all_predictions
+        })
+        return result_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -233,6 +273,21 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        if not self._model:
+            raise ValueError('Model is not defined')
+
+        texts = [sample[0] for sample in sample_batch]
+        tokens = self._tokenizer(
+            texts,
+            max_length=self._max_length,
+            padding=True,
+            truncation=True,
+            return_tensors='pt'
+        )
+        tokens = {k: v.to(self._device) for k, v in tokens.items()}
+        output = self._model(**tokens)
+        preds = torch.argmax(output.logits, dim=1)
+        return [str(pred.item()) for pred in preds]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -248,6 +303,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        self.data_path = data_path
+        self.metrics = metrics
 
     def run(self) -> dict | None:
         """
@@ -256,6 +313,14 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        target2pred = pd.read_csv(self.data_path)
+        results = {}
+        for metric in self.metrics:
+            result = load(str(metric)).compute(predictions=target2pred[ColumnNames.TARGET.value],
+                                               references=target2pred[ColumnNames.PREDICTION.value],
+                                               average='micro')
+            results.update(result)
+        return results
 
 
 class SFTPipeline(AbstractSFTPipeline):
