@@ -181,7 +181,7 @@ class TokenizedTaskDataset(Dataset):
         self._tokenizer = tokenizer
         self._max_length = max_length
 
-def __len__(self) -> int:
+    def __len__(self) -> int:
         """
         Return the number of items in the dataset.
 
