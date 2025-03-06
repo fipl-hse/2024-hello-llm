@@ -309,7 +309,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        data_frame = pd.read_csv(self.data_path)
+        data_frame = pd.read_csv(self._data_path)
 
         predictions = data_frame[ColumnNames.PREDICTION.value]
         references = data_frame[ColumnNames.TARGET.value]
