@@ -205,27 +205,29 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        dummy_inputs = torch.ones((1,
-                                  self._model.config.max_position_embeddings),
-                                  dtype=torch.long)
+        if not isinstance(self._model, torch.nn.Module):
+            raise ValueError("Model is of incorrect type")
+        tensor = torch.ones(
+            (1, self._model.config.encoder.max_position_embeddings),
+            dtype=torch.long
+        )
+        inputs = {"input_ids": tensor, "attention_mask": tensor}
+        model_summary = summary(
+            self._model,
+            input_data=inputs,
+            decoder_input_ids=tensor,
+            verbose=0
+        )
 
-        input_data = {'input_ids': dummy_inputs,
-                      'attention_mask': dummy_inputs}
-
-        if isinstance(self._model, torch.nn.Module):
-            model_summary = summary(self._model, input_data=input_data, verbose=0)
-            model_properties = {
-                'input_shape': {k: list(v.shape) for k, v in input_data.items()},
-                'embedding_size': self._model.config.max_position_embeddings,
-                'output_shape': model_summary.summary_list[-1].output_size,
-                'num_trainable_params': model_summary.trainable_params,
-                'vocab_size': self._model.config.vocab_size,
-                'size': model_summary.total_param_bytes,
-                'max_context_length': self._model.config.max_length
-            }
-            return model_properties
-
-        raise TypeError("model is not a valid torch.nn.Module")
+        return {
+            "input_shape": list(tensor.size()),
+            "embedding_size": self._model.config.encoder.max_position_embeddings,
+            "output_shape": model_summary.summary_list[-1].output_size,
+            "num_trainable_params": model_summary.trainable_params,
+            "vocab_size": self._model.config.encoder.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self._model.config.max_length,
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
