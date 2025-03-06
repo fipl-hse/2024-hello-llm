@@ -221,7 +221,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return {
             "input_shape": list(tensor.size()),
-            "embedding_size": self._model.config.encoder.max_position_embeddings,
+            "embedding_size": self._model.config.n_positions,
             "output_shape": model_summary.summary_list[-1].output_size,
             "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._model.config.encoder.vocab_size,
