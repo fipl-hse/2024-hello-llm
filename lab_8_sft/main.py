@@ -317,7 +317,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         references = data[ColumnNames.TARGET.value].tolist()
 
         scores = {}
-        for metric in self._metrics:
+        for metric in self.metrics:
             metric_evaluator = load(metric.value)
             calculated = metric_evaluator.compute(predictions=predictions, references=references)
 
