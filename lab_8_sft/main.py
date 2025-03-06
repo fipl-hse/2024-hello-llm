@@ -208,7 +208,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise ValueError("Model is of incorrect type")
         tensor = torch.ones(
-            (1, self._model.config.encoder.max_position_embeddings),
+            (1, self._model.config.n_positions),
             dtype=torch.long
         )
         inputs = {"input_ids": tensor, "attention_mask": tensor}
