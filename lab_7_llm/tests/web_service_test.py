@@ -13,7 +13,7 @@ except ImportError:
     print('Library "fastapi" not installed. Failed to import.')
     TestClient = namedtuple("TestClient", "post")
 
-from lab_7_llm.service import app
+from lab_7_llm.service import APP as app
 
 
 class WebServiceTest(unittest.TestCase):
