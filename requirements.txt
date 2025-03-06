@@ -1,3 +1,4 @@
+absl-py==1.4.0
 cmake==3.31.4
 datasets==3.2.0
 evaluate==0.4.3
@@ -8,11 +9,10 @@ pandas==2.2.3
 peft==0.14.0
 pydantic==2.10.5
 pytest==8.3.5
+rouge-score==0.1.2
 scikit-learn==1.6.1
 torch==2.5.1
 torchinfo==1.8.0
-rouge-score==0.1.2
-absl-py==1.4.0
 transformers==4.48.0
 
 --extra-index-url https://download.pytorch.org/whl/cpu
