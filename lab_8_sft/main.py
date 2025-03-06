@@ -14,7 +14,7 @@ from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
