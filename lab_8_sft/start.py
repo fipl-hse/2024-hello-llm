@@ -19,11 +19,11 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(PROJECT_ROOT / 'lab_8_llm' / 'settings.json')
+    settings = LabSettings(PROJECT_ROOT / 'lab_8_sft' / 'settings.json')
     dataset_name = settings.parameters.dataset
     model_name = settings.parameters.model
     metric_list = settings.parameters.metrics
-    predictions_file = PROJECT_ROOT / "lab_8_llm" / "dist" / "predictions.csv"
+    predictions_file = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
 
     importer = RawDataImporter(dataset_name)
     importer.obtain()
