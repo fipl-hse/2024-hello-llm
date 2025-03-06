@@ -60,8 +60,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_columns": self._raw_data.shape[1],
             "dataset_duplicates": self._raw_data.duplicated().sum(),
             "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
-            "dataset_sample_min_len": self._raw_data["text"].dropna().map(len).min(),
-            "dataset_sample_max_len": self._raw_data["text"].map(len).max()
+            "dataset_sample_min_len": self._raw_data["info"].dropna().map(len).min(),
+            "dataset_sample_max_len": self._raw_data["info"].map(len).max()
         }
 
         return properties_dict
@@ -71,8 +71,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.rename(columns={"text": ColumnNames.SOURCE.value,
-                                                    "label": ColumnNames.TARGET.value})
+        self._data = self._raw_data.rename(columns={"info": ColumnNames.SOURCE.value,
+                                                    "summary": ColumnNames.TARGET.value})
         self._data.reset_index(drop=True, inplace=True)
 
 
@@ -195,7 +195,6 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model.to(self._device).eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                         model_max_length=max_length)
 
@@ -209,19 +208,19 @@ class LLMPipeline(AbstractLLMPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
-        input_data = torch.ones((1, self._model.config.max_position_embeddings),
-                                dtype=torch.long)
+        input_data = torch.ones((1, self._model.config.d_model),
+                                dtype=torch.long, device=self._device)
+        input_data = {"input_ids": input_data, "decoder_input_ids": input_data}
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
         return {
+            "input_shape": list(model_summary.input_size["input_ids"]),
             "embedding_size": list(self._model.named_parameters())[1][1].shape[0],
-            "input_shape": {'attention_mask': list(input_data.size()),
-                            'input_ids': list(input_data.size())},
-            "max_context_length": self._model.config.max_length,
-            "num_trainable_params": model_summary.trainable_params,
             "output_shape": model_summary.summary_list[-1].output_size,
-            "size": model_summary.total_param_bytes,
+            "num_trainable_params": model_summary.trainable_params,
             "vocab_size": self._model.config.vocab_size,
+            "size": model_summary.total_param_bytes,
+            "max_context_length": self._model.config.max_length
         }
 
     @report_time
@@ -268,17 +267,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        input_data = self._tokenizer(sample_batch[0],
-                                     return_tensors="pt",
-                                     padding=True,
-                                     truncation=True)
-        if not isinstance(self._model, torch.nn.Module):
-            raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
+        inputs = self._tokenizer(sample_batch[0],
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True)
 
-        outputs = self._model(**input_data)
-        predicted_labels = [str(prediction.item()) for prediction
-                            in torch.argmax(outputs["logits"], dim=-1)]
-        return predicted_labels
+        output_ids = self._model.generate(
+            input_ids=inputs["input_ids"].to(self._device),
+            attention_mask=inputs["attention_mask"].to(self._device),
+            max_length=self._max_length
+        )
+
+        output_sequences = self._tokenizer.batch_decode(output_ids,
+                                                        skip_special_tokens=True)
+        return [str(seq) for seq in output_sequences]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
