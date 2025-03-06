@@ -306,6 +306,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         self.data_path = data_path
         self.metrics = metrics
 
+
     def run(self) -> dict | None:
         """
         Evaluate the predictions against the references using the specified metric.
