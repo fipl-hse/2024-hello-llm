@@ -14,7 +14,7 @@ from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModelForSeq2SeqLM
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -193,8 +193,10 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference.
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            model_name, model_max_length=self._max_length
+        )
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -236,8 +238,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        predictions = self._infer_batch([sample])
-        return predictions[0] if predictions else None
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -247,19 +248,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        dataloader = DataLoader(self._dataset, batch_size=self._batch_size, shuffle=False)
-        all_predictions = []
-        all_targets = []
-        for batch in dataloader:
-            texts, targets = batch
-            batch_samples = list(zip(texts, targets))
-            batch_predictions = self._infer_batch(batch_samples)
-            all_predictions.extend(batch_predictions)
-            all_targets.extend(targets)
-        result_df = pd.DataFrame({
-            ColumnNames.TARGET.value: all_targets,
-            ColumnNames.PREDICTION.value: all_predictions
-        })
+        data_loader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+        predictions = []
+
+        with torch.no_grad():
+            for batch in data_loader:
+                batch_predictions = self._infer_batch(batch)
+                predictions.extend(batch_predictions)
+
+        result_df = pd.DataFrame(self._dataset.data)
+        result_df[ColumnNames.PREDICTION.value] = predictions
+
         return result_df
 
     @torch.no_grad()
@@ -273,21 +272,23 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        if not self._model:
-            raise ValueError('Model is not defined')
-
-        texts = [sample[0] for sample in sample_batch]
-        tokens = self._tokenizer(
-            texts,
-            max_length=self._max_length,
+        inputs = self._tokenizer(
+            list(sample_batch[0]),
             padding=True,
             truncation=True,
-            return_tensors='pt'
+            return_tensors="pt"
+        ).to(self._device)
+
+
+        generated_ids = self._model.generate(
+            input_ids=inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
+            max_length=self._max_length
         )
-        tokens = {k: v.to(self._device) for k, v in tokens.items()}
-        output = self._model(**tokens)
-        preds = torch.argmax(output.logits, dim=1)
-        return [str(pred.item()) for pred in preds]
+
+        decoded_predictions = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+
+        return [prediction.strip() for prediction in decoded_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -314,14 +315,21 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        target2pred = pd.read_csv(self.data_path)
-        results = {}
-        for metric in self.metrics:
-            result = load(str(metric)).compute(predictions=target2pred[ColumnNames.TARGET.value],
-                                               references=target2pred[ColumnNames.PREDICTION.value],
-                                               average='micro')
-            results.update(result)
-        return results
+        eval_data = pd.read_csv(self.data_path)
+
+        predictions = eval_data[ColumnNames.PREDICTION.value]
+        targets = eval_data[ColumnNames.TARGET.value]
+
+        eval_results = {}
+        for metric in self._metrics:
+            scores = load(metric.value, seed=77).compute(predictions=predictions,
+                                                         references=targets)
+            if metric.value == "rouge":
+                eval_results[metric.value] = scores["rougeL"]
+            else:
+                eval_results[metric.value] = scores[metric.value]
+
+        return eval_results
 
 
 class SFTPipeline(AbstractSFTPipeline):
