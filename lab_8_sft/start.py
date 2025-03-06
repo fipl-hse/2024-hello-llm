@@ -62,7 +62,8 @@ def main() -> None:
         batch_size=3,
         max_fine_tuning_steps=50,
         device="cpu",
-        finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / f"{settings.parameters.model}_finetuned",
+        finetuned_model_path=PROJECT_ROOT / "lab_8_sft" /
+                             "dist" / f"{settings.parameters.model}_finetuned",
         learning_rate=1e-3,
         target_modules=["q", "v"]
     )
@@ -96,19 +97,21 @@ def main() -> None:
     predictions_dataframe.to_csv(predictions_file)
 
     evaluator = TaskEvaluator(predictions_file, settings.parameters.metrics)
-    fine_tuned_metrics = evaluator.run()
+    result = evaluator.run()
 
     for metric in settings.parameters.metrics:
         key = metric.value
         base_val = base_metrics.get(key)
-        ft_val = fine_tuned_metrics.get(key)
+        ft_val = result.get(key)
         if base_val is not None and ft_val is not None:
             diff = ft_val - base_val
-            print(f"metric {key}: base = {base_val:.3f}, fine-tuned = {ft_val:.3f}, diff = {diff:.3f}")
+            print(f"metric {key}: base = {base_val:.3f}, "
+                  f"fine-tuned = {ft_val:.3f}, diff = {diff:.3f}")
         else:
-            print(f"metric {key} not computed properly: base = {base_val}, fine-tuned = {ft_val}")
+            print(f"metric {key} not computed properly: "
+                  f"base = {base_val}, fine-tuned = {ft_val}")
 
-    assert fine_tuned_metrics is not None, "Finetuning does not work correctly"
+    assert result is not None, "Finetuning does not work correctly"
 
 
 if __name__ == "__main__":
