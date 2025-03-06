@@ -312,21 +312,21 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        eval_data = pd.read_csv(self.data_path)
+        data = pd.read_csv(self.data_path)
+        predictions = data[ColumnNames.PREDICTION.value].tolist()
+        references = data[ColumnNames.TARGET.value].tolist()
 
-        predictions = eval_data[ColumnNames.PREDICTION.value]
-        targets = eval_data[ColumnNames.TARGET.value]
-
-        eval_results = {}
+        scores = {}
         for metric in self._metrics:
-            scores = load(metric.value, seed=77).compute(predictions=predictions,
-                                                         references=targets)
-            if metric.value == "rouge":
-                eval_results[metric.value] = scores["rougeL"]
-            else:
-                eval_results[metric.value] = scores[metric.value]
+            metric_evaluator = load(metric.value)
+            calculated = metric_evaluator.compute(predictions=predictions, references=references)
 
-        return eval_results
+            if metric.value == Metrics.ROUGE.value:
+                scores[metric.value] = float(calculated['rougeL'])
+            else:
+                scores[metric.value] = float(calculated[metric.value])
+
+        return scores
 
 
 class SFTPipeline(AbstractSFTPipeline):
