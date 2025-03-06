@@ -2,16 +2,15 @@
 Fine-tuning starter.
 """
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
-from pathlib import Path
-
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-from core_utils.llm.time_decorator import report_time
-from lab_8_sft.main import (
+from lab_7_llm.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
-    TaskDataset
+    report_time,
+    TaskDataset,
+    TaskEvaluator,
 )
 
 
@@ -48,7 +47,12 @@ def main() -> None:
     predictions_path.parent.mkdir(exist_ok=True)
     dataframe.to_csv(predictions_path)
 
-    result = dataframe
+    evaluator = TaskEvaluator(predictions_path, lab_settings.parameters.metrics)
+    result = evaluator.run()
+    print("Evaluation results:")
+    for metric, value in result.items():
+        print(metric, value, sep=': ')
+
     assert result is not None, "Finetuning does not work correctly"
 
 

@@ -5,8 +5,8 @@ httpx==0.26.0
 pandas==2.2.3
 peft==0.14.0
 pydantic==2.10.5
-rouge-score==0.1.2
 pytest==8.3.4
+rouge-score==0.1.2
 scikit-learn==1.6.1
 torch==2.5.1
 torchinfo==1.8.0
