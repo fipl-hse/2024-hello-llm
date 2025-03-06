@@ -121,7 +121,7 @@ class TaskDataset(Dataset):
 
 
 def tokenize_sample(
-        sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
+    sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
 ) -> dict[str, torch.Tensor]:
     """
     Tokenize sample.
@@ -332,7 +332,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         super().__init__(metrics)
         self._data_path = data_path
         self._metrics = {
-            metric: load(metric.value, seed=77)
+            metric.value: load(metric.value, seed=77)
             if metric == Metrics.ROUGE else load(metric.value)
             for metric in metrics
         }
@@ -346,17 +346,16 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         dataframe = pd.read_csv(self._data_path)
 
+        preds = dataframe[ColumnNames.PREDICTION.value].tolist()
+        targets = dataframe[ColumnNames.TARGET.value].tolist()
+
         results = {}
-        for metric_name, module in self._metrics.items():
-            metric_enum = Metrics(metric_name)
-            scores = module.compute(predictions=dataframe[ColumnNames.PREDICTION.value],
-                                    references=dataframe[ColumnNames.TARGET.value])
-
-            if metric_enum == Metrics.ROUGE.value:
-                results[metric_enum] = scores.get("rougeL")
+        for metric in self._metrics:
+            scores = self._metrics[metric].compute(predictions=preds, references=targets)
+            if metric == Metrics.ROUGE.value:
+                results[metric] = scores.get("rougeL")
             else:
-                results[metric_enum] = scores.get(metric_enum)
-
+                results[metric] = scores.get(metric)
         return results
 
 
@@ -397,13 +396,9 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if self._finetuned_model_path is None:
-            return
-
-        if self._batch_size is None:
-            return
-
-        if self._learning_rate is None:
+        if (self._finetuned_model_path is None
+                or self._batch_size is None
+                or self._learning_rate is None):
             return
 
         if not isinstance(self._model, torch.nn.Module):

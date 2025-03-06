@@ -38,7 +38,6 @@ def main() -> None:
     preprocessor.transform()
 
     task_dataset = TaskDataset(preprocessor.data.head(100))
-
     pipeline = LLMPipeline(settings.parameters.model,
                            task_dataset,
                            max_length=120,
@@ -47,7 +46,7 @@ def main() -> None:
     pipeline.analyze_model()
 
     sample = pipeline.infer_sample(task_dataset[0])
-    print("sample inference result:", sample)
+    print("sample inference result (base model):", sample)
 
     predictions_df = pipeline.infer_dataset()
     predictions_file = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
@@ -55,17 +54,17 @@ def main() -> None:
     predictions_df.to_csv(predictions_file)
 
     evaluator = TaskEvaluator(predictions_file, settings.parameters.metrics)
-    result = evaluator.run()
-    print("evaluation results:", result)
+    base_metrics = evaluator.run()
+    print("evaluation results:", base_metrics)
 
     sft_params = SFTParams(
         max_length=120,
         batch_size=3,
         max_fine_tuning_steps=50,
         device="cpu",
-        finetuned_model_path=Path().parent / f"{settings.parameters.model}_finetuned",
+        finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / f"{settings.parameters.model}_finetuned",
         learning_rate=1e-3,
-        target_modules=None
+        target_modules=["q", "v"]
     )
 
     num_samples = 10
@@ -93,15 +92,23 @@ def main() -> None:
     )
     pipeline_ft.analyze_model()
 
-    predictions_dataframe = pipeline.infer_dataset()
-    predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
-    predictions_path.parent.mkdir(exist_ok=True)
-    predictions_dataframe.to_csv(predictions_path)
+    predictions_dataframe = pipeline_ft.infer_dataset()
+    predictions_dataframe.to_csv(predictions_file)
 
-    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
-    result = evaluator.run()
+    evaluator = TaskEvaluator(predictions_file, settings.parameters.metrics)
+    fine_tuned_metrics = evaluator.run()
 
-    assert result is not None, "Finetuning does not work correctly"
+    for metric in settings.parameters.metrics:
+        key = metric.value
+        base_val = base_metrics.get(key)
+        ft_val = fine_tuned_metrics.get(key)
+        if base_val is not None and ft_val is not None:
+            diff = ft_val - base_val
+            print(f"metric {key}: base = {base_val:.3f}, fine-tuned = {ft_val:.3f}, diff = {diff:.3f}")
+        else:
+            print(f"metric {key} not computed properly: base = {base_val}, fine-tuned = {ft_val}")
+
+    assert fine_tuned_metrics is not None, "Finetuning does not work correctly"
 
 
 if __name__ == "__main__":
