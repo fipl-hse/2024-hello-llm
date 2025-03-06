@@ -96,7 +96,7 @@ Technical solution
 | <https://fastapi.tiangolo.com/>`__ |                                        |      |
 +------------------------------------+----------------------------------------+------+
 
-.. important:: ``torch`` module needs to be installed using
+.. important:: ``torch`` module version 2.1.2 needs to be installed using
                ``--extra-index-url https://download.pytorch.org/whl/cpu``
                in ``requirements.txt`` file.
 
@@ -169,6 +169,9 @@ and import them into ``start.py``.
 .. note:: You need to set the desired mark: 4, 6, 8 or 10 in the ``target_score`` field
           in the ``settings.json`` file. The higher the desired mark, the more
           number of tests run when checking your Pull Request.
+
+.. note:: You cannot use the pipeline abstraction from the transformers library
+          in this laboratory work.
 
 Stage 1. Introduce importer abstraction: ``RawDataImporter``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -606,7 +609,7 @@ in the ``main()`` function of the ``start.py`` module.
 .. important:: Set parameter ``batch_size`` = 64.
 
 .. note:: After dataset inference you have to save
-          you predictions to ``predictions.csv`` file in ``start.py``.
+          you predictions to ``dist/predictions.csv`` file in ``start.py``.
 
 Stage 6. Implement Model as a Service
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -726,4 +729,5 @@ Demonstrate work of your service by running a server
 implemented in ``service.py`` module and obtaining one sample inference result.
 
 .. note:: You can run you server using ``uvicorn PATH:app --reload`` command,
-          where ``PATH`` is a path to ``service.py`` module.
+          where ``PATH`` is a path to ``service.py`` module. Just replace slashes in path with dots.
+          Refer to the appropriate seminar listing for an example.

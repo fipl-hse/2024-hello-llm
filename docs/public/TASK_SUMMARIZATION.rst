@@ -125,6 +125,28 @@ Datasets
       3. Rename column ``Summary`` to ``target``.
       4. Reset indexes.
 
+Supervised Fine-Tuning (SFT) Parameters
+---------------------------------------
+
+.. note:: Set the parameter
+          ``target_modules=["query", "key", "value", "dense"]`` for the
+          `mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization
+          <https://huggingface.co/mrm8488/bert-small2bert-small-finetuned-
+          cnn_daily_mail-summarization>`__,
+          `mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization
+          <https://huggingface.co/mrm8488/bert-mini2bert-mini-finetuned-
+          cnn_daily_mail-summarization>`__ and
+          `dmitry-vorobiev/rubert_ria_headlines <https://huggingface.co/dmitry-
+          vorobiev/rubert_ria_headlines>`__ models.
+
+.. note:: Set the parameter ``learning_rate=1e-4`` for the
+          `mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization
+          <https://huggingface.co/mrm8488/bert-mini2bert-mini-finetuned-
+          cnn_daily_mail-summarization>`__ model and
+          ``learning_rate=1e-1`` for the
+          `dmitry-vorobiev/rubert_ria_headlines
+          <https://huggingface.co/dmitry-vorobiev/rubert_ria_headlines>`__
+          as SFT parameter.
 
 Metrics
 -------
