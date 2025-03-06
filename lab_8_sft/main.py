@@ -207,26 +207,21 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not isinstance(self._model, torch.nn.Module):
             raise ValueError("Model is of incorrect type")
-        tensor = torch.ones(
-            (1, self._model.config.n_positions),
-            dtype=torch.long
-        )
-        inputs = {"input_ids": tensor, "attention_mask": tensor}
-        model_summary = summary(
-            self._model,
-            input_data=inputs,
-            decoder_input_ids=tensor,
-            verbose=0
-        )
+        model_config = self._model.config
+
+        embeddings_length = model_config.hidden_size
+        input_data = torch.ones((1, embeddings_length), dtype=torch.long)
+        model_summary = summary(self._model,
+                                input_data=input_data, decoder_input_ids=input_data)
 
         return {
-            "input_shape": list(tensor.size()),
-            "embedding_size": self._model.config.n_positions,
-            "output_shape": model_summary.summary_list[-1].output_size,
-            "num_trainable_params": model_summary.trainable_params,
-            "vocab_size": self._model.config.encoder.vocab_size,
-            "size": model_summary.total_param_bytes,
-            "max_context_length": self._model.config.max_length,
+            'input_shape': model_summary.summary_list[0].input_size,
+            'embedding_size': embeddings_length,
+            'output_shape': model_summary.summary_list[-1].output_size,
+            'num_trainable_params': model_summary.trainable_params,
+            'vocab_size': model_config.vocab_size,
+            'size': model_summary.total_param_bytes,
+            'max_context_length': model_config.max_length
         }
 
     @report_time
