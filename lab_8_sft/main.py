@@ -10,7 +10,7 @@ from typing import Iterable, Sequence
 import pandas as pd
 import torch
 from datasets import load_dataset
-# from evaluate import load
+from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
@@ -296,6 +296,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
+        self._metrics2module = {}
+        for metric in self._metrics:
+            self._metrics2module[metric.value] = load(metric.value)
 
     def run(self) -> dict | None:
         """
@@ -304,6 +309,21 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data_frame = pd.read_csv(self.data_path)
+
+        predictions = data_frame[ColumnNames.PREDICTION.value]
+        references = data_frame[ColumnNames.TARGET.value]
+
+        evaluation_res = {}
+        for metric_name, module in self._metrics2module.items():
+            scores = module.compute(predictions=predictions, references=references)
+
+            if metric_name == Metrics.ROUGE.value:
+                evaluation_res[metric_name] = scores["rougeL"]
+            else:
+                evaluation_res[metric_name] = scores[metric_name]
+
+        return evaluation_res
 
 
 class SFTPipeline(AbstractSFTPipeline):
