@@ -56,8 +56,6 @@ def main() -> None:
     sft_pipeline = SFTPipeline(settings.parameters.model, tokenized_dataset, sft_params)
     sft_pipeline.run()
 
-    output_dir = sft_pipeline._output_dir
-
     dataset = TaskDataset(preprocessor.data.head(100))
 
     pipeline = LLMPipeline(

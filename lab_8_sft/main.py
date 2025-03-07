@@ -7,7 +7,6 @@ Fine-tuning Large Language Models for a downstream task.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import nltk
 import pandas as pd
 import torch
 from datasets import load_dataset
@@ -334,6 +333,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__()
         self.data_path = data_path
         self._metrics = metrics
 
@@ -376,7 +376,9 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
-        super().__init__(model_name, dataset, sft_params)
+        super().__init__(model_name, dataset)
+
+        self._sft_params = sft_params
 
         self._lora_config = LoraConfig(
             r=4,
