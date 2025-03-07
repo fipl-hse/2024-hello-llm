@@ -15,12 +15,7 @@ from pandas import DataFrame
 from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    Trainer,
-    TrainingArguments
-)
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -64,8 +59,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                 'dataset_duplicates': self._raw_data.duplicated().sum().item(),
                 'dataset_empty_rows': (self._raw_data.eq('').all(axis=1) |
                                        self._raw_data.isna().all(axis=1)).sum().item(),
-                'dataset_sample_min_len': min(len(sample) for sample in self._raw_data["comment_text"]),
-                'dataset_sample_max_len': max(len(sample) for sample in self._raw_data["comment_text"])}
+                'dataset_sample_min_len': min(len(sample) for sample
+                                              in self._raw_data["comment_text"]),
+                'dataset_sample_max_len': max(len(sample) for sample
+                                              in self._raw_data["comment_text"])}
 
     @report_time
     def transform(self) -> None:
@@ -74,7 +71,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = (self._raw_data.rename(columns={'comment_text': ColumnNames.SOURCE.value,
                                                      'toxic': ColumnNames.TARGET.value})
-                      .drop(columns=['id', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate'])
+                      .drop(columns=['id', 'severe_toxic', 'obscene', 'threat',
+                                     'insult', 'identity_hate'])
                       .drop_duplicates().reset_index(drop=True))
 
 
@@ -219,7 +217,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference.
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)\
+            .to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model.eval()
 
@@ -310,10 +309,6 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return [str(pred.argmax().item()) for pred in outputs]
 
-    @property
-    def tokenizer(self):
-        return self._tokenizer
-
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
@@ -367,8 +362,10 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
         self._device = sft_params.device
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
-        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1, target_modules=sft_params.target_modules)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)\
+            .to(self._device)
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1,
+                                       target_modules=sft_params.target_modules)
         self._model = get_peft_model(self._model, self._lora_config)
         self._batch_size = sft_params.batch_size
         self._learning_rate = sft_params.learning_rate

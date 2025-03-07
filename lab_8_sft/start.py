@@ -26,7 +26,6 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    # settings = LabSettings(Path(__file__).parent / "settings.json")
     settings = LabSettings(PROJECT_ROOT / "lab_8_sft" / "settings.json")
 
     importer = RawDataImporter(settings.parameters.dataset)
@@ -77,9 +76,12 @@ def main() -> None:
     tok_dataset = TokenizedTaskDataset(preprocessor.data.loc[
                                              num_samples: num_samples + fine_tune_samples],
                                        max_length=sft_params.max_length,
-                                       tokenizer=AutoTokenizer.from_pretrained(settings.parameters.model))
+                                       tokenizer=AutoTokenizer
+                                       .from_pretrained(settings.parameters.model))
 
-    sft_pipeline = SFTPipeline(settings.parameters.model, tok_dataset, sft_params)
+    sft_pipeline = SFTPipeline(settings.parameters.model,
+                               tok_dataset,
+                               sft_params)
     sft_pipeline.run()
 
     pipeline = LLMPipeline(settings.parameters.model,
