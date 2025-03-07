@@ -52,7 +52,7 @@ def main() -> None:
         max_length=120
     )
 
-    sft_params = settings.parameters.sft_params  # Assumes sft_params is in settings
+    sft_params = settings.parameters.sft_params
     sft_pipeline = SFTPipeline(settings.parameters.model, tokenized_dataset, sft_params)
     sft_pipeline.run()
 

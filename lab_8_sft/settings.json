@@ -2,7 +2,8 @@
   "parameters": {
     "model": "UrukHan/t5-russian-summarization",
     "dataset": "d0rj/curation-corpus-ru",
-    "metrics": ["bleu", "rouge"]
+    "metrics": ["bleu", "rouge"],
+    "batch_size": 32
   },
   "target_score": 8
 }
