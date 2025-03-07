@@ -12,9 +12,15 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -134,18 +140,19 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
-    # encoded = tokenizer(
-    #     sample[0],
-    #     padding="max_length",
-    #     truncation=True,
-    #     max_length=max_length,
-    #     return_tensors="pt"
-    # )
-    # return {
-    #     "input_ids": encoded["input_ids"],
-    #     "attention_mask": encoded["attention_mask"],
-    #     "labels": sample[1]
-    # }
+    encoded = tokenizer(
+        sample[ColumnNames.SOURCE.value],
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+        return_tensors="pt"
+    )
+
+    return {
+        "input_ids": encoded["input_ids"].squeeze(0),
+        "attention_mask": encoded["attention_mask"].squeeze(0),
+        "labels": sample[ColumnNames.TARGET.value]
+    }
 
 
 class TokenizedTaskDataset(Dataset):
@@ -163,6 +170,7 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = [tokenize_sample(row, tokenizer, max_length) for _, row in data.iterrows()]
 
     def __len__(self) -> int:
         """
@@ -171,6 +179,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -182,6 +191,13 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        sample = self._data[index]
+
+        return {
+            'input_ids': sample['input_ids'],
+            'attention_mask': sample['attention_mask'],
+            'labels': sample['labels']
+        }
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -294,6 +310,10 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return [str(pred.argmax().item()) for pred in outputs]
 
+    @property
+    def tokenizer(self):
+        return self._tokenizer
+
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
@@ -310,6 +330,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self.data_path = data_path
+        self._metrics = [load(metric.value) for metric in metrics]
 
     def run(self) -> dict | None:
         """
@@ -319,15 +340,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         outputs_df = pd.read_csv(self.data_path)
-        summaries = outputs_df[ColumnNames.PREDICTION.value]
+        preds = outputs_df[ColumnNames.PREDICTION.value]
         targets = outputs_df[ColumnNames.TARGET.value]
         evaluation = {}
 
-        string_metrics = [format(item) for item in self._metrics]
-
-        for metr in string_metrics:
-            metric = load(metr).compute(predictions=summaries, references=targets, average="micro")
-            evaluation[metr] = metric[metr]
+        for metr in self._metrics:
+            metric = metr.compute(predictions=preds, references=targets, average="micro")
+            evaluation[metr.name] = metric[metr.name]
 
         return evaluation
 
@@ -346,8 +365,35 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset)
+        self._device = sft_params.device
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1, target_modules=sft_params.target_modules)
+        self._model = get_peft_model(self._model, self._lora_config)
+        self._batch_size = sft_params.batch_size
+        self._learning_rate = sft_params.learning_rate
+        self._max_length = sft_params.max_length
+        self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._finetuned_model_path = sft_params.finetuned_model_path
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+        args = TrainingArguments(
+            output_dir=self._finetuned_model_path,
+            max_steps=self._max_sft_steps,
+            per_device_train_batch_size=self._batch_size,
+            learning_rate=self._learning_rate,
+            save_strategy="no",
+            use_cpu=True,
+            load_best_model_at_end=False
+        )
+
+        trainer = Trainer(self._model, args, train_dataset=self._dataset)
+        trainer.train()
+
+        tuned_model = self._model.merge_and_unload()
+        tuned_model.save_pretrained(self._finetuned_model_path)
+        tokenizer = AutoModelForSequenceClassification.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)
