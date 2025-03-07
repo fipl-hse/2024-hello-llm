@@ -216,7 +216,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-
         if isinstance(self._model, Module):
             result = summary(
                 self._model,

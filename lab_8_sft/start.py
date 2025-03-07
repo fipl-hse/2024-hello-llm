@@ -56,6 +56,5 @@ def main() -> None:
     result = metric
     assert result is not None, "Finetuning does not work correctly"
 
-
 if __name__ == "__main__":
     main()
