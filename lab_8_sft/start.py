@@ -30,7 +30,6 @@ def main() -> None:
         return None
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-
     print(preprocessor.analyze())
     preprocessor.transform()
 
@@ -39,10 +38,17 @@ def main() -> None:
     pipeline = LLMPipeline(settings.parameters.model, dataset, 120, 64, "cpu")
     print(pipeline.analyze_model())
 
-    result = pipeline.infer_sample(dataset[0])
+    inference = pipeline.infer_dataset()
+    output_path = Path(__file__).parent / "dist" / "predictions.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    inference.to_csv(output_path, index=False)
+
+    evaluator = TaskEvaluator(output_path, settings.parameters.metrics)
+    result = evaluator.run()
     print(result)
 
     assert result is not None, "Finetuning does not work correctly"
+
     return None
 
 

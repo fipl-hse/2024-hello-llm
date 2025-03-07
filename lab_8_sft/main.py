@@ -4,14 +4,17 @@ Laboratory work.
 Fine-tuning Large Language Models for a downstream task.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, duplicate-code, unused-argument, too-many-arguments
+from itertools import chain
 from pathlib import Path
 from typing import Iterable, Sequence
 
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
+from torch.nn.functional import softmax
 from torchinfo import summary
 from transformers import AutoTokenizer, BertForSequenceClassification, BertTokenizerFast
 
@@ -258,14 +261,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        inputs = self._tokenizer(
-            sample, max_length=self._max_length, padding=True, truncation=True, return_tensors="pt"
-        ).to(self._device)
-        print(sample)
-        outputs = self._model(**inputs)
-        predicted = torch.nn.functional.softmax(outputs.logits, dim=1)
-        predicted = torch.argmax(predicted, dim=1).numpy()[0]
-        return str(predicted if predicted != 0 else 2)
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -275,6 +271,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(
+            dataset=self._dataset, batch_size=self._batch_size, collate_fn=lambda x: x
+        )
+        data = {"target": self._dataset.data["target"].tolist(), "predictions": []}
+        for batch in dataloader:
+            pred = self._infer_batch(batch)
+            data["predictions"].extend(pred)
+
+        return pd.DataFrame(data=data)
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -287,6 +292,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        inputs = self._tokenizer(
+            [sample[0] for sample in sample_batch],
+            max_length=self._max_length,
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
+        ).to(self._device)
+
+        with torch.no_grad():
+            outputs = softmax(self._model(**inputs).logits, dim=1)
+
+        predicted = torch.argmax(outputs, dim=1).tolist()
+        return [str(class_pred) if class_pred != 0 else 2 for class_pred in predicted]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -302,6 +320,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     def run(self) -> dict | None:
         """
@@ -310,6 +330,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        dataframe = pd.read_csv(self._data_path)
+        res = {}
+        for metric in self._metrics:
+            evaluation = load(str(metric))
+
+            preds = dataframe["predictions"].tolist()
+            refs = dataframe["target"].tolist()
+            results = evaluation.compute(references=refs, predictions=preds, average="micro")
+
+            res.update(results)
+
+        return res
 
 
 class SFTPipeline(AbstractSFTPipeline):
