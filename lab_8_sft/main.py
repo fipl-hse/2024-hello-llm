@@ -19,7 +19,8 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
     Trainer,
-    TrainingArguments,)
+    TrainingArguments,
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -384,7 +385,7 @@ class SFTPipeline(AbstractSFTPipeline):
         if any(attr is None for attr in
                [self._finetuned_model_path, self._max_sft_steps,
                 self._batch_size, self._learning_rate]):
-            raise ValueError('Training arguments are of the wrong type')
+            return
 
         args = TrainingArguments(
             output_dir=self._finetuned_model_path,
