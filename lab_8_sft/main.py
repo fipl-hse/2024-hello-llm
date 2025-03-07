@@ -13,9 +13,10 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, Trainer, TrainingArguments
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -137,6 +138,30 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
+    source_text = sample[ColumnNames.SOURCE.value]
+    target_text = sample[ColumnNames.TARGET.value]
+
+    source_tokenized = tokenizer(
+        source_text,
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+        return_tensors="pt"
+    )
+
+    target_tokenized = tokenizer(
+        target_text,
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+        return_tensors="pt"
+    )
+
+    return {
+        "input_ids": source_tokenized["input_ids"].squeeze(0),
+        "attention_mask": source_tokenized["attention_mask"].squeeze(0),
+        "labels": target_tokenized["input_ids"].squeeze(0)
+    }
 
 
 class TokenizedTaskDataset(Dataset):
@@ -154,6 +179,10 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = data
+        self._tokenizer = tokenizer
+        self._max_length = max_length
+
 
     def __len__(self) -> int:
         """
@@ -162,6 +191,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -173,6 +203,8 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        sample = self._data.iloc[index]
+        return tokenize_sample(sample, self._tokenizer, self._max_length)
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -344,8 +376,40 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset, sft_params)
+
+        self._lora_config = LoraConfig(
+            r=4,
+            lora_alpha=8,
+            lora_dropout=0.1,
+            target_modules=sft_params.target_modules
+        )
+
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._model = get_peft_model(self._model, self._lora_config)
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+        training_args = TrainingArguments(
+            output_dir=self._output_dir,
+            max_steps=self._sft_params.max_steps,
+            per_device_train_batch_size=self._sft_params.batch_size,
+            learning_rate=self._sft_params.learning_rate,
+            save_strategy="steps",
+            save_steps=self._sft_params.save_steps,
+            use_cpu=self._sft_params.use_cpu,
+            load_best_model_at_end=True
+        )
+
+        trainer = Trainer(
+            model=self._model,
+            args=training_args,
+            train_dataset=self._dataset
+        )
+
+        trainer.train()
+
+        self._model = self._model.merge_and_unload()
+        self._model.save_pretrained(self._output_dir)

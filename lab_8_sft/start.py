@@ -4,6 +4,8 @@ Fine-tuning starter.
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
 
+from transformers import AutoTokenizer
+
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from core_utils.llm.time_decorator import report_time
@@ -11,8 +13,10 @@ from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
     TaskEvaluator,
+    TokenizedTaskDataset,
 )
 
 
@@ -34,6 +38,26 @@ def main() -> None:
     print(f'Dataset analysis: {analysis}')
 
     preprocessor.transform()
+
+    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+
+    batch = settings.parameters.batch_size
+    fine_tuning_steps = settings.parameters.fine_tuning_steps
+    num_samples = 10
+    fine_tune_samples = batch * fine_tuning_steps
+
+    tokenized_dataset = TokenizedTaskDataset(
+        preprocessor.data.loc[num_samples:num_samples + fine_tune_samples],
+        tokenizer,
+        max_length=120
+    )
+
+    sft_params = settings.parameters.sft_params  # Assumes sft_params is in settings
+    sft_pipeline = SFTPipeline(settings.parameters.model, tokenized_dataset, sft_params)
+    sft_pipeline.run()
+
+    output_dir = sft_pipeline._output_dir
+
     dataset = TaskDataset(preprocessor.data.head(100))
 
     pipeline = LLMPipeline(
