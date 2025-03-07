@@ -261,7 +261,7 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             return None
 
-        return self._infer_batch([sample])[0]
+        return str(self._infer_batch([sample])[0])
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
