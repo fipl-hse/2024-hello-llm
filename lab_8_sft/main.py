@@ -15,7 +15,11 @@ from pandas import DataFrame
 from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -377,6 +381,11 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if any(attr is None for attr in
+               [self._finetuned_model_path, self._max_sft_steps,
+                self._batch_size, self._learning_rate]):
+            raise ValueError('Training arguments are of the wrong type')
+
         args = TrainingArguments(
             output_dir=self._finetuned_model_path,
             max_steps=self._max_sft_steps,
@@ -386,6 +395,9 @@ class SFTPipeline(AbstractSFTPipeline):
             use_cpu=True,
             load_best_model_at_end=False
         )
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a Module model')
 
         trainer = Trainer(self._model, args, train_dataset=self._dataset)
         trainer.train()

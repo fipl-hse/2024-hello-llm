@@ -17,7 +17,7 @@ from lab_8_sft.main import (
     SFTPipeline,
     TaskDataset,
     TaskEvaluator,
-    TokenizedTaskDataset
+    TokenizedTaskDataset,
 )
 
 
