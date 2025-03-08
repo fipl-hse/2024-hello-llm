@@ -77,10 +77,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-
         self._data = (
             self._raw_data
-            .rename(columns={'text': ColumnNames.SOURCE.name, 'label': ColumnNames.TARGET.name})
+            .rename(columns={'text': str(ColumnNames.SOURCE), 'label': str(ColumnNames.TARGET)})
             .replace('', pd.NA)
             .dropna()
             .drop_duplicates()
@@ -123,7 +122,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (self._data.iloc[index][ColumnNames.SOURCE.name],)
+        return (self._data.iloc[index][str(ColumnNames.SOURCE)],)
 
     @property
     def data(self) -> DataFrame:
@@ -152,7 +151,7 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
-    texts, labels = sample[ColumnNames.SOURCE.value], sample[ColumnNames.TARGET.value]
+    texts, labels = sample[str(ColumnNames.SOURCE)], sample[str(ColumnNames.TARGET)]
     tokenized = tokenizer(texts, padding='max_length', truncation=True, max_length=max_length)
     return {
         'input_ids': tokenized['input_ids'],
@@ -176,7 +175,7 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
-        self._data = data.apply(lambda x: tokenize_sample(x, tokenizer, max_length))
+        self._data = data.apply(lambda x: tokenize_sample(x, tokenizer, max_length), axis=1)
 
 
     def __len__(self) -> int:
@@ -279,8 +278,8 @@ class LLMPipeline(AbstractLLMPipeline):
             predictions.extend(output)
 
         res = pd.DataFrame(
-            {ColumnNames.TARGET.name: self._dataset.data[ColumnNames.TARGET.name],
-             ColumnNames.PREDICTION.name: predictions}
+            {str(ColumnNames.TARGET): self._dataset.data[str(ColumnNames.TARGET)],
+             str(ColumnNames.PREDICTION): predictions}
         )
         return res
 
@@ -335,8 +334,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         results_df = pd.read_csv(self._data_path)
-        predictions = results_df[ColumnNames.PREDICTION.name]
-        target = results_df[ColumnNames.TARGET.name]
+        predictions = results_df[str(ColumnNames.PREDICTION)]
+        target = results_df[str(ColumnNames.TARGET)]
 
         return {
             metric.name: metric.compute(predictions=predictions, references=target, average='micro')[metric.name]

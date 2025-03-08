@@ -37,7 +37,8 @@ def main() -> None:
 
     # print(pipeline.analyze_model())
     sample = dataset[22]
-    print(f'text: {sample[0]}, '
+    print('example of sample inference:')
+    print(f'text: {sample[0]}\n'
           f'label - {pipeline.infer_sample(sample)}')
 
 
@@ -50,7 +51,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, parameters.metrics)
     metrics_result = evaluator.run()
-    print(metrics_result)
+    print('results:', metrics_result)
 
 
     finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / f'finetuned_{parameters.model}'
@@ -72,7 +73,7 @@ def main() -> None:
         max_length=sft_parameters.max_length
     )
 
-    print(tokenized_dataset)
+    # print(tokenized_dataset[22])
 
     sft_pipeline = SFTPipeline(model_name=parameters.model,
                                dataset=tokenized_dataset,
