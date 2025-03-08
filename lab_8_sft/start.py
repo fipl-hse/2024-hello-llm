@@ -4,15 +4,19 @@ Fine-tuning starter.
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
 
+from transformers import AutoTokenizer
+
 from config.constants import PROJECT_ROOT
-from config.lab_settings import LabSettings
+from config.lab_settings import LabSettings, SFTParams
 from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
     TaskEvaluator,
+    TokenizedTaskDataset,
 )
 
 
@@ -30,9 +34,31 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
 
     preprocessor.transform()
-    dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model,
+    num_samples = 10
+    sft_params = SFTParams(
+        batch_size=3,
+        max_length=120,
+        max_fine_tuning_steps=50,
+        learning_rate=1e-3,
+        finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
+        device="cpu"
+    )
+    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
+    tokenized_dataset = TokenizedTaskDataset(
+        preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
+        tokenizer=AutoTokenizer.from_pretrained(settings.parameters.model),
+        max_length=sft_params.max_length
+    )
+    sft_pipeline = SFTPipeline(model_name=settings.parameters.model,
+                               dataset=tokenized_dataset,
+                               sft_params=sft_params)
+    sft_pipeline.run()
+
+    dataset = TaskDataset(preprocessor.data.head(10))
+
+    pipeline = LLMPipeline(str(PROJECT_ROOT / "lab_8_sft" /
+                               "dist" / settings.parameters.model),
                            dataset,
                            max_length=120,
                            batch_size=64,
