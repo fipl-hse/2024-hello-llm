@@ -47,15 +47,17 @@ def main() -> None:
     evaluator = TaskEvaluator(predictions_path / 'predictions.csv', settings.parameters.metrics)
     print(evaluator.run())
 
-    num_samples = 10
     sft_params = SFTParams(batch_size=3, max_length=120, max_fine_tuning_steps=50, device="cpu",
                            learning_rate=1e-3,
                            finetuned_model_path=predictions_path / settings.parameters.model)
+    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenizer.save_pretrained(sft_params.finetuned_model_path)
+
+    num_samples = 10
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
     tokenized_dataset = TokenizedTaskDataset(
         preprocessor.data.loc[num_samples:num_samples + fine_tune_samples],
-        AutoTokenizer.from_pretrained(settings.parameters.model),
-        sft_params.max_length)
+        tokenizer, sft_params.max_length)
 
     sft_pipeline = SFTPipeline(settings.parameters.model, tokenized_dataset, sft_params)
     sft_pipeline.run()

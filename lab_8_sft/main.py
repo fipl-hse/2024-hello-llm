@@ -43,7 +43,8 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
-        self._raw_data = load_dataset(path=self._hf_name, name='ru', split='validation').to_pandas()
+        self._raw_data = load_dataset(path=self._hf_name, name='ru',
+                                      split='validation').to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -63,10 +64,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                 'dataset_duplicates': self._raw_data.duplicated().sum().tolist(),
                 'dataset_empty_rows':
                     sum(self._raw_data.replace('', np.nan).isna().sum().to_list()),
-                'dataset_sample_max_len': max(max(self._raw_data['premise'].apply(len)),
-                                              max(self._raw_data['hypothesis'].apply(len))),
-                'dataset_sample_min_len': min(min(self._raw_data['premise'].apply(len)),
-                                              min(self._raw_data['hypothesis'].apply(len)))}
+                'dataset_sample_max_len': max(self._raw_data['premise'].apply(len),
+                                              self._raw_data['hypothesis'].apply(len)),
+                'dataset_sample_min_len': min(self._raw_data['premise'].apply(len),
+                                              self._raw_data['hypothesis'].apply(len))}
 
     @report_time
     def transform(self) -> None:
@@ -353,8 +354,6 @@ class SFTPipeline(AbstractSFTPipeline):
 
         self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1,
                                        target_modules=sft_params.target_modules)
-
-
 
     def run(self) -> None:
         """
