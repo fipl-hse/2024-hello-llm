@@ -333,7 +333,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        super().__init__()
         self.data_path = data_path
         self._metrics = metrics
 
