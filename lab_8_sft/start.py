@@ -5,14 +5,14 @@ Fine-tuning starter.
 from pathlib import Path
 
 from config.constants import PROJECT_ROOT
-from config.lab_settings import LabSettings
+from config.lab_settings import LabSettings, SFTParams
 from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    TaskEvaluator,
+    TaskEvaluator, SFTPipeline,
 )
 
 
@@ -62,6 +62,23 @@ def main() -> None:
 
     result = evaluator.run()
     print(result)
+
+    sft_params = SFTParams(
+        max_length=120,
+        batch_size=3,
+        max_fine_tuning_steps=50,
+        device="cpu",
+        finetuned_model_path=PROJECT_ROOT / 'lab_8_sft' / 'dist' / settings.parameters.model,
+        learning_rate=1e-3,
+    )
+
+    sft_pipeline = SFTPipeline(
+        model_name=settings.parameters.model,
+        dataset=predictions,
+        sft_params=sft_params
+    )
+
+    sft_pipeline.run()
 
     assert result is not None, "Demo does not work correctly"
 

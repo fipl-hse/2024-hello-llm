@@ -137,19 +137,12 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
-    source_text = sample[ColumnNames.SOURCE.value]
-    target_text = sample[ColumnNames.TARGET.value]
+    source = sample[ColumnNames.SOURCE.value]
+    target = sample[ColumnNames.TARGET.value]
 
-    source_tokenized = tokenizer(
-        source_text,
-        padding="max_length",
-        truncation=True,
-        max_length=max_length,
-        return_tensors="pt"
-    )
-
-    target_tokenized = tokenizer(
-        target_text,
+    tokenized = tokenizer(
+        source,
+        text_target=target,
         padding="max_length",
         truncation=True,
         max_length=max_length,
@@ -157,9 +150,9 @@ def tokenize_sample(
     )
 
     return {
-        "input_ids": source_tokenized["input_ids"].squeeze(0),
-        "attention_mask": source_tokenized["attention_mask"].squeeze(0),
-        "labels": target_tokenized["input_ids"].squeeze(0)
+        "input_ids": tokenized["input_ids"].squeeze(),
+        "attention_mask": tokenized["attention_mask"].squeeze(),
+        "labels": tokenized["labels"].squeeze()
     }
 
 
@@ -386,7 +379,7 @@ class SFTPipeline(AbstractSFTPipeline):
             target_modules=sft_params.target_modules
         )
 
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        #self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._model = get_peft_model(self._model, self._lora_config)
 
     def run(self) -> None:
@@ -395,22 +388,32 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         training_args = TrainingArguments(
             output_dir=self._output_dir,
-            max_steps=self._sft_params.max_steps,
+            max_steps=self._sft_params.max_fine_tuning_steps,
             per_device_train_batch_size=self._sft_params.batch_size,
             learning_rate=self._sft_params.learning_rate,
             save_strategy="steps",
-            save_steps=self._sft_params.save_steps,
-            use_cpu=self._sft_params.use_cpu,
-            load_best_model_at_end=True
+            save_steps=self._sft_params.max_fine_tuning_steps // 5,
+            logging_dir=str(self._output_dir / "logs"),
+            report_to="none",
+            remove_unused_columns=True,
+            use_cpu=(self._sft_params.device == "cpu"),
+            load_best_model_at_end=True,
+            disable_tqdm=True
         )
 
         trainer = Trainer(
             model=self._model,
             args=training_args,
-            train_dataset=self._dataset
+            train_dataset=self._dataset,
+            data_collator=lambda data: {
+                'input_ids': torch.stack([item['input_ids'] for item in data]),
+                'attention_mask': torch.stack([item['attention_mask'] for item in data]),
+                'labels': torch.stack([item['labels'] for item in data])
+            }
         )
 
         trainer.train()
 
         self._model = self._model.merge_and_unload()
         self._model.save_pretrained(self._output_dir)
+        self._tokenizer.save_pretrained(self._output_dir)
