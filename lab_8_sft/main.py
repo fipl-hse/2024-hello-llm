@@ -258,7 +258,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        return self._infer_batch([sample])[0]
+        return self._infer_batch([sample, ])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -361,8 +361,9 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if not all([self._finetuned_model_path, self._learning_rate,
-                    self._batch_size, self._max_sft_steps]):
+        if (self._batch_size is None or self._finetuned_model_path is None or
+                self._learning_rate is None or self._max_sft_steps is None or
+                self._lora_config is None):
             return
 
         model = get_peft_model(self._model, self._lora_config)
