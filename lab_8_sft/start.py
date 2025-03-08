@@ -63,13 +63,13 @@ def main() -> None:
     print('Metrics before tuning', results)
 
     sft_params = SFTParams(
-        batch_size=3,
-        max_length=120,
-        max_fine_tuning_steps=50,
-        learning_rate=1e-3,
-        finetuned_model_path=PROJECT_ROOT / 'lab_8_sft' / "dist" / settings.parameters.model,
-        device="cpu"
-    )
+                batch_size=3,
+                max_length=120,
+                max_fine_tuning_steps=50,
+                learning_rate=1e-3,
+                finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
+                device="cpu"
+            )
     num_samples = 10
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
 
@@ -84,11 +84,12 @@ def main() -> None:
                                sft_params)
     sft_pipeline.run()
 
-    pipeline = LLMPipeline(settings.parameters.model,
+    pipeline = LLMPipeline(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
                            TaskDataset(preprocessor.data.head(num_samples)),
                            max_length=120,
                            batch_size=64,
                            device='cpu')
+
     model_analysis = pipeline.analyze_model()
     print(model_analysis)
 
@@ -96,16 +97,14 @@ def main() -> None:
     print('Sample res:', sample)
 
     infered_df = pipeline.infer_dataset()
-
     path_to_outputs = PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv'
     path_to_outputs.parent.mkdir(exist_ok=True)
     infered_df.to_csv(path_to_outputs, index=False)
 
     evaluation = TaskEvaluator(path_to_outputs, settings.parameters.metrics)
-    results = evaluation.run()
-    print('Metrics after tuning', results)
+    result = evaluation.run()
+    print('Metrics after tuning', result)
 
-    result = results
     assert result is not None, "Finetuning does not work correctly"
 
 

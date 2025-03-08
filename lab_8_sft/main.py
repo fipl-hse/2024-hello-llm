@@ -401,10 +401,12 @@ class SFTPipeline(AbstractSFTPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError('The model is not a Module model')
 
-        trainer = Trainer(self._model, args, train_dataset=self._dataset)
+        trainer = Trainer(self._model,
+                          args,
+                          train_dataset=self._dataset)
         trainer.train()
 
         tuned_model = self._model.merge_and_unload()
         tuned_model.save_pretrained(self._finetuned_model_path)
-        tokenizer = AutoModelForSequenceClassification.from_pretrained(self._model_name)
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
         tokenizer.save_pretrained(self._finetuned_model_path)
