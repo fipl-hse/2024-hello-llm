@@ -58,9 +58,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_number_of_samples': self._raw_data.shape[0],
             'dataset_columns': self._raw_data.shape[-1],
             'dataset_duplicates': int(self._raw_data.duplicated().sum()),
-            'dataset_empty_rows': self._raw_data.replace("", pd.NA).isna().sum(),
+            'dataset_empty_rows': self._raw_data.replace("", pd.NA).isna().sum().sum(),
             'dataset_sample_min_len': int(self._raw_data['instruction'].str.len().min()),
-            'dataset_sample_max_len': int(self._raw_data['context'].str.len().max())
+            'dataset_sample_max_len': int(self._raw_data['instruction'].str.len().max())
         }
 
     @report_time
