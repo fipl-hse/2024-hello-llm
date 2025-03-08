@@ -135,21 +135,19 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
-    tokenized_input = tokenizer(
-        sample[ColumnNames.SOURCE.value],
-        padding="max_length",
-        truncation=True,
-        max_length=max_length,
-        return_tensors="pt"
-    )
+    tokenized_input = tokenizer(sample[ColumnNames.SOURCE.value],
+                                padding="max_length",
+                                truncation=True,
+                                max_length=max_length,
+                                return_tensors="pt"
+                                )
 
-    tokenized_target = tokenizer(
-        sample[ColumnNames.TARGET.value],
-        padding="max_length",
-        truncation=True,
-        max_length=max_length,
-        return_tensors="pt"
-    )
+    tokenized_target = tokenizer(sample[ColumnNames.TARGET.value],
+                                 padding="max_length",
+                                 truncation=True,
+                                 max_length=max_length,
+                                 return_tensors="pt"
+                                 )
     return {
         "input_ids": tokenized_input["input_ids"].squeeze(0),
         "attention_mask": tokenized_input["attention_mask"].squeeze(0),
@@ -398,6 +396,7 @@ class SFTPipeline(AbstractSFTPipeline):
         Fine-tune model.
         """
         if (self._finetuned_model_path is None
+                or self._max_sft_steps is None
                 or self._batch_size is None
                 or self._learning_rate is None):
             return
@@ -425,3 +424,6 @@ class SFTPipeline(AbstractSFTPipeline):
 
         merged_model = self._model.merge_and_unload()
         merged_model.save_pretrained(self._finetuned_model_path)
+
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)
