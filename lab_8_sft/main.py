@@ -170,9 +170,12 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
-        self._data = data.reset_index(drop=True)
-        self._tokenizer = tokenizer
-        self._max_length = max_length
+        self._data = list(
+            data.apply(
+                lambda sample: tokenize_sample(sample, tokenizer, max_length),
+                axis=1
+            )
+        )
 
     def __len__(self) -> int:
         """
@@ -193,8 +196,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        sample = self._data.iloc[index]
-        return tokenize_sample(sample, self._tokenizer, self._max_length)
+        return dict(self._data[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -222,9 +224,9 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
         self._model.eval()
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -310,8 +312,7 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self._max_length
         )
 
-        decoded_outputs: list[str] = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        return decoded_outputs
+        return [self._tokenizer.decode(pred, skip_special_tokens=True) for pred in outputs]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -352,9 +353,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metric_evaluator = load(metric.value)
             scores = metric_evaluator.compute(predictions=preds, references=targets)
             if metric.value == Metrics.ROUGE.value:
-                results[metric.value] = float(scores.get("rougeL"))
+                results[metric.value] = scores.get("rougeL")
             else:
-                results[metric.value] = float(scores.get(metric.value))
+                results[metric.value] = scores.get(metric.value)
         return results
 
 

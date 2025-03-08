@@ -65,7 +65,7 @@ def main() -> None:
         finetuned_model_path=PROJECT_ROOT / "lab_8_sft" /
                              "dist" / f"{settings.parameters.model}_finetuned",
         learning_rate=1e-3,
-        target_modules=["q", "k"]
+        target_modules=["q", "v"]
     )
 
     num_samples = 10
