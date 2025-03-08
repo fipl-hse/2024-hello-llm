@@ -14,7 +14,7 @@ from datasets import load_dataset
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSeq2SeqLM,T5TokenizerFast
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -125,7 +125,7 @@ class TaskDataset(Dataset):
 
 
 def tokenize_sample(
-    sample: pd.Series, tokenizer: T5TokenizerFast, max_length: int
+    sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
 ) -> dict[str, torch.Tensor]:
     """
     Tokenize sample.
@@ -146,7 +146,7 @@ class TokenizedTaskDataset(Dataset):
     A class that converts pd.DataFrame to Dataset and works with it.
     """
 
-    def __init__(self, data: pd.DataFrame, tokenizer: T5TokenizerFast, max_length: int) -> None:
+    def __init__(self, data: pd.DataFrame, tokenizer: AutoTokenizer, max_length: int) -> None:
         """
         Initialize an instance of TaskDataset.
 
@@ -197,9 +197,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model.eval()
         self._model.to(self._device)
-        self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -219,14 +218,13 @@ class LLMPipeline(AbstractLLMPipeline):
                          decoder_input_ids=ids,
                          device="cpu",  verbose=0)
         return {
-            "input_shape": {"input_ids": list(result.input_size["input_ids"]),
-                            "attention_mask": list(result.input_size["input_ids"])},
+            "input_shape": list(result.input_size["input_ids"]),
             "embedding_size": test_model.config.n_positions,
             "output_shape": result.summary_list[-1].output_size,
             "num_trainable_params": result.trainable_params,
             "vocab_size": test_model.config.vocab_size,
             "size": result.total_param_bytes,
-            "max_context_length": test_model.config.task_specific_params['summarization']['max_length']
+            "max_context_length": test_model.config.max_length
         }
 
     @report_time
@@ -279,6 +277,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        self._model.eval()
+
         inputs = self._tokenizer(
             list(sample_batch[0]),
             max_length=self._max_length,
@@ -290,9 +290,9 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             raise ValueError("There is no model")
 
-        outputs = self._model.generate(**inputs)
+        outputs = self._model.generate(**inputs, max_length=self._max_length)
         decoded_output = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        return list(map(str, decoded_output))
+        return [str(text) for text in decoded_output]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
