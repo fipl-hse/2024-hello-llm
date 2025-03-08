@@ -59,7 +59,7 @@ def main() -> None:
     dataset = TaskDataset(preprocessor.data.head(100))
 
     pipeline = LLMPipeline(
-        settings.parameters.model,
+        sft_pipeline,
         dataset,
         max_length=120,
         batch_size=64,
