@@ -1,43 +1,41 @@
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
-import torch
-from datasets import Dataset
+import torch  # type: ignore
+from torch.utils.data.dataset import Dataset
 
 class EvalPrediction:
-    logits: torch.Tensor
+    logits: torch.Tensor  # type: ignore
     labels: list[str]
 
-    def __getitem__(self, index: int) -> torch.Tensor | list[str]:
+    def __getitem__(self, index: int) -> torch.Tensor | list[str]:  # type: ignore
         return (self.logits, self.labels)[index]
 
 class TrainingArguments:
     def __init__(
         self,
-        output_dir: str,
+        output_dir: Path | str,
         learning_rate: float,
         per_device_train_batch_size: int,
-        per_device_eval_batch_size: int,
-        num_train_epochs: float,
-        evaluation_strategy: str,
-        eval_steps: int,
-        label_names: list[str],
+        max_steps: int,
+        use_cpu: bool,
+        save_strategy: str,
+        load_best_model_at_end: bool,
+        remove_unused_columns: bool = True,
     ): ...
 
 class Trainer:
-    def __init__(
+    def __init__(  # type: ignore
         self,
         model: torch.nn.Module,
         args: TrainingArguments,
-        train_dataset: Dataset,
-        eval_dataset: Dataset,
-        compute_metrics: Callable[[EvalPrediction], dict[str, float]],
+        train_dataset: Dataset | list[dict[str, Any]],
     ): ...
     def save_model(self, path: Path) -> None: ...
     def train(self) -> None: ...
 
 class BatchEncoding:
-    input_features: torch.Tensor
+    input_features: torch.Tensor  # type: ignore
     def to(self, device: str) -> BatchEncoding: ...
     def __getitem__(self, el: str) -> Any: ...
     def __setitem__(self, el: str, val: Any) -> None: ...
@@ -48,7 +46,7 @@ class LayerLike(Protocol):
 
 class ContainerLike(Protocol):
     dense: LayerLike
-    out_proj: torch.nn.Linear
+    out_proj: torch.nn.Linear  # type: ignore
 
     def parameters(self) -> list: ...
 
@@ -62,10 +60,10 @@ class AutoModel:
     def from_pretrained(model_name: str) -> AutoModel: ...
     def load_state_dict(self, state_dict: dict, strict: bool, assign: bool) -> None: ...
     def state_dict(self) -> dict: ...
-    def __call__(self, *args: Any, **kwds: Any) -> torch.Tensor: ...
+    def __call__(self, *args: Any, **kwds: Any) -> torch.Tensor: ...  # type: ignore
     def to(self, device: str) -> AutoModel: ...
     def eval(self) -> AutoModel: ...
-    def generate(self, values: torch.Tensor) -> list: ...
+    def generate(self, values: torch.Tensor) -> list: ...  # type: ignore
 
 class PreTrainedTokenizerBase:
     cls_token_id: int
