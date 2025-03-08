@@ -45,7 +45,18 @@ def main() -> None:
     print(analysis)
     print(pipeline.infer_sample(dataset[0]))
 
-    result = analysis
+    predictions = pipeline.infer_dataset()
+
+    Path(PROJECT_ROOT / 'lab_8_sft' / 'dist').mkdir(exist_ok=True)
+    predictions_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv'
+    predictions.to_csv(predictions_path)
+
+    metrics_list = []
+    for metric in settings['parameters']['metrics']:
+        metrics_list.append(Metrics(metric))
+    evaluator = TaskEvaluator(predictions_path, metrics_list)
+    result = evaluator.run()
+    print(result)
     assert result is not None, "Finetuning does not work correctly"
 
 
