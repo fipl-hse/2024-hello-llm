@@ -54,7 +54,7 @@ def main() -> None:
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length=120,
-                           batch_size=64,
+                           batch_size=4,  # 4
                            device="cpu")
 
     predictions_dataframe = pipeline.infer_dataset()
