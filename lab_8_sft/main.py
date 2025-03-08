@@ -13,9 +13,17 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    BertForSequenceClassification,
+    BertTokenizer,
+    Trainer,
+    TrainingArguments,
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -92,6 +100,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                                            "toxic": ColumnNames.TARGET.value})
                 .drop_duplicates().reset_index(drop=True)
         )
+        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].apply(lambda x: int(x))
 
 
 class TaskDataset(Dataset):
@@ -141,8 +150,8 @@ class TaskDataset(Dataset):
         return self._data
 
 
-def _tokenize_sample(
-        sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
+def tokenize_sample(
+    sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
 ) -> dict[str, torch.Tensor]:
     """
     Tokenize sample.
@@ -156,6 +165,21 @@ def _tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
+    source_text = sample[ColumnNames.SOURCE.value]
+
+    tokenized_sample = tokenizer(
+        source_text,
+        padding="max_length",
+        max_length=max_length,
+        truncation=True,
+        return_tensors="pt"
+    )
+
+    return {
+        "input_ids": tokenized_sample["input_ids"].squeeze(0),
+        "attention_mask": tokenized_sample["attention_mask"].squeeze(0),
+        "labels": torch.tensor(sample[ColumnNames.TARGET.value], dtype=torch.long)
+    }
 
 
 class TokenizedTaskDataset(Dataset):
@@ -173,6 +197,12 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = list(
+            data.apply(
+                lambda sample: tokenize_sample(sample, tokenizer, max_length),
+                axis=1
+            )
+        )
 
     def __len__(self) -> int:
         """
@@ -181,6 +211,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -192,6 +223,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        return dict(self._data[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -212,9 +244,14 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader
             device (str): The device for inference
         """
+        # super().__init__(model_name, dataset, max_length, batch_size, device)
+        # self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
+        # self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # self._model.eval()
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._model = BertForSequenceClassification.from_pretrained(self._model_name)
+        self._model.to(self._device)
+        self._tokenizer = BertTokenizer.from_pretrained(self._model_name)
         self._model.eval()
 
     def analyze_model(self) -> dict:
@@ -286,7 +323,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        inputs = self._tokenizer.prepare_seq2seq_batch(
+        inputs = self._tokenizer(
             list(sample_batch[0]),
             return_tensors="pt",
             padding=True,
@@ -297,11 +334,8 @@ class LLMPipeline(AbstractLLMPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
-        with torch.no_grad():
-            outputs = self._model(**inputs).logits.detach()
-
-        predictions = torch.argmax(outputs, dim=-1).cpu().tolist()
-        return list(map(str, predictions))
+        decoded_predictions = self._model(**inputs).logits
+        return [str(prediction.argmax().item()) for prediction in decoded_predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -358,8 +392,46 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset)
+        self._model = BertForSequenceClassification.from_pretrained(self._model_name)
+        self._batch_size = sft_params.batch_size
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.3, target_modules=sft_params.target_modules)
+        self._device = sft_params.device
+        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+        self._max_length = sft_params.max_length
+        self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._finetuned_model_path = sft_params.finetuned_model_path
+        self._learning_rate = sft_params.learning_rate
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+        if (self._finetuned_model_path is None
+                or self._learning_rate is None
+                or self._batch_size is None
+                or self._max_sft_steps is None):
+            return
+
+        training_args = TrainingArguments(
+            max_steps=self._max_sft_steps,
+            per_device_train_batch_size=self._batch_size,
+            learning_rate=self._learning_rate,
+            weight_decay=0.01,
+            save_strategy="no",
+            output_dir=self._finetuned_model_path,
+            use_cpu=True,
+            load_best_model_at_end=False,
+        )
+
+        trainer = Trainer(
+            model=self._model,
+            args=training_args,
+            train_dataset=self._dataset
+        )
+
+        trainer.train()
+
+        merged_model = self._model.merge_and_unload()
+        merged_model.save_pretrained(self._finetuned_model_path)
+
