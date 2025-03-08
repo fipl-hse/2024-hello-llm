@@ -13,10 +13,15 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from peft import LoraConfig, get_peft_model
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -160,7 +165,9 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
-        self._data = tokenize_sample(data, tokenizer, max_length)
+        self._data = list(data.apply(lambda sample:
+                                     tokenize_sample(sample, tokenizer, max_length),
+                                     axis=1))
 
     def __len__(self) -> int:
         """
@@ -370,6 +377,3 @@ class SFTPipeline(AbstractSFTPipeline):
 
         merged_model = model.merge_and_unload()
         merged_model.save_pretrained(self._finetuned_model_path)
-
-        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        tokenizer.save_pretrained(self._finetuned_model_path)
