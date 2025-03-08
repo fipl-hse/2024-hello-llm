@@ -18,6 +18,7 @@ from lab_8_sft.main import (
     TaskEvaluator,
     TokenizedTaskDataset,
 )
+from lab_8_sft.service import fine_tuned_pipeline
 
 
 @report_time
@@ -58,23 +59,26 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(
-        sft_pipeline,
-        dataset,
+    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / f'{settings.parameters.model}_finetuned'
+
+    fine_tuned_pipeline = LLMPipeline(
+        model_name=finetuned_model_path,
+        dataset=dataset,
         max_length=120,
         batch_size=64,
-        device="cpu"
+        device='cpu'
     )
-    model_summary = pipeline.analyze_model()
+
+    model_summary = fine_tuned_pipeline.analyze_model()
     print(f'Model analysis: {model_summary}')
 
     sample_text = dataset[0]
     print(f'Single sample input: {sample_text}')
 
-    single_prediction = pipeline.infer_sample(sample_text)
+    single_prediction = fine_tuned_pipeline.infer_sample(sample_text)
     print(f'Single sample prediction: {single_prediction}')
 
-    infer_data = pipeline.infer_dataset()
+    infer_data = fine_tuned_pipeline.infer_dataset()
 
     predictions = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
     predictions.parent.mkdir(exist_ok=True)
