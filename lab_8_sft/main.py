@@ -16,9 +16,10 @@ from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
+    AutoModelForSequenceClassification,
     AutoTokenizer,
     Trainer,
-    TrainingArguments, AutoModelForSequenceClassification,
+    TrainingArguments,
 )
 
 from config.lab_settings import SFTParams
@@ -63,8 +64,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_columns': len(self._raw_data.columns),
             'dataset_duplicates': self._raw_data.duplicated().sum(),
             "dataset_empty_rows": self._raw_data.isnull().any(axis=1).sum(),
-            'dataset_sample_min_len': min(len(sample) for sample in self._raw_data["toxic_comment"]),
-            'dataset_sample_max_len': max(len(sample) for sample in self._raw_data["toxic_comment"]),
+            'dataset_sample_min_len': min(
+                len(sample) for sample in self._raw_data["toxic_comment"]
+            ),
+            'dataset_sample_max_len': max(
+                len(sample) for sample in self._raw_data["toxic_comment"]
+            )
         }
 
     @report_time
@@ -72,30 +77,25 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = (
-            self._raw_data.copy()
-            .rename(
-                columns={
-                    "reasons": ColumnNames.TARGET.value,
-                    "toxic_comment": ColumnNames.SOURCE.value,
-                }
-            )
+        self._data = self._raw_data.copy().rename(
+            columns={
+                "reasons": ColumnNames.TARGET.value,
+                "toxic_comment": ColumnNames.SOURCE.value,
+            }
         )
 
-        self._data = (
-            self._data.loc[
-                self._data[ColumnNames.TARGET.value].isin(['{"toxic_content":true}', '{"not_toxic":true}'])
-            ]
-            .replace(
-                {
-                    ColumnNames.TARGET.value: {
-                        '{"toxic_content":true}': 1,
-                        '{"not_toxic":true}': 0,
-                    }
-                }
+        self._data = self._data.loc[
+            self._data[ColumnNames.TARGET.value].isin(
+                ['{"toxic_content":true}', '{"not_toxic":true}']
             )
-            .reset_index(drop=True)
-        )
+        ].replace(
+            {
+                ColumnNames.TARGET.value: {
+                    '{"toxic_content":true}': 1,
+                    '{"not_toxic":true}': 0,
+                }
+            }
+        ).reset_index(drop=True)
 
 class TaskDataset(Dataset):
     """
@@ -312,6 +312,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('Model must be a torch.nn.Module')
+
         inputs = self._tokenizer(
             list(sample_batch[0]),
             return_tensors="pt",
@@ -336,6 +339,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
         self._metrics = [load(metric.value) for metric in metrics]
         self._data_path = data_path
 
@@ -396,6 +400,15 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if (self._max_sft_steps is None
+                or self._batch_size is None
+                or self._learning_rate is None
+                or self._finetuned_model_path is None):
+            return
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('Model must be a torch.nn.Module')
+
         training_args = TrainingArguments(
             max_steps=self._max_sft_steps,
             per_device_train_batch_size=self._batch_size,

@@ -31,6 +31,9 @@ def main() -> None:
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
+    if importer.raw_data is None:
+        raise ValueError("Raw data is None")
+
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
     print(f"Dataset analysis: {analysis}")
@@ -125,10 +128,11 @@ def main() -> None:
         print(f"{metric}: {value:.3f}")
 
     print("\nDifference in metrics (new - old):")
-    for metric in new_metrics:
-        if metric in old_metrics:
-            old_value, new_value = old_metrics[metric], new_metrics[metric]
-            print(f"{metric}: {new_value:.3f} - {old_value:.3f} = {new_value - old_value:.3f}")
+    if old_metrics and isinstance(old_metrics, dict):
+        for metric, new_value in new_metrics.items():
+            old_value = old_metrics.get(metric)
+            if old_value is not None:
+                print(f"{metric}: {new_value:.3f} - {old_value:.3f} = {new_value - old_value:.3f}")
 
     result = new_metrics
 
