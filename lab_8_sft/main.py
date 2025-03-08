@@ -7,10 +7,10 @@ Fine-tuning Large Language Models for a downstream task.
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from evaluate import load
 import pandas as pd
 import torch
 from datasets import load_dataset
+from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
