@@ -258,7 +258,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if not self._model:
             return None
-        return self._infer_batch([sample, ])[0]
+        return self._infer_batch((sample, ))[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -287,12 +287,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        if len(sample_batch) == 1:
-            sample_batch = sample_batch[0]
-        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        tokens = tokenizer(sample_batch[0], sample_batch[1], padding=True, truncation=True,
-                           return_tensors='pt')
-        output = self._model(**tokens).logits
+        if self._model:
+            if len(sample_batch) == 1:
+                sample_batch = sample_batch[0]
+            tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+            tokens = tokenizer(sample_batch[0], sample_batch[1], padding=True, truncation=True,
+                               return_tensors='pt')
+            output = self._model(**tokens).logits
 
         return [str(prediction.item()) for prediction in list(torch.argmax(output, dim=1))]
 
