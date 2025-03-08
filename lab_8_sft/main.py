@@ -13,9 +13,10 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import LoraConfig, get_peft_model
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -132,6 +133,16 @@ def tokenize_sample(sample: pd.Series, tokenizer: AutoTokenizer,
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
+    tokenized_input = tokenizer(sample[ColumnNames.PREMISE.value],
+                                sample[ColumnNames.HYPOTHESIS.value],
+                                padding="max_length",
+                                truncation=True,
+                                max_length=max_length,
+                                return_tensors="pt")
+
+    return {"input_ids": tokenized_input["input_ids"].squeeze(0),
+            "attention_mask": tokenized_input["attention_mask"].squeeze(0),
+            "labels":  sample[ColumnNames.TARGET.value]}
 
 
 class TokenizedTaskDataset(Dataset):
@@ -149,6 +160,7 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = tokenize_sample(data, tokenizer, max_length)
 
     def __len__(self) -> int:
         """
@@ -157,6 +169,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -168,6 +181,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        return dict(self._data[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -320,8 +334,42 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset)
+
+        self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
+        self._batch_size = sft_params.batch_size
+        self._max_length = sft_params.max_length
+        self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._device = sft_params.device
+        self._finetuned_model_path = sft_params.finetuned_model_path
+        self._learning_rate = sft_params.learning_rate
+
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1,
+                                       target_modules=sft_params.target_modules)
+
+
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+        model = get_peft_model(self._model, self._lora_config)
+        training_args = TrainingArguments(output_dir=self._finetuned_model_path,
+                                          max_steps=self._max_sft_steps,
+                                          per_device_train_batch_size=self._batch_size,
+                                          learning_rate=self._learning_rate,
+                                          save_strategy="no",
+                                          use_cpu=bool(self._device == "cpu"),
+                                          load_best_model_at_end=False)
+
+        trainer = Trainer(model=model,
+                          args=training_args,
+                          train_dataset=self._dataset)
+
+        trainer.train()
+
+        merged_model = model.merge_and_unload()
+        merged_model.save_pretrained(self._finetuned_model_path)
+
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)
