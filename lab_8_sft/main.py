@@ -361,8 +361,12 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if not all([self._finetuned_model_path, self._learning_rate,
+                    self._batch_size, self._max_sft_steps]):
+            return
+
         model = get_peft_model(self._model, self._lora_config)
-        training_args = TrainingArguments(output_dir=self._finetuned_model_path,
+        training_args = TrainingArguments(output_dir=str(self._finetuned_model_path),
                                           max_steps=self._max_sft_steps,
                                           per_device_train_batch_size=self._batch_size,
                                           learning_rate=self._learning_rate,
