@@ -96,10 +96,7 @@ def main() -> None:
     print('Fine-tuning...')
     sft_pipeline.run()
 
-    fine_tuned_model = sft_pipeline._model.merge_and_unload()
-
     fine_tuned_model_path = PROJECT_ROOT / "dist" / settings.parameters.model
-    fine_tuned_model.save_pretrained(fine_tuned_model_path)
 
     tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
     tokenizer.save_pretrained(fine_tuned_model_path)

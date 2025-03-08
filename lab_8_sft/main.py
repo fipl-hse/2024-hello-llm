@@ -426,3 +426,6 @@ class SFTPipeline(AbstractSFTPipeline):
         )
 
         trainer.train()
+
+        final_model = self._model.merge_and_unload()
+        final_model.save_pretrained(self._finetuned_model_path)
