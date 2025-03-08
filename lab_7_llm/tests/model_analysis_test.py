@@ -31,8 +31,7 @@ def run_model_analysis_check(lab_path: Path, pipeline_class: type[AbstractLLMPip
     references = ReferenceAnalysisScores(scores_type=ReferenceAnalysisScoresType.MODEL)
 
     model_name = settings.parameters.model.replace("test_", "")
-    print(references.get(model_name))
-    print(model_analysis)
+
     if references.get(model_name) != model_analysis:
         assert False, f"Model {settings.parameters.model} analysis is incorrect"
 
