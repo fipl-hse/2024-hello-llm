@@ -1,7 +1,7 @@
 {
   "parameters": {
     "model": "JackFram/llama-68m",
-    "dataset": "lionelchg/dolly_closed_qa",
+    "dataset": "lionelchg/dolly_open_qa",
     "metrics": ["bleu", "rouge"]
   },
   "target_score": 8
