@@ -41,7 +41,8 @@ def main() -> None:
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model, dataset,  max_length=120, batch_size=64,  device='cpu')
+    pipeline = LLMPipeline(settings.parameters.model, dataset,  max_length=120,
+                           batch_size=64,  device='cpu')
     print(pipeline.analyze_model())
     pipeline.infer_dataset().to_csv(predictions_path / 'predictions.csv', index=False)
     evaluator = TaskEvaluator(predictions_path / 'predictions.csv', settings.parameters.metrics)
@@ -63,7 +64,8 @@ def main() -> None:
     sft_pipeline.run()
 
     pipeline = LLMPipeline(str(predictions_path / settings.parameters.model),
-                           TaskDataset(preprocessor.data.head(10)), max_length=120, batch_size=64, device='cpu')
+                           TaskDataset(preprocessor.data.head(10)), batch_size=64,
+                           max_length=120, device='cpu')
     print(pipeline.analyze_model())
     pipeline.infer_dataset().to_csv(predictions_path / 'SFT-predictions.csv', index=False)
     evaluator = TaskEvaluator(predictions_path / 'SFT-predictions.csv', settings.parameters.metrics)

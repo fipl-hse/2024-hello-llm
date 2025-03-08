@@ -64,10 +64,12 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                 'dataset_duplicates': self._raw_data.duplicated().sum().tolist(),
                 'dataset_empty_rows':
                     sum(self._raw_data.replace('', np.nan).isna().sum().to_list()),
-                'dataset_sample_max_len': max(self._raw_data['premise'].apply(len),
-                                              self._raw_data['hypothesis'].apply(len)),
-                'dataset_sample_min_len': min(self._raw_data['premise'].apply(len),
-                                              self._raw_data['hypothesis'].apply(len))}
+                'dataset_sample_max_len':
+                    pd.concat([self._raw_data['premise'].apply(len),
+                               self._raw_data['hypothesis'].apply(len)]).max(),
+                'dataset_sample_min_len':
+                    pd.concat([self._raw_data['premise'].apply(len),
+                               self._raw_data['hypothesis'].apply(len)]).min()}
 
     @report_time
     def transform(self) -> None:
