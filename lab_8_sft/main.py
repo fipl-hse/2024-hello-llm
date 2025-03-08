@@ -396,7 +396,7 @@ class SFTPipeline(AbstractSFTPipeline):
         Fine-tune model.
         """
         if (self._finetuned_model_path is None
-                or self._max_sft_steps is None
+                or self._max_fine_tuning_steps is None
                 or self._batch_size is None
                 or self._learning_rate is None):
             return
