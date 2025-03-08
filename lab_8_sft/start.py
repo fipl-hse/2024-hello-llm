@@ -18,7 +18,6 @@ from lab_8_sft.main import (
     TaskEvaluator,
     TokenizedTaskDataset,
 )
-from lab_8_sft.service import fine_tuned_pipeline
 
 
 @report_time
@@ -40,45 +39,25 @@ def main() -> None:
 
     preprocessor.transform()
 
-    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
-
-    batch = settings.parameters.batch_size
-    fine_tuning_steps = settings.parameters.fine_tuning_steps
-    num_samples = 10
-    fine_tune_samples = batch * fine_tuning_steps
-
-    tokenized_dataset = TokenizedTaskDataset(
-        preprocessor.data.loc[num_samples:num_samples + fine_tune_samples],
-        tokenizer,
-        max_length=120
-    )
-
-    sft_params = settings.parameters.sft_params
-    sft_pipeline = SFTPipeline(settings.parameters.model, tokenized_dataset, sft_params)
-    sft_pipeline.run()
-
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / f'{settings.parameters.model}_finetuned'
-
-    fine_tuned_pipeline = LLMPipeline(
-        model_name=finetuned_model_path,
-        dataset=dataset,
+    pipeline = LLMPipeline(
+        settings.parameters.model,
+        dataset,
         max_length=120,
         batch_size=64,
-        device='cpu'
+        device="cpu"
     )
-
-    model_summary = fine_tuned_pipeline.analyze_model()
+    model_summary = pipeline.analyze_model()
     print(f'Model analysis: {model_summary}')
 
     sample_text = dataset[0]
     print(f'Single sample input: {sample_text}')
 
-    single_prediction = fine_tuned_pipeline.infer_sample(sample_text)
+    single_prediction = pipeline.infer_sample(sample_text)
     print(f'Single sample prediction: {single_prediction}')
 
-    infer_data = fine_tuned_pipeline.infer_dataset()
+    infer_data = pipeline.infer_dataset()
 
     predictions = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
     predictions.parent.mkdir(exist_ok=True)
