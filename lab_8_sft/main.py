@@ -288,13 +288,15 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: model predictions as strings
         """
         if self._model:
-            if len(sample_batch) == 1:
-                sample_batch = sample_batch[0]
             tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-            tokens = tokenizer(sample_batch[0], sample_batch[1], padding=True, truncation=True,
-                               return_tensors='pt')
-            output = self._model(**tokens).logits
+            if len(sample_batch) == 1:
+                tokens = tokenizer(sample_batch[0][0], sample_batch[0][1], padding=True,
+                                   truncation=True, return_tensors='pt')
+            else:
+                tokens = tokenizer(sample_batch[0], sample_batch[1], padding=True,
+                                   truncation=True, return_tensors='pt')
 
+            output = self._model(**tokens).logits
         return [str(prediction.item()) for prediction in list(torch.argmax(output, dim=1))]
 
 
