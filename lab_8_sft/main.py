@@ -235,8 +235,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         emb_size = self._model.config.max_position_embeddings
         input_data = torch.ones((1, emb_size), dtype=torch.long)
-        model_summary = summary(self._model,
-                                input_data=input_data, decoder_input_ids=input_data)
+        model_summary = summary(self._model, input_data=input_data)
 
         return {
             'input_shape': model_summary.input_size,
@@ -306,8 +305,9 @@ class LLMPipeline(AbstractLLMPipeline):
 
         self._model.eval()
         output = self._model(**model_input)
-        target_idx = output.logits.argmax().item()
-        return self._model.config.id2label[target_idx]
+
+        target_ids = list(map(lambda x: x.argmax().item(), output[0]))
+        return [self._model.config.id2label[id] for id in target_ids]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -339,7 +339,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         target = results_df[ColumnNames.TARGET.name]
 
         return {
-            metric.name: metric.compute(predictions=predictions, references=target, average='micro')
+            metric.name: metric.compute(predictions=predictions, references=target, average='micro')[metric.name]
             for metric in self._loaded_metrics
         }
 

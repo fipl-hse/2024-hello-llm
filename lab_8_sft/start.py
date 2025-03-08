@@ -27,7 +27,7 @@ def main() -> None:
         return
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    print(preprocessor.analyze())
+    # print(preprocessor.analyze())
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
@@ -35,12 +35,15 @@ def main() -> None:
     pipeline = LLMPipeline(parameters.model, dataset,
                            max_length=120, batch_size=64, device='cpu')
 
-    print(pipeline.analyze_model())
-    print(pipeline.infer_sample(dataset[22]))
+    # print(pipeline.analyze_model())
+    sample = dataset[22]
+    print(f'text: {sample[0]}, '
+          f'label - {pipeline.infer_sample(sample)}')
 
 
     predictions_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
+
 
     predictions = pipeline.infer_dataset()
     predictions.to_csv(predictions_path)
@@ -65,9 +68,11 @@ def main() -> None:
     num_samples = 10
     tokenized_dataset = TokenizedTaskDataset(
         preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
-        tokenizer=AutoTokenizer(parameters.model),
-        max_length=sft_params.max_length
+        tokenizer=AutoTokenizer.from_pretrained(parameters.model),
+        max_length=sft_parameters.max_length
     )
+
+    print(tokenized_dataset)
 
     sft_pipeline = SFTPipeline(model_name=parameters.model,
                                dataset=tokenized_dataset,
