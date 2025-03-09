@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Web Service</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/main.js" defer></script>
+</head>
+<body class="body-layout">
+  <div class="container">
+    <h2>Ask the AI</h2>
+    <input type="text" id="queryInput" class="input-field" placeholder="Enter your query...">
+    <div class="checkbox-container">
+      <input type="checkbox" id="useBaseCheckbox" checked>
+      <label for="useBaseCheckbox">Use base model</label>
+    </div>
+    <button id="sendButton" class="submit-button">Get Answer</button>
+    <div class="loader" id="loadingSpinner"></div>
+    <p id="output" class="output">Answer will appear here...</p>
+  </div>
+</body>
+</html>
