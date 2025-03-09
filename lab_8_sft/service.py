@@ -17,6 +17,13 @@ from lab_8_sft.start import main
 
 
 class Query(BaseModel):
+    """
+    Model for an inference request.
+
+    Attributes:
+        question (str): The user query.
+        is_base_model (bool): Flag to select the base model (True) or the fine-tuned model (False).
+    """
     question: str
     is_base_model: bool = True
 
@@ -67,19 +74,37 @@ app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
+    """
+    Root endpoint for the web application.
+
+    Args:
+        request (Request): The incoming HTTP request.
+
+    Returns:
+        HTMLResponse: The rendered HTML response for 'index.html'.
+    """
     templates = Jinja2Templates(directory=Path(__file__).parent / "assets")
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/infer")
 async def infer(query: Query) -> dict[str, str]:
-    q = query.question.strip()
-    if not q:
+    """
+    Process an inference request by choosing either the base or fine-tuned model.
+
+    Args:
+        query (InferenceQuery): The inference request with a question and a model selection flag.
+
+    Returns:
+        dict[str, str]: A dictionary with the inference result.
+    """
+    question = query.question.strip()
+    if not question:
         return {"infer": "Please provide a valid query."}
 
     if query.is_base_model:
-        answer = pre_trained_pipeline.infer_sample((q,))
+        answer = pre_trained_pipeline.infer_sample((question,))
     else:
-        answer = fine_tuned_pipeline.infer_sample((q,))
+        answer = fine_tuned_pipeline.infer_sample((question,))
 
     return {"infer": answer}
