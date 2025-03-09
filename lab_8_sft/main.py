@@ -12,9 +12,10 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, Trainer, TrainingArguments
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -139,6 +140,23 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
+    tokenized_source = tokenizer(sample[ColumnNames.SOURCE.value],
+                                 padding="max_length",
+                                 truncation=True,
+                                 max_length=120)
+
+    tokenized_target = tokenizer(sample[ColumnNames.TARGET.value],
+                                 padding="max_length",
+                                 truncation=True,
+                                 max_length=120)
+
+
+    return {
+        "input_ids": tokenized_source["input_ids"],
+        "attention_mask": tokenized_source["attention_mask"],
+        "labels": tokenized_target["input_ids"]
+    }
+
 
 
 class TokenizedTaskDataset(Dataset):
@@ -156,6 +174,13 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = list(
+            data.apply(
+                lambda sample: tokenize_sample(sample, tokenizer, max_length),
+                axis=1
+            )
+        )
+
 
     def __len__(self) -> int:
         """
@@ -164,6 +189,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -175,6 +201,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        return dict(self._data[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -331,6 +358,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             else:
                 metric_counts[metric_name] = res["rougeL"]
         return metric_counts
+    
 
 class SFTPipeline(AbstractSFTPipeline):
     """
@@ -346,8 +374,41 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
+        self._device = sft_params.device
+        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+        self._finetuned_model_path = sft_params.finetuned_model_path
+        self._max_steps = sft_params.max_fine_tuning_steps
+        self._per_device_train_batch_size = sft_params.batch_size
+        self.learning_rate = sft_params.learning_rate
+
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+        training_params = TrainingArguments(
+            output_dir=self._finetuned_model_path,
+            max_steps=self._max_steps,
+            per_device_train_batch_size=self._per_device_train_batch_size,
+            learning_rate=self.learning_rate,
+            save_strategy="no",
+            use_cpu=bool(self._device == "cpu"),
+            load_best_model_at_end=False
+        )
+        trainer = Trainer(model=self._model, args=training_params, train_dataset=self._dataset)
+        trainer.train()
+        merged_model = self._model.merge_and_unload()
+        merged_model.save_pretrained(self._finetuned_model_path)
+
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)
+
+
+
+
+
+
+
