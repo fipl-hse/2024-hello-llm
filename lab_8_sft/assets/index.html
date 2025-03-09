@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Classifier</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="centered_title">Classify your text!</h1>
+        <textarea class="input_text" id="inputText" placeholder="Enter your text here..."></textarea>
+
+        <div>
+            <label>
+                <input type="checkbox" id="useBaseModel" />
+                use base model
+            </label>
+        </div>
+
+        <button type="button" class="classify_button" id="classifyButton">Classify</button>
+        <div id="result"></div>
+    </div>
+    <script src="/assets/main.js"></script>
+</body>
+</html>
