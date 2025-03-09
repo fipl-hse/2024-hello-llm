@@ -330,7 +330,7 @@ class LLMPipeline(AbstractLLMPipeline):
             outputs = softmax(self._model(**inputs).logits, dim=1)
 
         predicted = torch.argmax(outputs, dim=1).tolist()
-        return [str(class_pred) if class_pred != 0 else 2 for class_pred in predicted]
+        return [str(class_pred) if class_pred != 0 else "2" for class_pred in predicted]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -385,26 +385,28 @@ class SFTPipeline(AbstractSFTPipeline):
             sft_params (SFTParams): Fine-Tuning parameters.
         """
         super().__init__(model_name, dataset)
-        self._sft_params = sft_params
-        self._lora_config = LoraConfig(
-            r=4, lora_alpha=8, lora_dropout=0.1, target_modules=sft_params.target_modules
-        )
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
         self._model = BertForSequenceClassification.from_pretrained(model_name)
+        self._output_dir = str(sft_params.finetuned_model_path)
+        self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._batch_size = sft_params.batch_size
+        self._lr = sft_params.learning_rate
+        self._device = sft_params.device
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
 
-        model = get_peft_model(self._model, self._lora_config)
+        model = get_peft_model(self._model, self._lora_config).to(self._device)
         training_args = TrainingArguments(
-            output_dir=str(self._sft_params.finetuned_model_path),
-            max_steps=self._sft_params.max_fine_tuning_steps,
-            per_device_train_batch_size=self._sft_params.batch_size,
-            learning_rate=self._sft_params.learning_rate,
+            output_dir=self._output_dir,
+            max_steps=self._max_sft_steps,
+            per_device_train_batch_size=self._batch_size,
+            learning_rate=self._lr,
             save_strategy="no",
-            use_cpu=True if self._sft_params.device == "cpu" else False,
-            load_best_model_at_end=True,
+            use_cpu=bool(self._device == "cpu"),
+            load_best_model_at_end=False,
         )
 
         trainer = Trainer(
@@ -415,7 +417,7 @@ class SFTPipeline(AbstractSFTPipeline):
         trainer.train()
 
         trainer.model.merge_and_unload()
-        trainer.model.base_model.save_pretrained(self._sft_params.finetuned_model_path)
+        trainer.model.base_model.save_pretrained(self._output_dir)
 
         tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        tokenizer.save_pretrained(self._sft_params.finetuned_model_path)
+        tokenizer.save_pretrained(self._output_dir)

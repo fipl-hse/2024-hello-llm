@@ -90,8 +90,6 @@ def main() -> None:
     model_path = Path(__file__).parent / "dist"
 
     # parameters for sft model inference
-    num_samples = 10
-    max_length = 120
     batch_size = 64
 
     dataset = TaskDataset(preprocessor.data.head(num_samples))
