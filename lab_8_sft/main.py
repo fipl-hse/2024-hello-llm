@@ -331,8 +331,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         super().__init__(metrics)
         self._data_path = data_path
         self._metrics = {
-            metric: load(metric.value, seed=77)
-            if metric == Metrics.ROUGE else load(metric.value)
+            metric.value: load(metric.value, seed=77)
             for metric in metrics
         }
 
@@ -345,17 +344,18 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         dataframe = pd.read_csv(self._data_path)
 
-        preds = dataframe[ColumnNames.PREDICTION.value].tolist()
-        targets = dataframe[ColumnNames.TARGET.value].tolist()
+        preds = dataframe[ColumnNames.PREDICTION.value]
+        targets = dataframe[ColumnNames.TARGET.value]
 
         results = {}
-        for metric in self._metrics:
-            metric_evaluator = load(metric.value)
-            scores = metric_evaluator.compute(predictions=preds, references=targets)
-            if metric.value == Metrics.ROUGE.value:
-                results[metric.value] = scores.get("rougeL")
+        for metric, module in self._metrics.items():
+            scores = module.compute(predictions=preds, references=targets)
+
+            if metric == Metrics.ROUGE.value:
+                results[metric] = scores["rougeL"]
             else:
-                results[metric.value] = scores.get(metric.value)
+                results[metric] = scores[metric]
+
         return results
 
 

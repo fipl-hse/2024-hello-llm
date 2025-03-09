@@ -2,8 +2,6 @@
 Fine-tuning starter.
 """
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
-from pathlib import Path
-
 from transformers import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
@@ -98,6 +96,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_file, settings.parameters.metrics)
     result = evaluator.run()
+    print("evaluation results:", result)
 
     for metric in settings.parameters.metrics:
         key = metric.value
