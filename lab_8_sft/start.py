@@ -1,20 +1,18 @@
 """
 Fine-tuning starter.
 """
-import json
 
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
-
 from transformers import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
+from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
-    report_time,
     SFTPipeline,
     TaskDataset,
     TaskEvaluator,
@@ -27,107 +25,119 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    config = LabSettings(PROJECT_ROOT / "lab_8_sft" / "settings.json")
+    current_folder = PROJECT_ROOT / "lab_8_sft"
 
-    data_loader = RawDataImporter(config.parameters.dataset)
-    data_loader.obtain()
+    settings = LabSettings(current_folder / "settings.json")
 
-    processor = RawDataPreprocessor(data_loader.raw_data)
-    dataset_stats = processor.analyze()
-    print(f"Dataset overview: {dataset_stats}")
+    importer = RawDataImporter(settings.parameters.dataset)
+    importer.obtain()
 
-    processor.transform()
-    sample_dataset = TaskDataset(processor.data.head(100))
+    if importer.raw_data is None:
+        raise ValueError("Raw data is None")
 
-    model_pipeline = LLMPipeline(
-        config.parameters.model,
-        sample_dataset,
+    preprocessor = RawDataPreprocessor(importer.raw_data)
+    analysis = preprocessor.analyze()
+    print(f"Dataset analysis: {analysis}")
+
+    preprocessor.transform()
+    dataset = TaskDataset(preprocessor.data.head(100))
+
+    pipeline = LLMPipeline(
+        settings.parameters.model,
+        dataset,
         max_length=120,
         batch_size=64,
         device="cpu"
     )
-    print(f"Initial model analysis: {model_pipeline.analyze_model()}")
+    model_summary = pipeline.analyze_model()
+    print(f"Model analysis: {model_summary}")
 
-    test_sample = sample_dataset[0]
-    print(f"Test sample input: {test_sample}")
-    print(f"Predicted output: {model_pipeline.infer_sample(test_sample)}")
+    sample_text = dataset[0]
+    print(f"Single sample input: {sample_text}")
 
-    prediction_results = model_pipeline.infer_dataset()
-    output_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
-    output_path.parent.mkdir(exist_ok=True)
-    prediction_results.to_csv(output_path)
+    single_prediction = pipeline.infer_sample(sample_text)
+    print(f"Single sample prediction: {single_prediction}")
 
-    evaluator = TaskEvaluator(output_path, config.parameters.metrics)
-    initial_metrics = evaluator.run()
-    print("Performance before fine-tuning:")
-    for metric, score in initial_metrics.items():
-        print(f"{metric}: {score:.3f}")
+    inference_data = pipeline.infer_dataset()
 
-    tuning_params = SFTParams(
+    predictions_path = current_folder / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    inference_data.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    old_metrics = evaluator.run()
+    print("Old evaluation metrics before fine-tuning:")
+    for metric, value in old_metrics.items():
+        print(f"{metric}: {value:.3f}")
+
+    sft_params = SFTParams(
         batch_size=3,
         max_length=120,
         max_fine_tuning_steps=50,
         learning_rate=1e-3,
-        finetuned_model_path=PROJECT_ROOT / "dist" / config.parameters.model,
-        device="cpu",
-        target_modules=["query", "key", "value"]
+        finetuned_model_path=current_folder / "dist" / settings.parameters.model,
+        device="cpu"
     )
 
-    sample_count = 1000
-    tuning_sample_count = tuning_params.batch_size * tuning_params.max_fine_tuning_steps
+    num_samples = 1000
+    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
 
-    tokenizer = AutoTokenizer.from_pretrained(config.parameters.model)
-    prepared_dataset = TokenizedTaskDataset(
-        processor.data.loc[sample_count: sample_count + tuning_sample_count],
+    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenizer.save_pretrained(sft_params.finetuned_model_path)
+
+    tokenized_dataset = TokenizedTaskDataset(
+        preprocessor.data.loc[num_samples : num_samples + fine_tune_samples],
         tokenizer=tokenizer,
-        max_length=tuning_params.max_length,
+        max_length=sft_params.max_length,
     )
 
-    fine_tuning_pipeline = SFTPipeline(
-        model_name=config.parameters.model,
-        dataset=prepared_dataset,
-        sft_params=tuning_params
+    sft_pipeline = SFTPipeline(
+        model_name=settings.parameters.model,
+        dataset=tokenized_dataset,
+        sft_params=sft_params
     )
 
-    print('Starting fine-tuning...')
-    fine_tuning_pipeline.run()
+    print('Fine-tuning...')
+    sft_pipeline.run()
 
-    refined_pipeline = LLMPipeline(
-        model_name=PROJECT_ROOT / "dist" / config.parameters.model,
-        dataset=TaskDataset(processor.data.head(sample_count)),
+    fine_tuned_pipeline = LLMPipeline(
+        model_name=str(current_folder / "dist" / settings.parameters.model),
+        dataset=TaskDataset(preprocessor.data.head(num_samples)),
         max_length=120,
         batch_size=64,
         device="cpu",
     )
 
-    refined_model_analysis = refined_pipeline.analyze_model()
-    print("Model evaluation after fine-tuning:")
-    for attribute, result in refined_model_analysis.items():
-        print(f"{attribute}: {result}")
+    model_analysis = fine_tuned_pipeline.analyze_model()
+    print("Model analysis after fine-tuning:")
+    for field, value in model_analysis.items():
+        print(f"{field}: {value}")
 
-    first_text_sample = sample_dataset.data.iloc[0]["source"]
-    print("\nOriginal Text:", first_text_sample)
-    print("Prediction after fine-tuning:", refined_pipeline.infer_sample(first_text_sample))
+    first_sample = dataset.data.iloc[0]["source"]
+    print("\nFirst text:", first_sample)
+    print("Inference result after fine-tuning:", fine_tuned_pipeline.infer_sample(first_sample))
 
-    final_predictions = refined_pipeline.infer_dataset()
-    final_output_path = PROJECT_ROOT / "dist" / "predictions.csv"
-    final_output_path.parent.mkdir(exist_ok=True)
-    final_predictions.to_csv(final_output_path)
+    predictions_dataframe = fine_tuned_pipeline.infer_dataset()
 
-    final_evaluator = TaskEvaluator(final_output_path, config.parameters.metrics)
-    final_metrics = final_evaluator.run()
-    print("Performance after fine-tuning:")
+    predictions_path = current_folder / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    predictions_dataframe.to_csv(predictions_path)
 
-    for metric, score in final_metrics.items():
-        print(f"{metric}: {score:.3f}")
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    new_metrics = evaluator.run()
+    print("New evaluation metrics after fine-tuning:")
 
-    print("\nMetric differences (post-fine-tuning - pre-fine-tuning):")
-    for metric in final_metrics:
-        if metric in initial_metrics:
-            print(f"{metric}: {final_metrics[metric]:.3f} - {initial_metrics[metric]:.3f} = "
-                  f"{final_metrics[metric] - initial_metrics[metric]:.3f}")
+    for metric, value in new_metrics.items():
+        print(f"{metric}: {value:.3f}")
 
-    result = final_metrics
+    print("\nDifference in metrics (new - old):")
+    if old_metrics and isinstance(old_metrics, dict):
+        for metric, new_value in new_metrics.items():
+            old_value = old_metrics.get(metric)
+            if old_value is not None:
+                print(f"{metric}: {new_value:.3f} - {old_value:.3f} = {new_value - old_value:.3f}")
+
+    result = new_metrics
 
     assert result is not None, "Finetuning does not work correctly"
 
