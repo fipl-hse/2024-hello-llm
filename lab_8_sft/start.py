@@ -98,7 +98,6 @@ def main() -> None:
         sft_params=sft_params
     )
 
-    print('Fine-tuning...')
     sft_pipeline.run()
 
     fine_tuned_pipeline = LLMPipeline(

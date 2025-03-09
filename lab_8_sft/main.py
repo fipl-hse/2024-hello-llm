@@ -49,7 +49,6 @@ class RawDataImporter(AbstractRawDataImporter):
         )
 
         self._raw_data = dataset.to_pandas() if isinstance(dataset, datasets.Dataset) else None
-        print(self._raw_data[:5])
         if self._raw_data is None:
             raise TypeError(
                 f"Failed to convert dataset to DataFrame. Expected 'Dataset', "
