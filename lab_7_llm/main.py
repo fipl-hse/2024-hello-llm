@@ -13,7 +13,6 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -128,6 +127,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
+    _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -149,7 +149,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                                         padding_side='left',
                                                         legacy=False)
         self._tokenizer.pad_token = self._tokenizer.eos_token
-        self._model.to(self._device).eval()
+        self._model.to(self._device)
 
     def analyze_model(self) -> dict:
         """
@@ -163,7 +163,9 @@ class LLMPipeline(AbstractLLMPipeline):
         ids = torch.ones((1, embeddings_length), dtype=torch.long)
         input_data = {"input_ids": ids, "attention_mask": ids}
 
-        statistics = summary(nn.Module(self._model), input_data=input_data, verbose=0)
+        if self._model is None:
+            return {}
+        statistics = summary(self._model, input_data=input_data, verbose=0)
         input_shape = {'attention_mask': list(statistics.input_size['attention_mask']),
                        'input_ids': list(statistics.input_size['input_ids'])}
         output_shape = statistics.summary_list[-1].output_size
