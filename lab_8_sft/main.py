@@ -198,8 +198,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        return self._data.iloc[index]
-
+        return dict(self._data.iloc[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -227,6 +226,9 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForSequenceClassification.from_pretrained(
             self._model_name).to(self._device)
 
+        if self._model is None:
+            return
+
 
     def analyze_model(self) -> dict:
         """
@@ -237,7 +239,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         emb_size = self._model.config.max_position_embeddings
         input_data = torch.ones((1, emb_size), dtype=torch.long)
-        model_summary = summary(self._model, input_data=input_data)
+        model_summary = summary(self._model, input_data=input_data, verbose=0)
 
         return {
             'input_shape': model_summary.input_size,
@@ -377,8 +379,8 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if any(el is None for el in
-               (self._finetuned_model_path, self._batch_size, self._learning_rate, self._max_sft_steps)):
+        if (self._finetuned_model_path is None or self._batch_size is None or
+            self._learning_rate is None or self._max_sft_steps is None):
             return
 
         training_args = TrainingArguments(
@@ -386,7 +388,9 @@ class SFTPipeline(AbstractSFTPipeline):
             per_device_train_batch_size=self._batch_size,
             learning_rate=self._learning_rate,
             max_steps=self._max_sft_steps,
-            save_strategy='no'
+            save_strategy='no',
+            use_cpu=(self._device == 'cpu'),
+            load_best_model_at_end=False
         )
 
         trainer = Trainer(model=self._model, args=training_args, train_dataset=self._dataset)
