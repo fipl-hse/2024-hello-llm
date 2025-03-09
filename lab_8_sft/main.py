@@ -224,7 +224,8 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name).to(self._device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(
+            self._model_name).to(self._device)
 
 
     def analyze_model(self) -> dict:
@@ -340,7 +341,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         target = results_df[str(ColumnNames.TARGET)]
 
         return {
-            metric.name: metric.compute(predictions=predictions, references=target, average='micro')[metric.name]
+            metric.name: metric.compute(predictions=predictions, references=target,
+                                        average='micro')[metric.name]
             for metric in self._loaded_metrics
         }
 
@@ -361,10 +363,11 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
-        self._batch_size = sft_params.batch_size
         self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1, target_modules=None)
         self._device = sft_params.device
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+
+        self._batch_size = sft_params.batch_size
         self._max_length = sft_params.max_length
         self._max_sft_steps = sft_params.max_fine_tuning_steps
         self._finetuned_model_path = sft_params.finetuned_model_path
@@ -374,10 +377,12 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if any(self._finetuned_model_path, self._batch_size,
+               self._learning_rate, self._max_sft_steps) is None:
+            return
 
         training_args = TrainingArguments(
             output_dir=self._finetuned_model_path,
-            overwrite_output_dir=True,
             per_device_train_batch_size=self._batch_size,
             learning_rate=self._learning_rate,
             max_steps=self._max_sft_steps,
