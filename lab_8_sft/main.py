@@ -372,6 +372,8 @@ class SFTPipeline(AbstractSFTPipeline):
 
         self._sft_params = sft_params
 
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
         self._lora_config = LoraConfig(
             r=4,
             lora_alpha=8,
@@ -379,7 +381,6 @@ class SFTPipeline(AbstractSFTPipeline):
             target_modules=sft_params.target_modules
         )
 
-        #self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         self._model = get_peft_model(self._model, self._lora_config)
 
     def run(self) -> None:

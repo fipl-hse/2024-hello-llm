@@ -11,8 +11,9 @@ from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
-    TaskEvaluator, SFTPipeline,
+    TaskEvaluator,
 )
 
 
@@ -70,6 +71,7 @@ def main() -> None:
         device="cpu",
         finetuned_model_path=PROJECT_ROOT / 'lab_8_sft' / 'dist' / settings.parameters.model,
         learning_rate=1e-3,
+        target_modules=["q", "v"],
     )
 
     sft_pipeline = SFTPipeline(
