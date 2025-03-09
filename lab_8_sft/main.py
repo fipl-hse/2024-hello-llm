@@ -406,7 +406,7 @@ class SFTPipeline(AbstractSFTPipeline):
             raise TypeError("model is not properly initialized")
 
         training_args = TrainingArguments(
-            output_dir=self._finetuned_model_path,
+            output_dir=str(self._finetuned_model_path),
             max_steps=self._max_fine_tuning_steps,
             per_device_train_batch_size=self._batch_size,
             learning_rate=self._learning_rate,

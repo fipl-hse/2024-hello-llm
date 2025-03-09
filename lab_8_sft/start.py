@@ -60,10 +60,8 @@ def main() -> None:
         batch_size=3,
         max_fine_tuning_steps=50,
         device="cpu",
-        finetuned_model_path=PROJECT_ROOT / "lab_8_sft" /
-                             "dist" / f"{settings.parameters.model}_finetuned",
-        learning_rate=1e-3,
-        target_modules=["q", "v"]
+        finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
+        learning_rate=1e-3
     )
 
     num_samples = 10
@@ -80,8 +78,6 @@ def main() -> None:
                                sft_params=sft_params)
     sft_pipeline.run()
 
-    base_tokenizer.save_pretrained(sft_params.finetuned_model_path)
-
     pipeline_ft = LLMPipeline(
         str(sft_params.finetuned_model_path),
         TaskDataset(preprocessor.data.head(num_samples)),
@@ -91,8 +87,10 @@ def main() -> None:
     )
     pipeline_ft.analyze_model()
 
-    predictions_dataframe = pipeline_ft.infer_dataset()
-    predictions_dataframe.to_csv(predictions_file)
+    predictions_dataframe = pipeline.infer_dataset()
+    predictions_path = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
+    predictions_path.parent.mkdir(exist_ok=True)
+    predictions_dataframe.to_csv(predictions_path)
 
     evaluator = TaskEvaluator(predictions_file, settings.parameters.metrics)
     result = evaluator.run()
