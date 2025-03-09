@@ -400,6 +400,8 @@ class SFTPipeline(AbstractSFTPipeline):
 
         self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
 
+        self._model = get_peft_model(self._model, self._lora_config)
+
         self._batch_size = sft_params.batch_size
         self._max_length = sft_params.max_length
         self._max_sft_steps = sft_params.max_fine_tuning_steps
@@ -415,6 +417,9 @@ class SFTPipeline(AbstractSFTPipeline):
         batch_size = self._batch_size if self._batch_size is not None else 1
         max_steps = self._max_sft_steps if self._max_sft_steps is not None else 100
         learning_rate = self._learning_rate if self._learning_rate is not None else 1e-3
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Expected a valid torch model, but got an invalid instance.")
 
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),
