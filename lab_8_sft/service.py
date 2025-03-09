@@ -66,8 +66,8 @@ class Query:
     """
     A class that contains text of the query.
     """
-    question: str
-    hypothesis: str
+    question: str | None = None
+    hypothesis: str | None = None
     is_base_model: bool
 
 
