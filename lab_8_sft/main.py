@@ -152,8 +152,7 @@ def tokenize_sample(
         dict[str, torch.Tensor]: Tokenized sample
     """
     texts, labels = sample[str(ColumnNames.SOURCE)], sample[str(ColumnNames.TARGET)]
-    tokenized = tokenizer(texts, padding='max_length', truncation=True,
-                          max_length=max_length, return_tensors='pt')
+    tokenized = tokenizer(texts, padding='max_length', truncation=True, max_length=max_length)
 
     return {
         'input_ids': tokenized['input_ids'],
@@ -199,7 +198,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        return dict(self._data[index])
+        return self._data.iloc[index]
 
 
 
@@ -364,7 +363,7 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
-        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1, target_modules=None)
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
         self._device = sft_params.device
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
 
