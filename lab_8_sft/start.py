@@ -36,7 +36,7 @@ def main() -> None:
     print(preprocessor.analyze())
     preprocessor.transform()
 
-    finetuned_model_path = Path(__file__).parent / 'dist' / f'finetuned_{settings.parameters.model}'
+    finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
