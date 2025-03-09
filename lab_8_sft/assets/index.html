@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/assets/styles.css">
+    <title>NLI Service</title>
+</head>
+<body>
+    <h1>Natural Language Inference</h1>
+    <div id="main">
+        <div id="premise-text">
+            <label for="premise">Premise text</label>
+            <textarea id="premise" placeholder="Enter text here"></textarea>
+        </div>
+        <div id="result">
+            <div id="checkbox-block">
+                <input type="checkbox" id="base-model-checkbox">
+                <label for="base-model-checkbox">Use base model</label>
+                <button id="send-button" type="button">Click me</button>
+            </div>
+            <h2>Result:</h2>
+            <h3 id="prediction"></h3>
+        </div>
+        <div id="hypothesis-text">
+            <label for="hypothesis">Hypothesis text</label>
+            <textarea id="hypothesis" placeholder="Enter text here"></textarea>
+        </div>
+    </div>
+    <script src="/assets/main.js"></script>
+</body>
+</html>

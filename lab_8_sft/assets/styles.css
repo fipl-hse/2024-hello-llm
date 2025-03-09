@@ -1,0 +1,76 @@
+body {
+    background-color: lavender;
+    font-family: sans-serif;
+    margin: 20px;
+}
+
+button {
+    background-color: rgb(239, 255, 253);
+    border: none;
+    border-radius: 4px;
+    color: purple;
+    font-size: 1.25rem;
+    margin-left: 5%;
+    margin-right: 5%;
+    margin-top: 5%;
+    padding: 12px 20px;
+}
+
+button:hover {
+    background-color: rgb(203, 0, 244);
+}
+
+h1 {
+    color: purple;
+    text-align: center;
+}
+
+h2 {
+    color: rgb(167, 50, 220);
+    margin-left: 40%;
+}
+
+h3 {
+    color: rgb(112, 12, 140);
+    margin-left: 35%;
+}
+
+input {
+     width: 15px;
+     height: 15px;
+     display: center;
+}
+
+label {
+    color: rgb(145, 10, 220);
+    font-size: 1.25rem;
+    text-align: center;
+}
+
+textarea {
+    background-color: rgb(255, 252, 249);
+    border-radius: 4px;
+    color: rgb(182, 0, 214);
+    font-size: 1.5rem;
+    max-height: 450px;
+    max-width: 100%;
+    min-height: 250px;
+    min-width: 100%;
+    padding: 8px;
+}
+
+#checkbox-block {
+    display: inline-block;
+    font-size: 1rem;
+    margin-left: 10%;
+    margin-right: 10%;
+    margin-top: 10px;
+    text-align: right;
+}
+
+#main {
+  display: flex;
+}
+#main > div {
+  width: 33%;
+}
