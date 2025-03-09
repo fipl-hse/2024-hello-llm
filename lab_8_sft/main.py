@@ -12,9 +12,10 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, Trainer, TrainingArguments
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -150,6 +151,24 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
+    source_encodings = tokenizer(
+        sample['source'],
+        padding="max_length",
+        truncation=True,
+        max_length=max_length
+    )
+    target_encodings = tokenizer(
+        sample['target'],
+        padding="max_length",
+        truncation=True,
+        max_length=max_length
+    )
+
+    return {
+        "input_ids": torch.tensor(source_encodings["input_ids"], dtype=torch.long),
+        "attention_mask": torch.tensor(source_encodings["attention_mask"], dtype=torch.long),
+        "labels": torch.tensor(target_encodings["input_ids"], dtype=torch.long)
+    }
 
 
 class TokenizedTaskDataset(Dataset):
@@ -167,6 +186,8 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = [tokenize_sample(sample, tokenizer, max_length)
+                      for _, sample in data.iterrows()]
 
     def __len__(self) -> int:
         """
@@ -175,6 +196,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -186,7 +208,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-
+        return dict(self._data[index])
 
 class LLMPipeline(AbstractLLMPipeline):
     """
@@ -280,7 +302,7 @@ class LLMPipeline(AbstractLLMPipeline):
                 batch_preds = self._infer_batch(batch)
                 collected_preds.extend(batch_preds)
 
-        df_results = pd.DataFrame(self._dataset.data)
+        df_results = pd.DataFrame(self._dataset.data.iloc[:len(collected_preds)])
         df_results[ColumnNames.PREDICTION.value] = collected_preds
 
         return df_results
@@ -328,7 +350,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
         super().__init__(metrics)
         self._data_path = data_path
 
-
     def run(self) -> dict | None:
         """
         Evaluate the predictions against the references using the specified metric.
@@ -366,8 +387,49 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset)
+
+        self._lora_config = LoraConfig(
+            r=4,
+            lora_alpha=8,
+            lora_dropout=0.1,
+            target_modules=sft_params.target_modules
+        )
+
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+
+        self._batch_size = sft_params.batch_size
+        self._max_length = sft_params.max_length
+        self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._finetuned_model_path = sft_params.finetuned_model_path
+        self._learning_rate = sft_params.learning_rate
+
+        self._device = sft_params.device
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+
+        training_args = TrainingArguments(
+            output_dir=str(self._finetuned_model_path),
+            per_device_train_batch_size=self._batch_size,
+            max_steps=self._max_sft_steps,
+            learning_rate=self._learning_rate,
+            use_cpu=bool(self._device == "cpu"),
+            save_strategy="no",
+            load_best_model_at_end=False
+        )
+
+        trainer = Trainer(
+            model=self._model,
+            args=training_args,
+            train_dataset=self._dataset
+        )
+
+        trainer.train()
+
+        merged_model = self._model.merge_and_unload()
+
+        merged_model.save_pretrained(self._finetuned_model_path)
