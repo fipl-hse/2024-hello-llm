@@ -370,12 +370,6 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
 
-        self._output_dir = str(sft_params.finetuned_model_path)
-
-        self._sft_params = sft_params
-
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
         self._lora_config = LoraConfig(
             r=4,
             lora_alpha=8,
@@ -383,24 +377,28 @@ class SFTPipeline(AbstractSFTPipeline):
             target_modules=sft_params.target_modules
         )
 
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
         self._model = get_peft_model(self._model, self._lora_config)
+
+        self._max_length = sft_params.max_length
+        self._batch_size = sft_params.batch_size
+        self._max_fine_tuning_steps = sft_params.max_fine_tuning_steps
+        self._device = sft_params.device
+        self._finetuned_model_path = sft_params.finetuned_model_path
+        self._learning_rate = sft_params.learning_rate
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
         training_args = TrainingArguments(
-            output_dir=self._output_dir,
-            max_steps=self._sft_params.max_fine_tuning_steps,
-            per_device_train_batch_size=self._sft_params.batch_size,
-            learning_rate=self._sft_params.learning_rate,
-            save_strategy="steps",
-            save_steps=self._sft_params.max_fine_tuning_steps // 5,
-            report_to="none",
-            remove_unused_columns=True,
-            use_cpu=(self._sft_params.device == "cpu"),
-            load_best_model_at_end=True,
-            disable_tqdm=True
+            output_dir=str(self._finetuned_model_path),
+            max_steps=self._max_fine_tuning_steps,
+            per_device_train_batch_size=self._batch_size,
+            learning_rate=self._learning_rate,
+            save_strategy="no",
+            use_cpu=True,
+            load_best_model_at_end=False
         )
 
         trainer = Trainer(
