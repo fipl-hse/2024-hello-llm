@@ -337,9 +337,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
+
         self._metrics_dict = {}
         for metric in self._metrics:
             self._metrics_dict[metric.value] = load(str(metric))
+
 
     def run(self) -> dict | None:
         """
@@ -353,11 +355,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric_name, metric_evaluator in self._metrics_dict.items():
             res = metric_evaluator.compute(references=pred_df[ColumnNames.TARGET.value],
                                            predictions=pred_df[ColumnNames.PREDICTION.value])
-            if metric_name == "bleu":
-                metric_counts[metric_name] = res["bleu"]
+            if metric_name == Metrics.BLEU.value:
+                metric_counts[metric_name] = float(res["bleu"])
             else:
-                metric_counts[metric_name] = res["rougeL"]
+                metric_counts[metric_name] = float(res["rougeL"])
         return metric_counts
+
 
 class SFTPipeline(AbstractSFTPipeline):
     """

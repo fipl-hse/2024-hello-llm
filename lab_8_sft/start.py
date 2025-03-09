@@ -36,11 +36,11 @@ def main() -> None:
     print(preprocessor.analyze())
     preprocessor.transform()
 
-    finetuned_model_path = Path(__file__).parent / 'dist' / f'finetuned_{settings.parameters.model}'
+    finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=50,
+        max_fine_tuning_steps=150,
         learning_rate=1e-3,
         device="cpu",
         finetuned_model_path=finetuned_model_path
@@ -58,7 +58,7 @@ def main() -> None:
     sft_pipeline.run()
 
     dataset = TaskDataset(preprocessor.data.head(10))
-    pipeline = LLMPipeline(settings.parameters.model,
+    pipeline = LLMPipeline(str(Path(__file__).parent / 'dist' / settings.parameters.model),
                            dataset, max_length=120, batch_size=64, device='cpu')
 
     print(pipeline.analyze_model())
@@ -71,6 +71,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     result = evaluator.run()
+    print(result)
 
     assert result is not None, "Finetuning does not work correctly"
 
