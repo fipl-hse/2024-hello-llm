@@ -358,7 +358,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
             else:
                 metric_counts[metric_name] = res["rougeL"]
         return metric_counts
-    
 
 class SFTPipeline(AbstractSFTPipeline):
     """
@@ -389,6 +388,15 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if (self._finetuned_model_path is None
+                or self._per_device_train_batch_size is None
+                or self._max_steps is None
+                or self._learning_rate is None):
+            return
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Wrong class of model")
+
         training_params = TrainingArguments(
             output_dir=self._finetuned_model_path,
             max_steps=self._max_steps,
@@ -405,10 +413,3 @@ class SFTPipeline(AbstractSFTPipeline):
 
         tokenizer = AutoTokenizer.from_pretrained(self._model_name)
         tokenizer.save_pretrained(self._finetuned_model_path)
-
-
-
-
-
-
-

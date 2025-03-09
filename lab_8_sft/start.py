@@ -5,6 +5,7 @@ Fine-tuning starter.
 from pathlib import Path
 
 from transformers import AutoTokenizer
+
 from config.lab_settings import LabSettings, SFTParams
 from lab_8_sft.main import (
     LLMPipeline,
@@ -14,7 +15,7 @@ from lab_8_sft.main import (
     SFTPipeline,
     TaskDataset,
     TaskEvaluator,
-    TokenizedTaskDataset
+    TokenizedTaskDataset,
 )
 
 
