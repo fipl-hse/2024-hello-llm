@@ -8,7 +8,7 @@ const handleClick = async () => {
         const result = document.getElementById("prediction");
 
         if (!premise || !hypothesis) {
-            result.textContent = "You need to type two texts!";
+            result.textContent = "You need to fill both text areas!";
             return;
         }
 

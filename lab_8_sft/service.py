@@ -35,6 +35,8 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
                                   dataset=TaskDataset(pd.DataFrame()), batch_size=1, device='cpu')
 
     fine_tuned_model_path = PARENT_DIR / 'dist' / settings.parameters.model
+    if not fine_tuned_model_path.exists():
+        main()
 
     fine_tuned_llm = LLMPipeline(model_name=str(fine_tuned_model_path), max_length=120,
                                  dataset=TaskDataset(pd.DataFrame()), batch_size=1, device='cpu')
@@ -79,6 +81,8 @@ def infer(query: Query) -> dict[str, str]:
     """
     label_mapping = {'0': 'entailment', '1': 'neutral', '2': 'contradiction'}
     sample = query.question, query.hypothesis
+    if not query.hypothesis or not query.question:
+        return {'infer': 'You need to fill both text areas!'}
     if query.is_base_model:
         prediction = pre_trained_pipeline.infer_sample(sample)
         return {'infer': label_mapping.get(prediction)}
