@@ -236,11 +236,11 @@ class LLMPipeline(AbstractLLMPipeline):
         Initialize an instance of LLMPipeline.
 
         Args:
-            model_name (str): The name of the pre-trained model
-            dataset (TaskDataset): The dataset used
-            max_length (int): The maximum length of generated sequence
-            batch_size (int): The size of the batch inside DataLoader
-            device (str): The device for inference
+            model_name (str): The name of the pre-trained model.
+            dataset (TaskDataset): The dataset to be used for translation.
+            max_length (int): The maximum length of generated sequence.
+            batch_size (int): The size of the batch inside DataLoader.
+            device (str): The device for inference.
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)

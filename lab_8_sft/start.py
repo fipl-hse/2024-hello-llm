@@ -4,6 +4,7 @@ Fine-tuning starter.
 
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
+
 from transformers import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
@@ -144,4 +145,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
