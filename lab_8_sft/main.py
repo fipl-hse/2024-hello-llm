@@ -16,10 +16,10 @@ from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
-    AutoTokenizer,
     AutoModelForSequenceClassification,
+    AutoTokenizer,
     Trainer,
-    TrainingArguments
+    TrainingArguments,
 )
 
 from config.lab_settings import SFTParams
@@ -152,7 +152,9 @@ def tokenize_sample(
         dict[str, torch.Tensor]: Tokenized sample
     """
     texts, labels = sample[str(ColumnNames.SOURCE)], sample[str(ColumnNames.TARGET)]
-    tokenized = tokenizer(texts, padding='max_length', truncation=True, max_length=max_length)
+    tokenized = tokenizer(texts, padding='max_length', truncation=True,
+                          max_length=max_length, return_tensors='pt')
+
     return {
         'input_ids': tokenized['input_ids'],
         'attention_mask': tokenized['attention_mask'],
@@ -360,14 +362,33 @@ class SFTPipeline(AbstractSFTPipeline):
         super().__init__(model_name, dataset)
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
         self._batch_size = sft_params.batch_size
-        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1, target_modules=None)
         self._device = sft_params.device
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
         self._max_length = sft_params.max_length
         self._max_sft_steps = sft_params.max_fine_tuning_steps
         self._finetuned_model_path = sft_params.finetuned_model_path
         self._learning_rate = sft_params.learning_rate
+
     def run(self) -> None:
         """
         Fine-tune model.
         """
+
+        training_args = TrainingArguments(
+            output_dir=self._finetuned_model_path,
+            overwrite_output_dir=True,
+            per_device_train_batch_size=self._batch_size,
+            learning_rate=self._learning_rate,
+            max_steps=self._max_sft_steps,
+            save_strategy='no',
+        )
+
+        trainer = Trainer(model=self._model, args=training_args, train_dataset=self._dataset)
+        trainer.train()
+
+        merged_model = self._model.merge_and_unload()
+        merged_model.save_pretrained(self._finetuned_model_path)
+
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)

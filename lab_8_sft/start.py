@@ -9,8 +9,15 @@ from transformers import AutoTokenizer
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
 from core_utils.llm.time_decorator import report_time
-from lab_8_sft.main import RawDataImporter, RawDataPreprocessor, TaskDataset, LLMPipeline, TaskEvaluator, \
-    TokenizedTaskDataset, SFTPipeline
+from lab_8_sft.main import (
+    LLMPipeline,
+    RawDataImporter,
+    RawDataPreprocessor,
+    SFTPipeline,
+    TaskDataset,
+    TaskEvaluator,
+    TokenizedTaskDataset,
+)
 
 
 @report_time
@@ -37,8 +44,8 @@ def main() -> None:
 
     # print(pipeline.analyze_model())
     sample = dataset[22]
-    print('example of sample inference:')
-    print(f'text: {sample[0]}\n'
+    print(f'example of sample inference:\n'
+          f'text: {sample[0]}\n'
           f'label - {pipeline.infer_sample(sample)}')
 
 
@@ -55,6 +62,7 @@ def main() -> None:
 
 
     finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / f'finetuned_{parameters.model}'
+    print(finetuned_model_path)
     sft_parameters = SFTParams(
         batch_size=3,
         max_length=120,
@@ -79,8 +87,6 @@ def main() -> None:
                                dataset=tokenized_dataset,
                                sft_params=sft_parameters)
     sft_pipeline.run()
-
-    pipeline = SFTPipeline(parameters.model, dataset, sft_parameters)
 
     # result = None
     # assert result is not None, "Finetuning does not work correctly"
