@@ -370,7 +370,7 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
 
-        self._output_dir = sft_params.finetuned_model_path
+        self._output_dir = str(sft_params.finetuned_model_path)
 
         self._sft_params = sft_params
 
