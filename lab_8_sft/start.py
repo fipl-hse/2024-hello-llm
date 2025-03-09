@@ -123,7 +123,7 @@ def main() -> None:
     predictions_dataframe_after_sft = pipeline_after_sft.infer_dataset()
     predictions_dataframe_after_sft.to_csv(predictions_file, index=False)
 
-    evaluator_after_sft = TaskEvaluator(predictions_file, settings.parameters.metrics)
+    evaluator_after_sft = TaskEvaluator(predictions_file, metric_list)
     result_after_sft = evaluator_after_sft.run()
     print("Evaluation scores after SFT:")
     for metric, value in result_after_sft.items():
