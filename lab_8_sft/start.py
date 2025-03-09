@@ -85,8 +85,9 @@ def main() -> None:
                                sft_params=sft_parameters)
     sft_pipeline.run()
 
-    finetuned_pipeline = LLMPipeline(finetuned_model_path, TaskDataset(preprocessor.data.sample(num_samples)),
-                           max_length=120, batch_size=64, device='cpu')
+    finetuned_pipeline = LLMPipeline(finetuned_model_path,
+                                     TaskDataset(preprocessor.data.sample(num_samples)),
+                                     max_length=120, batch_size=64, device='cpu')
 
     print('finetuned model analysis:', finetuned_pipeline.analyze_model())
 
@@ -100,7 +101,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, parameters.metrics)
     finetuned_metrics_result = evaluator.run()
-    print('results of finetuned model:', metrics_result)
+    print('results of finetuned model:', finetuned_metrics_result)
 
     result = finetuned_metrics_result
     assert result is not None, "Finetuning does not work correctly"

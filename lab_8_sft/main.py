@@ -234,21 +234,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        if self._model is None:
-            return
-
         emb_size = self._model.config.max_position_embeddings
         input_data = torch.ones((1, emb_size), dtype=torch.long)
-        model_summary = summary(self._model, input_data=input_data, verbose=0)
+
+        test_model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
+        model_summary = summary(test_model, input_data=input_data, verbose=0)
 
         return {
             'input_shape': model_summary.input_size,
             'embedding_size': emb_size,
             'output_shape': model_summary.summary_list[-1].output_size,
             'num_trainable_params': model_summary.trainable_params,
-            'vocab_size': self._model.config.vocab_size,
+            'vocab_size': test_model.config.vocab_size,
             'size': model_summary.total_param_bytes,
-            'max_context_length': self._model.config.max_length
+            'max_context_length': test_model.config.max_length
         }
 
 
@@ -367,7 +366,7 @@ class SFTPipeline(AbstractSFTPipeline):
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
         self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
         self._device = sft_params.device
-        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+        self._peft_model = get_peft_model(self._model, self._lora_config).to(self._device)
 
         self._batch_size = sft_params.batch_size
         self._max_length = sft_params.max_length
@@ -394,10 +393,10 @@ class SFTPipeline(AbstractSFTPipeline):
             load_best_model_at_end=False
         )
 
-        trainer = Trainer(model=self._model, args=training_args, train_dataset=self._dataset)
+        trainer = Trainer(model=self._peft_model, args=training_args, train_dataset=self._dataset)
         trainer.train()
 
-        merged_model = self._model.merge_and_unload()
+        merged_model = self._peft_model.merge_and_unload()
         merged_model.save_pretrained(self._finetuned_model_path)
 
         tokenizer = AutoTokenizer.from_pretrained(self._model_name)
