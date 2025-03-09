@@ -14,7 +14,7 @@ from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -362,12 +362,34 @@ class SFTPipeline(AbstractSFTPipeline):
             sft_params (SFTParams): Fine-Tuning parameters.
         """
         super.__init__(model_name, dataset)
-        self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
-        self._lora_config = LoraConfig(target_modules=sft_params,
+        self.sft_params = sft_params
+        self._lora_config = LoraConfig(target_modules=self.sft_params.target_modules,
                                        r=4,
                                        lora_alpha=8,
-                                       lora_dropout=0.)
+                                       lora_dropout=0.1)
+        self._model = get_peft_model(
+            self.AutoModelForSequenceClassification.from_pretrained(self._model_name),
+            self._lora_config
+        ).to(self.sft_params.device)
+
     def run(self) -> None:
         """
         Fine-tune model.
         """
+        training_arguments = TrainingArguments(
+            output_dir=self.sft_params.finetuned_model_path,
+            max_steps=self.sft_params.max_fine_tuning_steps,
+            per_device_train_batch_size=self.sft_params.batch_size,
+            learning_rate=self.sft_params.learning_rate,
+            save_strategy='no',
+            use_cpu=bool(self.sft_params.device == 'cpu'),
+            load_best_model_at_end=False
+        )
+
+        trainer = Trainer(
+            train_dataset=self._dataset,
+            model=self._model,
+            args=training_arguments
+        )
+
+        trainer.train()

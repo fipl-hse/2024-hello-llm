@@ -85,7 +85,7 @@ def main() -> None:
         device=device,
         finetuned_model_path=model_path,
         learning_rate=lr,
-        target_modules=None
+        target_modules=["query", "key", "value", "dense"]
 
     )
     pipeline = SFTPipeline(settings.parameters.model, dataset, sft_params)
