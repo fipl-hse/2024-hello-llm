@@ -370,6 +370,8 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
 
+        self._output_dir = sft_params.finetuned_model_path
+
         self._sft_params = sft_params
 
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
