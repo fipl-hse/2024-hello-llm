@@ -396,7 +396,7 @@ class SFTPipeline(AbstractSFTPipeline):
             learning_rate=self._sft_params.learning_rate,
             save_strategy="steps",
             save_steps=self._sft_params.max_fine_tuning_steps // 5,
-            logging_dir=str(self._output_dir / "logs"),
+            #logging_dir=str(self._output_dir / "logs"),
             report_to="none",
             remove_unused_columns=True,
             use_cpu=(self._sft_params.device == "cpu"),
