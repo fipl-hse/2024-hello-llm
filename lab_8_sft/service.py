@@ -68,7 +68,7 @@ class Query:
     """
     question: str | None = None
     hypothesis: str | None = None
-    is_base_model: bool
+    is_base_model: bool = False
 
 
 @app.post("/infer")
