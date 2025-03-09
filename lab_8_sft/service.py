@@ -82,8 +82,11 @@ def infer(query: Query) -> dict[str, str]:
     """
     label_mapping = {'0': 'entailment', '1': 'neutral', '2': 'contradiction'}
     sample = query.question, query.hypothesis
+    if not query.hypothesis or not query.question:
+        return {'infer': 'ERROR! Fill both text fields!'}
     if query.is_base_model:
         prediction = pre_trained_pipeline.infer_sample(sample)
-        return {'infer': label_mapping.get(str(prediction))}
-    prediction = fine_tuned_pipeline.infer_sample(sample)
-    return {'infer': label_mapping.get(str(prediction))}
+    else:
+        prediction = fine_tuned_pipeline.infer_sample(sample)
+    if prediction:
+        return {'infer': label_mapping.get(prediction)}
