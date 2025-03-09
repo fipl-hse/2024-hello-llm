@@ -97,7 +97,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                                            "toxic": ColumnNames.TARGET.value})
                 .drop_duplicates().reset_index(drop=True)
         )
-        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].apply(lambda x: int(x))
+        self._data[ColumnNames.TARGET.value] = \
+            self._data[ColumnNames.TARGET.value].apply(lambda x: int(x))
 
 
 class TaskDataset(Dataset):
@@ -229,7 +230,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
