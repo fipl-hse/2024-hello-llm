@@ -4,7 +4,6 @@ Laboratory work.
 Fine-tuning Large Language Models for a downstream task.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, duplicate-code, unused-argument, too-many-arguments
-from itertools import chain
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -13,10 +12,17 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torch.nn.functional import softmax
 from torchinfo import summary
-from transformers import AutoTokenizer, BertForSequenceClassification, BertTokenizerFast
+from transformers import (
+    AutoTokenizer,
+    BertForSequenceClassification,
+    BertTokenizerFast,
+    Trainer,
+    TrainingArguments,
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -152,6 +158,21 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
+    inputs = dict(
+        tokenizer(
+            sample["source"],
+            max_length=max_length,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt",
+        )
+    )
+    del inputs["token_type_ids"]
+    inputs = {k: v[0] for k, v in inputs.items()}
+
+    inputs.update({"labels": sample["target"]})
+
+    return inputs
 
 
 class TokenizedTaskDataset(Dataset):
@@ -169,6 +190,9 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._data = data
+        self._tokenizer = tokenizer
+        self._max_length = max_length
 
     def __len__(self) -> int:
         """
@@ -177,6 +201,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return self._data.shape[0]
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -188,6 +213,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        return tokenize_sample(self._data.iloc[index], self._tokenizer, self._max_length)
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -358,8 +384,38 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset)
+        self._sft_params = sft_params
+        self._lora_config = LoraConfig(
+            r=4, lora_alpha=8, lora_dropout=0.1, target_modules=sft_params.target_modules
+        )
+        self._model = BertForSequenceClassification.from_pretrained(model_name)
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+
+        model = get_peft_model(self._model, self._lora_config)
+        training_args = TrainingArguments(
+            output_dir=str(self._sft_params.finetuned_model_path),
+            max_steps=self._sft_params.max_fine_tuning_steps,
+            per_device_train_batch_size=self._sft_params.batch_size,
+            learning_rate=self._sft_params.learning_rate,
+            save_strategy="no",
+            use_cpu=True if self._sft_params.device == "cpu" else False,
+            load_best_model_at_end=True,
+        )
+
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=self._dataset,
+        )
+        trainer.train()
+
+        trainer.model.merge_and_unload()
+        trainer.model.base_model.save_pretrained(self._sft_params.finetuned_model_path)
+
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._sft_params.finetuned_model_path)
