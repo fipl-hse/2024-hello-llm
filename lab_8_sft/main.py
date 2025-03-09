@@ -257,9 +257,11 @@ class LLMPipeline(AbstractLLMPipeline):
             embedding_size = self._model.config.max_position_embeddings
         except AttributeError:
             if hasattr(self._model.config, "encoder"):
-                embedding_size = getattr(self._model.config.encoder, "max_position_embeddings", None)
+                embedding_size = getattr(self._model.config.encoder,
+                                         "max_position_embeddings", None)
                 if embedding_size is None:
-                    embedding_size = getattr(self._model.config.encoder, "hidden_size", None)
+                    embedding_size = getattr(self._model.config.encoder,
+                                             "hidden_size", None)
             else:
                 embedding_size = None
 
@@ -357,10 +359,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        df = pd.read_csv(self._data_path)
+        data = pd.read_csv(self._data_path)
 
-        preds = df[ColumnNames.PREDICTION.value]
-        refs = df[ColumnNames.TARGET.value]
+        preds = data[ColumnNames.PREDICTION.value]
+        refs = data[ColumnNames.TARGET.value]
 
         results = {}
         for metric in self._metrics:
@@ -410,21 +412,24 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if self._lora_config is not None:
-            self._model = get_peft_model(self._model, self._lora_config).to(self._device)
-        else:
-            self._model.to(self._device)
+        device = self._device if self._device is not None else "cpu"
 
-        batch_size = self._batch_size if self._batch_size is not None else 1
-        max_steps = self._max_sft_steps if self._max_sft_steps is not None else 100
-        learning_rate = self._learning_rate if self._learning_rate is not None else 1e-3
+        assert self._model is not None, "Model must be initialized before running fine-tuning."
+
+        if self._lora_config is not None:
+            self._model = get_peft_model(self._model, self._lora_config)
+        self._model.to(device)
+
+        batch_size = self._batch_size or 1
+        max_steps = self._max_sft_steps or 100
+        learning_rate = self._learning_rate or 1e-3
 
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),
             per_device_train_batch_size=batch_size,
             max_steps=max_steps,
             learning_rate=learning_rate,
-            use_cpu=(self._device == "cpu"),
+            use_cpu=(device == "cpu"),
             save_strategy="no",
             load_best_model_at_end=False
         )
