@@ -331,8 +331,8 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self._max_length
         )
 
-        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
-
+        decoded: list[str] = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        return decoded
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
@@ -410,14 +410,21 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+        if self._lora_config is not None:
+            self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+        else:
+            self._model.to(self._device)
+
+        batch_size = self._batch_size if self._batch_size is not None else 1
+        max_steps = self._max_sft_steps if self._max_sft_steps is not None else 100
+        learning_rate = self._learning_rate if self._learning_rate is not None else 1e-3
 
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),
-            per_device_train_batch_size=self._batch_size,
-            max_steps=self._max_sft_steps,
-            learning_rate=self._learning_rate,
-            use_cpu=bool(self._device == "cpu"),
+            per_device_train_batch_size=batch_size,
+            max_steps=max_steps,
+            learning_rate=learning_rate,
+            use_cpu=(self._device == "cpu"),
             save_strategy="no",
             load_best_model_at_end=False
         )
@@ -430,6 +437,8 @@ class SFTPipeline(AbstractSFTPipeline):
 
         trainer.train()
 
-        merged_model = self._model.merge_and_unload()
-
-        merged_model.save_pretrained(self._finetuned_model_path)
+        if self._lora_config is not None:
+            merged_model = self._model.merge_and_unload()
+            merged_model.save_pretrained(self._finetuned_model_path)
+        else:
+            self._model.save_pretrained(self._finetuned_model_path)

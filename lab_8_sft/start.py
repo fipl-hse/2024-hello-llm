@@ -116,18 +116,18 @@ def main() -> None:
     for field, value in model_analysis_after_sft.items():
         print(f"{field}: {value}")
 
-        random_sample = tuple(task_dataset.data.sample(random_state=42)["source"])
-        print("Inference result on random sample (after SFT):",
-              pipeline_after_sft.infer_sample(random_sample))
+    random_sample = tuple(task_dataset.data.sample(random_state=42)["source"])
+    print("Inference result on random sample (after SFT):",
+          pipeline_after_sft.infer_sample(random_sample))
 
-        predictions_dataframe_after_sft = pipeline_after_sft.infer_dataset()
-        predictions_dataframe_after_sft.to_csv(predictions_file, index=False)
+    predictions_dataframe_after_sft = pipeline_after_sft.infer_dataset()
+    predictions_dataframe_after_sft.to_csv(predictions_file, index=False)
 
-        evaluator_after_sft = TaskEvaluator(predictions_file, settings.parameters.metrics)
-        result_after_sft = evaluator_after_sft.run()
-        print("Evaluation scores after SFT:")
-        for metric, value in result_after_sft.items():
-            print(f"{metric}: {value}")
+    evaluator_after_sft = TaskEvaluator(predictions_file, settings.parameters.metrics)
+    result_after_sft = evaluator_after_sft.run()
+    print("Evaluation scores after SFT:")
+    for metric, value in result_after_sft.items():
+        print(f"{metric}: {value}")
 
     assert result_after_sft is not None, "Finetuning does not work correctly"
 
