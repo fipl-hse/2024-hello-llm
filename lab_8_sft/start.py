@@ -36,11 +36,11 @@ def main() -> None:
     print(preprocessor.analyze())
     preprocessor.transform()
 
-    finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
+    finetuned_model_path = Path(__file__).parent / 'dist' / f'finetuned_{settings.parameters.model}'
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=150,
+        max_fine_tuning_steps=50,
         learning_rate=1e-3,
         device="cpu",
         finetuned_model_path=finetuned_model_path
@@ -58,7 +58,7 @@ def main() -> None:
     sft_pipeline.run()
 
     dataset = TaskDataset(preprocessor.data.head(10))
-    pipeline = LLMPipeline(str(Path(__file__).parent / 'dist' / settings.parameters.model),
+    pipeline = LLMPipeline(settings.parameters.model,
                            dataset, max_length=120, batch_size=64, device='cpu')
 
     print(pipeline.analyze_model())

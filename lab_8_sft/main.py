@@ -337,10 +337,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
-
-        self._metrics_dict = {}
-        for metric in self._metrics:
-            self._metrics_dict[metric.value] = load(str(metric))
+        self._metrics_dict = [load(metric.value, seed=77) if metric == Metrics.ROUGE.value
+                              else load(metric.value) for metric in self._metrics ]
 
 
     def run(self) -> dict | None:
@@ -352,13 +350,13 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         pred_df = pd.read_csv(self._data_path)
         metric_counts = {}
-        for metric_name, metric_evaluator in self._metrics_dict.items():
-            res = metric_evaluator.compute(references=pred_df[ColumnNames.TARGET.value],
+        for metric in self._metrics_dict:
+            res = metric.compute(references=pred_df[ColumnNames.TARGET.value],
                                            predictions=pred_df[ColumnNames.PREDICTION.value])
-            if metric_name == Metrics.BLEU.value:
-                metric_counts[metric_name] = float(res["bleu"])
+            if metric.name == Metrics.BLEU.value:
+                metric_counts[metric.name] = float(res["bleu"])
             else:
-                metric_counts[metric_name] = float(res["rougeL"])
+                metric_counts[metric.name] = float(res["rougeL"])
         return metric_counts
 
 
