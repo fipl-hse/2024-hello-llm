@@ -415,6 +415,9 @@ class SFTPipeline(AbstractSFTPipeline):
                 or self._max_sft_steps is None):
             return
 
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('Model is not a torch.nn.Module')
+
         training_args = TrainingArguments(
             max_steps=self._max_sft_steps,
             per_device_train_batch_size=self._batch_size,
