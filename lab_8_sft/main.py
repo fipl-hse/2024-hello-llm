@@ -177,7 +177,12 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
-        self._data = data.apply(lambda x: tokenize_sample(x, tokenizer, max_length), axis=1)
+        print(data.head())
+        data = data.apply(lambda x: tokenize_sample(x, tokenizer, max_length))
+        print(data.head())
+        self._data = data
+        print(11111)
+        print(self._data.head())
 
 
     def __len__(self) -> int:
@@ -187,6 +192,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -377,8 +383,8 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if any(self._finetuned_model_path, self._batch_size,
-               self._learning_rate, self._max_sft_steps) is None:
+        if any(el is None for el in
+               (self._finetuned_model_path, self._batch_size, self._learning_rate, self._max_sft_steps)):
             return
 
         training_args = TrainingArguments(
@@ -386,7 +392,7 @@ class SFTPipeline(AbstractSFTPipeline):
             per_device_train_batch_size=self._batch_size,
             learning_rate=self._learning_rate,
             max_steps=self._max_sft_steps,
-            save_strategy='no',
+            save_strategy='no'
         )
 
         trainer = Trainer(model=self._model, args=training_args, train_dataset=self._dataset)

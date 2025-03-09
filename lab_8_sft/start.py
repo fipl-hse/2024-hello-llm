@@ -46,7 +46,7 @@ def main() -> None:
     sample = dataset[22]
     print(f'example of sample inference:\n'
           f'text: {sample[0]}\n'
-          f'label - {pipeline.infer_sample(sample)}')
+          f'label: {pipeline.infer_sample(sample)}')
 
 
     predictions_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv'
@@ -60,9 +60,9 @@ def main() -> None:
     metrics_result = evaluator.run()
     print('results:', metrics_result)
 
+    finetuned_model_dir = f'finetuned_{parameters.model.split("/")[-1]}'
+    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / finetuned_model_dir
 
-    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / f'finetuned_{parameters.model}'
-    print(finetuned_model_path)
     sft_parameters = SFTParams(
         batch_size=3,
         max_length=120,
@@ -81,10 +81,7 @@ def main() -> None:
         max_length=sft_parameters.max_length
     )
 
-    # print(tokenized_dataset[22])
-
-    sft_pipeline = SFTPipeline(model_name=parameters.model,
-                               dataset=tokenized_dataset,
+    sft_pipeline = SFTPipeline(model_name=parameters.model, dataset=tokenized_dataset,
                                sft_params=sft_parameters)
     sft_pipeline.run()
 
