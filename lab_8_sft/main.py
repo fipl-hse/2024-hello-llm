@@ -226,9 +226,6 @@ class LLMPipeline(AbstractLLMPipeline):
         self._model = AutoModelForSequenceClassification.from_pretrained(
             self._model_name).to(self._device)
 
-        if self._model is None:
-            return
-
 
     def analyze_model(self) -> dict:
         """
@@ -237,6 +234,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if self._model is None:
+            return
+
         emb_size = self._model.config.max_position_embeddings
         input_data = torch.ones((1, emb_size), dtype=torch.long)
         model_summary = summary(self._model, input_data=input_data, verbose=0)
@@ -379,8 +379,9 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if (self._finetuned_model_path is None or self._batch_size is None or
-            self._learning_rate is None or self._max_sft_steps is None):
+        if (self._model is None or self._finetuned_model_path is None or
+                self._batch_size is None or self._learning_rate is None or
+                self._max_sft_steps is None):
             return
 
         training_args = TrainingArguments(

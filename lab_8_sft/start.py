@@ -42,7 +42,7 @@ def main() -> None:
     pipeline = LLMPipeline(parameters.model, dataset,
                            max_length=120, batch_size=64, device='cpu')
 
-    # print(pipeline.analyze_model())
+    print('base model analysis:', pipeline.analyze_model())
     sample = dataset[22]
     print(f'example of sample inference:\n'
           f'text: {sample[0]}\n'
@@ -58,7 +58,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, parameters.metrics)
     metrics_result = evaluator.run()
-    print('results:', metrics_result)
+    print('results of base model:', metrics_result)
 
     finetuned_model_dir = f'finetuned_{parameters.model.split("/")[-1]}'
     finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / finetuned_model_dir
@@ -76,7 +76,7 @@ def main() -> None:
 
     num_samples = 10
     tokenized_dataset = TokenizedTaskDataset(
-        preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
+        data=preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
         tokenizer=AutoTokenizer.from_pretrained(parameters.model),
         max_length=sft_parameters.max_length
     )
@@ -85,8 +85,25 @@ def main() -> None:
                                sft_params=sft_parameters)
     sft_pipeline.run()
 
-    # result = None
-    # assert result is not None, "Finetuning does not work correctly"
+    finetuned_pipeline = LLMPipeline(finetuned_model_path, TaskDataset(preprocessor.data.sample(num_samples)),
+                           max_length=120, batch_size=64, device='cpu')
+
+    print('finetuned model analysis:', finetuned_pipeline.analyze_model())
+
+    sample = dataset[12]
+    print(f'example of sample inference:\n'
+          f'text: {sample[0]}\n'
+          f'label: {finetuned_pipeline.infer_sample(sample)}')
+
+    finetuned_predictions = finetuned_pipeline.infer_dataset()
+    finetuned_predictions.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, parameters.metrics)
+    finetuned_metrics_result = evaluator.run()
+    print('results of finetuned model:', metrics_result)
+
+    result = finetuned_metrics_result
+    assert result is not None, "Finetuning does not work correctly"
 
 
 if __name__ == "__main__":
