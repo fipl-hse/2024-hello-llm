@@ -7,13 +7,14 @@ from pathlib import Path
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.requests import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic.dataclasses import dataclass
 
 from config.lab_settings import LabSettings
-from lab_8_sft.main import LLMPipeline, SFTPipeline, TaskDataset
+from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
@@ -31,6 +32,8 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
                                dataset, max_length=120, batch_size=1, device='cpu')
 
     finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
+    if not finetuned_model_path.exists():
+        main()
 
     finetuned_pipeline = LLMPipeline(str(finetuned_model_path),
                                dataset, max_length=120, batch_size=1, device="cpu")
