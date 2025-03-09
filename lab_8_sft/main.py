@@ -97,8 +97,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
                                            "toxic": ColumnNames.TARGET.value})
                 .drop_duplicates().reset_index(drop=True)
         )
-        self._data[ColumnNames.TARGET.value] = \
-            self._data[ColumnNames.TARGET.value].apply(lambda x: int(x))
+        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].apply(int)
 
 
 class TaskDataset(Dataset):
@@ -243,7 +242,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference.
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        self._model = model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model.eval()
 
@@ -348,9 +348,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
         self._metrics = [Metrics(m) if isinstance(m, str) else m for m in metrics]
         super().__init__(self._metrics)
 
-        self._metrics2module = {}
+        self._metricstomodule = {}
         for metric in self._metrics:
-            self._metrics2module[metric.value] = load(metric.value)
+            self._metricstomodule[metric.value] = load(metric.value)
 
     def run(self) -> dict | None:
         """
@@ -364,8 +364,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         targets = outputs_df[ColumnNames.TARGET.value]
         evaluation = {}
         targets = targets.astype(int)
-        for metric, module in self._metrics2module.items():
-            metric_result = module.compute(predictions=predictions, references=targets, average="micro")
+        for metric, module in self._metricstomodule.items():
+            metric_result = module.compute(
+                predictions=predictions,
+                references=targets,
+                average="micro"
+            )
             evaluation[metric] = metric_result[metric]
 
         return evaluation
@@ -388,7 +392,12 @@ class SFTPipeline(AbstractSFTPipeline):
         super().__init__(model_name, dataset)
         self._model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
         self._batch_size = sft_params.batch_size
-        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.3, target_modules=sft_params.target_modules)
+        self._lora_config = LoraConfig(
+            r=4,
+            lora_alpha=8,
+            lora_dropout=0.1,
+            target_modules=sft_params.target_modules
+        )
         self._device = sft_params.device
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
         self._max_length = sft_params.max_length
@@ -427,4 +436,3 @@ class SFTPipeline(AbstractSFTPipeline):
 
         merged_model = self._model.merge_and_unload()
         merged_model.save_pretrained(self._finetuned_model_path)
-
