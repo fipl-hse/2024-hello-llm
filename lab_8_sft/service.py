@@ -35,11 +35,11 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     if not finetuned_model_path.exists():
         main()
 
-    finetuned_pipeline = LLMPipeline(str(finetuned_model_path),
+    finetuned_llm_pipeline = LLMPipeline(str(finetuned_model_path),
                                dataset, max_length=120, batch_size=1, device="cpu")
     fastapi = FastAPI()
 
-    return fastapi, llm_pipeline, finetuned_pipeline
+    return fastapi, llm_pipeline, finetuned_llm_pipeline
 
 
 app, pipeline, finetuned_pipeline = init_application()
