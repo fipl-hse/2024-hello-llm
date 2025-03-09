@@ -15,8 +15,7 @@ from pandas import DataFrame
 from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, \
-    Trainer, TrainingArguments
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, Trainer, TrainingArguments
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -219,8 +218,8 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference.
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model.to(self._device)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self._device)
+        self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -320,6 +319,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
         self.data_path = data_path
         self._metrics = metrics
 

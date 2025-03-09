@@ -39,7 +39,7 @@ def main() -> None:
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=50,
+        max_fine_tuning_steps=200,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
         device="cpu"
