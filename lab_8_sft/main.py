@@ -381,7 +381,7 @@ class SFTPipeline(AbstractSFTPipeline):
         self._finetuned_model_path = sft_params.finetuned_model_path
         self._max_steps = sft_params.max_fine_tuning_steps
         self._per_device_train_batch_size = sft_params.batch_size
-        self.learning_rate = sft_params.learning_rate
+        self._learning_rate = sft_params.learning_rate
 
 
     def run(self) -> None:
@@ -401,7 +401,7 @@ class SFTPipeline(AbstractSFTPipeline):
             output_dir=self._finetuned_model_path,
             max_steps=self._max_steps,
             per_device_train_batch_size=self._per_device_train_batch_size,
-            learning_rate=self.learning_rate,
+            learning_rate=self._learning_rate,
             save_strategy="no",
             use_cpu=bool(self._device == "cpu"),
             load_best_model_at_end=False
