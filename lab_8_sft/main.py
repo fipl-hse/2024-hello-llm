@@ -412,24 +412,16 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        device = self._device if self._device is not None else "cpu"
-
-        assert self._model is not None, "Model must be initialized before running fine-tuning."
-
-        if self._lora_config is not None:
-            self._model = get_peft_model(self._model, self._lora_config)
-        self._model.to(device)
-
-        batch_size = self._batch_size or 1
-        max_steps = self._max_sft_steps or 100
-        learning_rate = self._learning_rate or 1e-3
+        batch_size = self._batch_size if self._batch_size is not None else 1
+        max_steps = self._max_sft_steps if self._max_sft_steps is not None else 100
+        learning_rate = self._learning_rate if self._learning_rate is not None else 1e-3
 
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),
             per_device_train_batch_size=batch_size,
             max_steps=max_steps,
             learning_rate=learning_rate,
-            use_cpu=(device == "cpu"),
+            use_cpu=(self._device == "cpu"),
             save_strategy="no",
             load_best_model_at_end=False
         )
