@@ -93,7 +93,7 @@ def main() -> None:
     fine_tuning_pipeline.run()
 
     refined_pipeline = LLMPipeline(
-        model_name=str(PROJECT_ROOT / "dist" / config.parameters.model),
+        model_name=PROJECT_ROOT / "dist" / config.parameters.model,
         dataset=TaskDataset(processor.data.head(sample_count)),
         max_length=120,
         batch_size=64,
