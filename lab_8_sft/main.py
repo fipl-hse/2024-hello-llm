@@ -419,7 +419,6 @@ class SFTPipeline(AbstractSFTPipeline):
             max_steps=self._max_sft_steps,
             per_device_train_batch_size=self._batch_size,
             learning_rate=self._learning_rate,
-            weight_decay=0.01,
             save_strategy="no",
             output_dir=self._finetuned_model_path,
             use_cpu=True,
