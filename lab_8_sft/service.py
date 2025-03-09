@@ -12,6 +12,7 @@ from pydantic.dataclasses import dataclass
 
 from config.lab_settings import LabSettings
 from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
 PARENT_DIR = Path(__file__).parent
 ASSETS_PATH = PARENT_DIR / 'assets'
@@ -81,10 +82,8 @@ def infer(query: Query) -> dict[str, str]:
     """
     label_mapping = {'0': 'entailment', '1': 'neutral', '2': 'contradiction'}
     sample = query.question, query.hypothesis
-    if not query.hypothesis or not query.question:
-        return {'infer': 'You need to fill both text areas!'}
     if query.is_base_model:
         prediction = pre_trained_pipeline.infer_sample(sample)
-        return {'infer': label_mapping.get(prediction)}
+        return {'infer': label_mapping.get(str(prediction))}
     prediction = fine_tuned_pipeline.infer_sample(sample)
-    return {'infer': label_mapping.get(prediction)}
+    return {'infer': label_mapping.get(str(prediction))}
