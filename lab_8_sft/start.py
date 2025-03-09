@@ -36,11 +36,36 @@ def main() -> None:
     _analysis = preprocessor.analyze()
     preprocessor.transform()
 
-    dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length=120, batch_size=64, device='cpu')
+    num_samples = 10
+    sft_params = SFTParams(
+        batch_size=3,
+        max_length=120,
+        max_fine_tuning_steps=150,
+        learning_rate=1e-3,
+        finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
+        device="cpu"
+    )
 
-    # print(pipeline.analyze_model())
-    _sample_infer = pipeline.infer_sample(dataset[1])
+    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
+
+    sft_dataset = TokenizedTaskDataset(
+        preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
+        tokenizer=AutoTokenizer.from_pretrained(settings.parameters.model),
+        max_length=sft_params.max_length
+    )
+
+    sft_pipeline = SFTPipeline(model_name=settings.parameters.model,
+                               dataset=sft_dataset,
+                               sft_params=sft_params)
+
+    sft_pipeline.run()
+
+    dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(str(sft_params.finetuned_model_path), dataset, max_length=120, batch_size=64, device='cpu')
+
+    pipeline.analyze_model()
+
+    _sample_infer = pipeline.infer_sample(dataset[0])
 
     predictions_path = Path(PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv')
     if not predictions_path.parent.exists():

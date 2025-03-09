@@ -126,7 +126,6 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        # return (self._data.iloc[index][ColumnNames.SOURCE.value],)
         return (self._data.iloc[index][ColumnNames.SOURCE.value],
                 self._data.iloc[index][ColumnNames.TARGET.value])
 
@@ -156,6 +155,23 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
+    tokenized_source = tokenizer(sample[ColumnNames.SOURCE.value],
+                                 padding="max_length",
+                                 truncation=True,
+                                 return_tensors="pt",
+                                 max_length=max_length
+                                 )
+    tokenized_target = tokenizer(sample[ColumnNames.TARGET.value],
+                                 padding="max_length",
+                                 truncation=True,
+                                 return_tensors="pt",
+                                 max_length=max_length
+                                 )
+    return {
+        "input_ids": tokenized_source["input_ids"].squeeze(),
+        "attention_mask": tokenized_source["attention_mask"].squeeze(),
+        "labels": tokenized_target["input_ids"].squeeze()
+    }
 
 
 class TokenizedTaskDataset(Dataset):
@@ -173,6 +189,11 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        self._tokenizer = tokenizer
+        self._max_length = max_length
+        self._data = list(
+            data.apply(lambda sample: tokenize_sample(sample, tokenizer, max_length), axis=1)
+        )
 
     def __len__(self) -> int:
         """
@@ -181,6 +202,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
@@ -192,6 +214,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        return self._data[index]
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -276,20 +299,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
-        # dataloader = DataLoader(self._dataset, batch_size=self._batch_size)
-        #
-        # predictions = []
-        #
-        # for batch in dataloader:
-        #     output = self._infer_batch(batch)
-        #     predictions.extend(output)
-        #
-        # res = pd.DataFrame(
-        #     {ColumnNames.TARGET.value: self._dataset.data[ColumnNames.TARGET.value],
-        #      ColumnNames.PREDICTION.value: predictions}
-        # )
-        # return res
-
         dataloader = DataLoader(batch_size=self._batch_size, dataset=self._dataset)
 
         predictions = []
@@ -318,18 +327,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        # texts = [sample[0] for sample in sample_batch]
-        # inputs = self._tokenizer(
-        #     texts,
-        #     padding=True,
-        #     truncation=True,
-        #     return_tensors="pt"
-        # )
-        #
-        # outputs = self._model(**inputs)
-        # preds = torch.argmax(outputs.logits, dim=-1)
-        #
-        # return [str(pred.item()) for pred in preds]
 
         texts = [sample[0] for sample in sample_batch]
         inputs = self._tokenizer(texts,
@@ -359,7 +356,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         super().__init__(metrics)
-        # self._loaded_metrics = [load(metric.value) for metric in self._metrics]
         self._data_path = data_path
 
     def run(self) -> dict | None:
@@ -375,7 +371,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
 
         scores = {}
         for metric in self._metrics:
-            metric_evaluator = load(metric.value)
+            if metric == Metrics.ROUGE.value:
+                metric_evaluator = load(metric.value, seed=77)
+            else:
+                metric_evaluator = load(metric.value)
             calculated = metric_evaluator.compute(predictions=predictions, references=references)
 
             if metric.value == Metrics.ROUGE.value:
@@ -400,8 +399,51 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        super().__init__(model_name, dataset)
+
+        self._sft_params = sft_params
+        self._device = sft_params.device
+
+        self._lora_config = LoraConfig(
+            r=4,
+            lora_alpha=8,
+            lora_dropout=0.1,
+            target_modules=sft_params.target_modules
+        )
+
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name).to(self._device)
+        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+
+        self._finetuned_model_path = sft_params.finetuned_model_path
+        self._batch_size = sft_params.batch_size
+        self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._learning_rate = sft_params.learning_rate
 
     def run(self) -> None:
         """
         Fine-tune model.
         """
+
+        training_args = TrainingArguments(
+            output_dir=str(self._finetuned_model_path),
+            per_device_train_batch_size=self._batch_size,
+            max_steps=self._max_sft_steps,
+            learning_rate=self._learning_rate,
+            save_strategy="no",
+            use_cpu=bool(self._device == "cpu"),
+            load_best_model_at_end=False
+        )
+
+        trainer = Trainer(
+            model=self._model,
+            args=training_args,
+            train_dataset=self._dataset,
+        )
+
+        trainer.train()
+
+        finetuned_model = self._model.merge_and_unload()
+        finetuned_model.save_pretrained(self._finetuned_model_path)
+
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)
