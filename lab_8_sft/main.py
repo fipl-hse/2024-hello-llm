@@ -351,7 +351,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric, module in self._metrics.items():
             scores = module.compute(predictions=preds, references=targets)
 
-            if metric == Metrics.ROUGE.value:
+            if metric == Metrics.ROUGE:
                 results[metric.value] = scores["rougeL"]
             else:
                 results[metric.value] = scores[metric.value]
