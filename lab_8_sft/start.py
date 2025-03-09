@@ -11,10 +11,10 @@ from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
     TaskEvaluator,
     TokenizedTaskDataset,
-    SFTPipeline,
 )
 
 
