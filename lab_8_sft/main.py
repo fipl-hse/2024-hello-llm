@@ -331,7 +331,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         super().__init__(metrics)
         self._data_path = data_path
         self._metrics = {
-            metric.value: load(metric.value, seed=77)
+            metric: load(metric.value, seed=77)
             for metric in metrics
         }
 
@@ -352,9 +352,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
             scores = module.compute(predictions=preds, references=targets)
 
             if metric == Metrics.ROUGE.value:
-                results[metric] = scores["rougeL"]
+                results[metric.value] = scores["rougeL"]
             else:
-                results[metric] = scores[metric]
+                results[metric.value] = scores[metric.value]
 
         return results
 
