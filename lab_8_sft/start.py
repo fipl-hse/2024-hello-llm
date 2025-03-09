@@ -85,7 +85,7 @@ def main() -> None:
                                sft_params=sft_parameters)
     sft_pipeline.run()
 
-    finetuned_pipeline = LLMPipeline(finetuned_model_path,
+    finetuned_pipeline = LLMPipeline(str(finetuned_model_path),
                                      TaskDataset(preprocessor.data.sample(num_samples)),
                                      max_length=120, batch_size=64, device='cpu')
 

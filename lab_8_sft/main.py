@@ -224,7 +224,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
         self._model = AutoModelForSequenceClassification.from_pretrained(
-            self._model_name).to(self._device)
+            self._model_name).to(self._device).eval()
 
 
     def analyze_model(self) -> dict:
@@ -306,7 +306,6 @@ class LLMPipeline(AbstractLLMPipeline):
                                       padding=True,
                                       truncation=True).to(self._device)
 
-        self._model.eval()
         output = self._model(**model_input)
 
         target_ids = list(map(lambda x: x.argmax().item(), output[0]))
