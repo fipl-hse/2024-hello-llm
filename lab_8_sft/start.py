@@ -64,7 +64,8 @@
 #     del sft_pipeline
 #
 #     dataset = TaskDataset(preprocessor.data.head(10))
-#     pipeline = LLMPipeline(model_name=str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),
+#     pipeline = LLMPipeline(model_name=str(PROJECT_ROOT /
+#     "lab_8_sft" / "dist" / settings.parameters.model),
 #                            dataset=dataset,
 #                            max_length=120,
 #                            batch_size=64,
@@ -96,7 +97,9 @@ Fine-tuning starter
 """
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
+
 from transformers import AutoTokenizer
+
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
 from core_utils.llm.time_decorator import report_time
@@ -109,6 +112,8 @@ from lab_8_sft.main import (
     TaskEvaluator,
     TokenizedTaskDataset,
 )
+
+
 @report_time
 def main() -> None:
     """
@@ -147,7 +152,9 @@ def main() -> None:
 
     sft_pipeline.run()
 
-    finetuned_tokenizer = AutoTokenizer.from_pretrained(str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model))
+    finetuned_tokenizer = AutoTokenizer.from_pretrained(str(PROJECT_ROOT /
+                                                            "lab_8_sft" /
+                                                            "dist" / settings.parameters.model))
 
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),

@@ -240,7 +240,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
         self._model: Module = (AutoModelForSeq2SeqLM.from_pretrained(model_name)
                                .to(self._device))
         self._model.eval()
@@ -452,15 +452,11 @@ class SFTPipeline(AbstractSFTPipeline):
             model=self._model,
             args=training_args,
             train_dataset=self._dataset,
-            data_collator=lambda data: {
-                'input_ids': torch.stack([item['input_ids'] for item in data]),
-                'attention_mask': torch.stack([item['attention_mask'] for item in data]),
-                'labels': torch.stack([item['labels'] for item in data])
-            }
         )
 
         trainer.train()
 
         self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
         AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
-        # T5TokenizerFast.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
+        # T5TokenizerFast.from_pretrained(self._model_name)
+        # .save_pretrained(self._finetuned_model_path)
