@@ -54,13 +54,11 @@ def main() -> None:
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     result = evaluator.run()
     print("Metrics before finetuning: ", result)
-
-
     finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=5,
+        max_fine_tuning_steps=200,
         learning_rate=1e-3,
         device="cpu",
         finetuned_model_path=finetuned_model_path

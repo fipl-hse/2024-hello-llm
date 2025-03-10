@@ -409,7 +409,6 @@ class SFTPipeline(AbstractSFTPipeline):
         trainer = Trainer(model=self._model, args=training_params, train_dataset=self._dataset)
         trainer.train()
         merged_model = self._model.merge_and_unload()
-        merged_model.save_pretrained(self._finetuned_model_path)
-
-        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        tokenizer.save_pretrained(self._finetuned_model_path)
+        self._model.save_pretrained(self._finetuned_model_path,
+                                    safe_serialization=False)
+        AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
