@@ -1,7 +1,7 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
+    "model": "cointegrated/rubert-tiny-bilingual-nli",
+    "dataset": "Russian Super GLUE TERRA",
     "metrics": []
   },
   "target_score": 0
