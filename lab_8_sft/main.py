@@ -193,9 +193,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        if not isinstance(self._data[index], dict):
-            raise ValueError
-        return self._data[index]
+        return dict(self._data[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
