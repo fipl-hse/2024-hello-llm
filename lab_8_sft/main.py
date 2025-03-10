@@ -326,6 +326,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
+        self._metrics = {
+            metric: load(metric.value, seed=77)
+            for metric in metrics
+        }
 
     def run(self) -> dict | None:
         """
@@ -334,21 +338,21 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        eval_data = pd.read_csv(self._data_path)
+        dataframe = pd.read_csv(self._data_path)
 
-        predictions = eval_data[ColumnNames.PREDICTION.value]
-        targets = eval_data[ColumnNames.TARGET.value]
+        predictions = dataframe[ColumnNames.PREDICTION.value]
+        references = dataframe[ColumnNames.TARGET.value]
 
-        eval_results = {}
-        for metric in self._metrics:
-            scores = load(metric.value, seed=77).compute(predictions=predictions,
-                                                         references=targets)
-            if metric.value == "rouge":
-                eval_results[metric.value] = scores["rougeL"]
+        results = {}
+        for metric, module in self._metrics.items():
+            scores = module.compute(predictions=predictions, references=references)
+
+            if metric == Metrics.ROUGE:
+                results[metric.value] = scores["rougeL"]
             else:
-                eval_results[metric.value] = scores[metric.value]
+                results[metric.value] = scores[metric.value]
 
-        return eval_results
+        return results
 
 
 class SFTPipeline(AbstractSFTPipeline):
@@ -393,7 +397,7 @@ class SFTPipeline(AbstractSFTPipeline):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
         training_args = TrainingArguments(
-            output_dir=self._finetuned_model_path,
+            output_dir=str(self._finetuned_model_path),
             per_device_train_batch_size=self._batch_size,
             max_steps=self._max_finetuning_steps,
             learning_rate=self._learning_rate,
