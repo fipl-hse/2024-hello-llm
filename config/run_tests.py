@@ -50,8 +50,8 @@ def prepare_pytest_args(
     ]
     logger.info(pytest_args)
 
-    if lab_path == "lab_5_scrapper":
-        pytest_args.append("--ignore=lab_6_pipeline")
+    if lab_path == "lab_7_llm":
+        pytest_args.append("--ignore=lab_8_sft")
 
     return pytest_args
 
