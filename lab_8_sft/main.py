@@ -373,18 +373,20 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
+        self._model_name = model_name
+        self._dataset = dataset
         self._lora_config = LoraConfig(
             r=4,
             lora_alpha=8,
             lora_dropout=0.1,
             target_modules=sft_params.target_modules
         )
-        self._dataset = dataset
+
         self._max_steps = sft_params.max_fine_tuning_steps
         self._per_device_train_batch_size = sft_params.batch_size
         self._learning_rate = sft_params.learning_rate
         self._finetuned_model_path = sft_params.finetuned_model_path
-        self._model = T5ForConditionalGeneration.from_pretrained(model_name)
+        self._model = T5ForConditionalGeneration.from_pretrained(self._model_name)
 
     def run(self) -> None:
         """
@@ -396,10 +398,10 @@ class SFTPipeline(AbstractSFTPipeline):
             output_dir=str(self._finetuned_model_path),
             learning_rate=self._learning_rate,
             per_device_train_batch_size=self._per_device_train_batch_size,
-            max_steps = self._max_steps,
-            save_strategy = 'no',
-            use_cpu = True,
-            load_best_model_at_end=True,
+            max_steps=self._max_steps,
+            save_strategy='no',
+            use_cpu=True,
+            load_best_model_at_end=False,
         )
 
         trainer = Trainer(
@@ -412,4 +414,5 @@ class SFTPipeline(AbstractSFTPipeline):
         trainer.model.merge_and_unload()
         trainer.model.base_model.save_pretrained(self._finetuned_model_path)
 
-
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)

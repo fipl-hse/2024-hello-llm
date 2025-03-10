@@ -61,7 +61,8 @@ def main() -> None:
         max_fine_tuning_steps=50,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT/'lab_8_sft'/'dist'/ settings.parameters.model,
-        device='cpu'
+        device='cpu',
+        target_modules=None
     )
 
     num_samples = 10
@@ -73,9 +74,30 @@ def main() -> None:
                                              tokenizer=tokenizer,
                                              max_length=sft_params.max_length)
 
-    pipeline = SFTPipeline(settings.parameters.model, dataset=tokenised_dataset, sft_params=sft_params)
+    sft_pipeline = SFTPipeline(settings.parameters.model,
+                               dataset=tokenised_dataset,
+                               sft_params=sft_params)
+    sft_pipeline.run()
 
-    result = metric
+    finetuned_pipline = LLMPipeline(
+        str(sft_params.finetuned_model_path),
+        TaskDataset(preprocessor.data.head(10)),
+        max_length=120,
+        batch_size=64,
+        device='cpu'
+    )
+    finetuned_pipline.analyze_model()
+    finetuned_pipline.infer_dataset()
+
+    predictions_ft_path = PROJECT_ROOT/'lab_8_sft'/'dist'/'predictions_ft.csv'
+    predictions_path.parent.mkdir(exist_ok=True)
+    predictions_df = finetuned_pipline.infer_dataset()
+    predictions_df.to_csv(predictions_path, index=False)
+
+    evaluator_ft = TaskEvaluator(predictions_ft_path, settings.parameters.metrics)
+    metric_ft = evaluator_ft.run()
+
+    result = metric_ft
     assert result is not None, "Finetuning does not work correctly"
 
 if __name__ == "__main__":
