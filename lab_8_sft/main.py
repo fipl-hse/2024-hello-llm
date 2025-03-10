@@ -240,9 +240,10 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._tokenizer = T5TokenizerFast.from_pretrained(self._model_name)
-        self._model: Module = (AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._model: Module = (AutoModelForSeq2SeqLM.from_pretrained(model_name)
                                .to(self._device))
+        self._model.eval()
 
     def analyze_model(self) -> dict:
         """
@@ -462,3 +463,4 @@ class SFTPipeline(AbstractSFTPipeline):
 
         self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
         AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
+        # T5TokenizerFast.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
