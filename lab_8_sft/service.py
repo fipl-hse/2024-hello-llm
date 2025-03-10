@@ -1,8 +1,15 @@
 """
 Web service for model inference.
 """
+import pandas as pd
+
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from fastapi import FastAPI
+from fastapi.requests import Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from config.lab_settings import LabSettings
 from lab_8_sft.main import LLMPipeline
 
 
