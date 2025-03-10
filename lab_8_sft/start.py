@@ -60,6 +60,9 @@ def main() -> None:
                                sft_params=sft_params)
     sft_pipeline.run()
 
+    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenizer.save_pretrained(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model)
+
     pipeline = LLMPipeline(
         model_name=str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),
         dataset=TaskDataset(preprocessor.data.head(10)),
