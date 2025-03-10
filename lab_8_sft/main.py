@@ -124,7 +124,7 @@ class TaskDataset(Dataset):
 
 
 def tokenize_sample(
-    sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
+        sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
 ) -> dict[str, torch.Tensor]:
     """
     Tokenize sample.
@@ -208,7 +208,7 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-        self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -235,10 +235,11 @@ class LLMPipeline(AbstractLLMPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
 
-        input_data = torch.ones((1, self._model.config.d_model),
-                                dtype=torch.long, device=self._device)
-        input_data = {"input_ids": input_data, "decoder_input_ids": input_data}
-        model_summary = summary(self._model, input_data=input_data, verbose=0)
+        data = torch.ones((1, self._model.config.d_model),
+                          dtype=torch.long, device=self._device)
+        input_data = {"input_ids": data, "decoder_input_ids": data}
+
+        model_summary = summary(self._model, input_data=input_data)
 
         return {
             "input_shape": list(model_summary.input_size["input_ids"]),
@@ -325,9 +326,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
-        self._metrics2module = {}
-        for metric in self._metrics:
-            self._metrics2module[metric.value] = load(metric.value)
 
     def run(self) -> dict | None:
         """
@@ -336,21 +334,21 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        data_frame = pd.read_csv(self._data_path)
+        eval_data = pd.read_csv(self._data_path)
 
-        predictions = data_frame[ColumnNames.PREDICTION.value]
-        references = data_frame[ColumnNames.TARGET.value]
+        predictions = eval_data[ColumnNames.PREDICTION.value]
+        targets = eval_data[ColumnNames.TARGET.value]
 
-        evaluation_res = {}
-        for metric_name, module in self._metrics2module.items():
-            scores = module.compute(predictions=predictions, references=references)
-
-            if metric_name == Metrics.ROUGE.value:
-                evaluation_res[metric_name] = scores["rougeL"]
+        eval_results = {}
+        for metric in self._metrics:
+            scores = load(metric.value, seed=77).compute(predictions=predictions,
+                                                         references=targets)
+            if metric.value == "rouge":
+                eval_results[metric.value] = scores["rougeL"]
             else:
-                evaluation_res[metric_name] = scores[metric_name]
+                eval_results[metric.value] = scores[metric.value]
 
-        return evaluation_res
+        return eval_results
 
 
 class SFTPipeline(AbstractSFTPipeline):
@@ -372,11 +370,12 @@ class SFTPipeline(AbstractSFTPipeline):
             self._model_name
         )
         self._batch_size = sft_params.batch_size
-        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
+        self._lora_config = LoraConfig(r=4, lora_alpha=8,
+                                       lora_dropout=0.1, target_modules=sft_params.target_modules)
         self._device = sft_params.device
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
         self._max_length = sft_params.max_length
-        self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._max_finetuning_steps = sft_params.max_fine_tuning_steps
         self._finetuned_model_path = sft_params.finetuned_model_path
         self._learning_rate = sft_params.learning_rate
 
@@ -384,12 +383,21 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if (self._finetuned_model_path is None
+                or self._max_finetuning_steps is None
+                or self._batch_size is None
+                or self._learning_rate is None):
+            return None
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
+
         training_args = TrainingArguments(
             output_dir=self._finetuned_model_path,
             per_device_train_batch_size=self._batch_size,
-            max_steps=self._max_sft_steps,
+            max_steps=self._max_finetuning_steps,
             learning_rate=self._learning_rate,
-            use_cpu=bool(self._device == "cpu"),
+            use_cpu=True,
             save_strategy="no",
             load_best_model_at_end=False
         )
