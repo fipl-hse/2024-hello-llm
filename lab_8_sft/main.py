@@ -403,24 +403,18 @@ class SFTPipeline(AbstractSFTPipeline):
             sft_params (SFTParams): Fine-Tuning parameters.
         """
         super().__init__(model_name, dataset)
-
-        self._sft_params = sft_params
-        self._device = sft_params.device
-
-        self._lora_config = LoraConfig(
-            r=4,
-            lora_alpha=8,
-            lora_dropout=0.1,
-            target_modules=sft_params.target_modules
-        )
-
-        self._model: Module = (AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
-                               .to(self._device))
-        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
-
-        self._finetuned_model_path = sft_params.finetuned_model_path
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
         self._batch_size = sft_params.batch_size
+        self._lora_config = LoraConfig(r=4,
+                                       lora_alpha=8,
+                                       lora_dropout=0.1,
+                                       target_modules=sft_params.target_modules
+                                       )
+        self._device = sft_params.device
+        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
+        self._max_length = sft_params.max_length
         self._max_sft_steps = sft_params.max_fine_tuning_steps
+        self._finetuned_model_path = sft_params.finetuned_model_path
         self._learning_rate = sft_params.learning_rate
 
     def run(self) -> None:
@@ -447,10 +441,21 @@ class SFTPipeline(AbstractSFTPipeline):
             load_best_model_at_end=False
         )
 
+        # trainer = Trainer(
+        #     model=self._model,
+        #     args=training_args,
+        #     train_dataset=self._dataset,
+        # )
+
         trainer = Trainer(
             model=self._model,
             args=training_args,
             train_dataset=self._dataset,
+            data_collator=lambda data: {
+                'input_ids': torch.stack([item['input_ids'] for item in data]),
+                'attention_mask': torch.stack([item['attention_mask'] for item in data]),
+                'labels': torch.stack([item['labels'] for item in data])
+            }
         )
 
         trainer.train()

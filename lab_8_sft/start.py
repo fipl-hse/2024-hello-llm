@@ -40,10 +40,11 @@ def main() -> None:
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=150,
+        max_fine_tuning_steps=100,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
-        device="cpu"
+        device="cpu",
+        # target_modules=["q", "v"]
     )
 
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
@@ -60,9 +61,9 @@ def main() -> None:
 
     sft_pipeline.run()
 
-    dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(str(sft_params.finetuned_model_path),
-                           dataset,
+    dataset = TaskDataset(preprocessor.data.head(10))
+    pipeline = LLMPipeline(model_name=str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),
+                           dataset=dataset,
                            max_length=120,
                            batch_size=64,
                            device='cpu')
