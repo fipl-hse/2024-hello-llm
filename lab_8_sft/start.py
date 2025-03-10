@@ -73,7 +73,7 @@ def main() -> None:
     lr = 1e-3
 
     fine_tune_samples = batch_size * fine_tuning_steps
-    dataset = TokenizedTaskDataset(
+    sft_dataset = TokenizedTaskDataset(
         preprocessor.data.loc[
             num_samples: num_samples + fine_tune_samples
         ],
@@ -93,11 +93,24 @@ def main() -> None:
         target_modules=["query", "key", "value", "dense"]
 
     )
-    pipeline = SFTPipeline(settings.parameters.model, dataset, sft_params)
-    pipeline.run()
+    sft_pipeline = SFTPipeline(settings.parameters.model, sft_dataset, sft_params)
+    sft_pipeline.run()
+
+    pipeline_sft_llm = LLMPipeline(model_path,
+                                   dataset,
+                                   max_length,
+                                   batch_size=64,
+                                   device=device)
+
+    predictions_sft = pipeline_sft_llm.infer_dataset()
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
-    predictions.to_csv(predictions_path, index=False)
+    predictions_sft.to_csv(predictions_path, index=False)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
+    print("Dataset fine-tuning result: ")
+    print(result)
     assert result is not None, "Finetuning does not work correctly"
 
 
