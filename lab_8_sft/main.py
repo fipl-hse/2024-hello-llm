@@ -6,6 +6,19 @@ Fine-tuning Large Language Models for a downstream task.
 # pylint: disable=too-few-public-methods, undefined-variable, duplicate-code, unused-argument, too-many-arguments
 from pathlib import Path
 from typing import Iterable, Sequence
+from datasets import load_dataset
+import pandas as pd
+from pandas import DataFrame
+import torch
+from torch.utils.data import Dataset
+
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.time_decorator import report_time
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.metrics import Metrics
+
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -18,6 +31,10 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
+        self._raw_data = load_dataset(self._hf_name, split='train').to_pandas()
+
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError('Downloaded dataset is not pd.DataFrame')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -32,12 +49,25 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: dataset key properties.
         """
+        return {
+            'dataset_number_of_samples': len(self._raw_data),
+            'dataset_columns': len(self._raw_data.columns),
+            'dataset_duplicates': int(self._raw_data.duplicated().sum()),
+            'dataset_empty_rows': int(self._raw_data.isnull().sum().sum()),
+            'dataset_sample_min_len': min(len(sample) for sample in self._raw_data['Reviews']),
+            'dataset_sample_max_len': max(len(sample) for sample in self._raw_data['Reviews']),
+        }
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data.drop(["part", "movie_name", "review_id", "author", "date", "title", "grade10"], axis=1, inplace=True)
+        self._data.rename(columns={"grade3": "target", "content": "source"}, inplace=True)
+        self._data.dropna(inplace=True)
+        self._data["target"].map({"Good": 1, "Bad": 2, "Neutral": 0})
+        self._data.reset_index(inplace=True, drop=True)
 
 
 class TaskDataset(Dataset):
@@ -52,6 +82,7 @@ class TaskDataset(Dataset):
         Args:
             data (pandas.DataFrame): Original data
         """
+        self._data = data
 
     def __len__(self) -> int:
         """
@@ -60,6 +91,7 @@ class TaskDataset(Dataset):
         Returns:
             int: The number of items in the dataset
         """
+        return len(self._data)
 
     def __getitem__(self, index: int) -> tuple[str, ...]:
         """
@@ -71,6 +103,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
+        return tuple(self._data["source"][index])
 
     @property
     def data(self) -> DataFrame:
@@ -80,6 +113,7 @@ class TaskDataset(Dataset):
         Returns:
             pandas.DataFrame: Preprocessed DataFrame
         """
+        return self._data
 
 
 def tokenize_sample(
