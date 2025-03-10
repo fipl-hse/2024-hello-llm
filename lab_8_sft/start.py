@@ -135,7 +135,8 @@ def main() -> None:
         max_fine_tuning_steps=100,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
-        device="cpu"
+        device="cpu",
+        target_modules=["q", "v"]
     )
 
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
@@ -152,9 +153,9 @@ def main() -> None:
 
     sft_pipeline.run()
 
-    finetuned_tokenizer = AutoTokenizer.from_pretrained(str(PROJECT_ROOT /
-                                                            "lab_8_sft" /
-                                                            "dist" / settings.parameters.model))
+    # finetuned_tokenizer = AutoTokenizer.from_pretrained(str(PROJECT_ROOT /
+    #                                                         "lab_8_sft" /
+    #                                                         "dist" / settings.parameters.model))
 
     dataset = TaskDataset(preprocessor.data.head(10))
     pipeline = LLMPipeline(str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),
@@ -162,7 +163,7 @@ def main() -> None:
                            batch_size=64,
                            device='cpu')
 
-    pipeline.tokenizer = finetuned_tokenizer
+    # pipeline.tokenizer = finetuned_tokenizer
 
     pipeline.analyze_model()
 
@@ -175,6 +176,7 @@ def main() -> None:
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     result = evaluator.run()
     print(result)
+
     assert result is not None, "Finetuning does not work correctly"
 
 
