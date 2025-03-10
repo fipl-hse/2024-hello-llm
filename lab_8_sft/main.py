@@ -240,7 +240,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
-        self._tokenizer = T5TokenizerFast.from_pretrained(model_name)
+        self.tokenizer = T5TokenizerFast.from_pretrained(model_name)
         self._model: Module = (AutoModelForSeq2SeqLM.from_pretrained(model_name)
                                .to(self._device))
         self._model.eval()
@@ -333,7 +333,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
 
         texts = [sample[0] for sample in sample_batch]
-        inputs = self._tokenizer(texts,
+        inputs = self.tokenizer(texts,
                                       return_tensors='pt',
                                       max_length=self._max_length,
                                       padding=True,
@@ -341,7 +341,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         outputs = self._model.generate(**inputs)
 
-        outputs_decoded = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        outputs_decoded = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         return [str(pred) for pred in outputs_decoded]
 
@@ -456,7 +456,11 @@ class SFTPipeline(AbstractSFTPipeline):
 
         trainer.train()
 
-        self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
+        # self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
+        # AutoTokenizer.from_pretrained(self._model_name)
+        # .save_pretrained(self._finetuned_model_path)
+
+        self._model.save_pretrained(self._finetuned_model_path)
         AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
         # T5TokenizerFast.from_pretrained(self._model_name)
         # .save_pretrained(self._finetuned_model_path)

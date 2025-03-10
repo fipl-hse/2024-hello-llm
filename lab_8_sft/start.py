@@ -162,7 +162,7 @@ def main() -> None:
                            batch_size=64,
                            device='cpu')
 
-    pipeline._tokenizer = finetuned_tokenizer
+    pipeline.tokenizer = finetuned_tokenizer
 
     pipeline.analyze_model()
 
