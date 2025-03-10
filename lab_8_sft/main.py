@@ -171,6 +171,9 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
+        if not isinstance(data, pd.DataFrame):
+            raise TypeError("data must be pandas DataFrame")
+
         self._data = data
         self._tokenizer = tokenizer
         self._max_length = max_length
@@ -391,6 +394,12 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if (self._finetuned_model_path is None
+                or self._max_fine_tuning_steps is None
+                or self._batch_size is None
+                or self._learning_rate is None):
+            return
+
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),
             max_steps=self._max_fine_tuning_steps,
@@ -404,16 +413,13 @@ class SFTPipeline(AbstractSFTPipeline):
         trainer = Trainer(
             model=self._model,
             args=training_args,
-            train_dataset=self._dataset,
-            data_collator=lambda data: {
-                'input_ids': torch.stack([item['input_ids'] for item in data]),
-                'attention_mask': torch.stack([item['attention_mask'] for item in data]),
-                'labels': torch.stack([item['labels'] for item in data])
-            }
+            train_dataset=self._dataset
         )
 
         trainer.train()
 
-        self._model = self._model.merge_and_unload()
-        self._model.save_pretrained(self._output_dir)
-        self._tokenizer.save_pretrained(self._output_dir)
+        merged_model = self._model.merge_and_unload()
+        merged_model.save_pretrained(self._finetuned_model_path)
+
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)
