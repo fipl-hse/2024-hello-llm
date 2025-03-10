@@ -3,19 +3,21 @@ Fine-tuning starter.
 """
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
+from transformers import AutoTokenizer
 
 import pandas as pd
 
 from config.constants import PROJECT_ROOT
-from config.lab_settings import LabSettings
+from config.lab_settings import LabSettings, SFTParams
 from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    TaskEvaluator,
+    TaskEvaluator, TokenizedTaskDataset, SFTPipeline,
 )
+
 
 @report_time
 def main() -> None:
@@ -37,11 +39,11 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    device = "cpu"
-    batch_size = 64
-    max_length = 120
-
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length, batch_size, device)
+    pipeline = LLMPipeline(settings.parameters.model,
+                           dataset,
+                           max_length=120,
+                           batch_size=64,
+                           device="cpu")
     pipeline.analyze_model()
     pipeline.infer_sample(dataset[0])
 
@@ -52,6 +54,26 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     metric = evaluator.run()
+
+    sft_params = SFTParams(
+        batch_size=3,
+        max_length=120,
+        max_fine_tuning_steps=50,
+        learning_rate=1e-3,
+        finetuned_model_path=PROJECT_ROOT/'lab_8_sft'/'dist'/ settings.parameters.model,
+        device='cpu'
+    )
+
+    num_samples = 10
+    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
+    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenised_dataset = TokenizedTaskDataset(preprocessor.data.loc[
+                                   num_samples: num_samples + fine_tune_samples
+                                   ],
+                                             tokenizer=tokenizer,
+                                             max_length=sft_params.max_length)
+
+    pipeline = SFTPipeline(settings.parameters.model, dataset=tokenised_dataset, sft_params=sft_params)
 
     result = metric
     assert result is not None, "Finetuning does not work correctly"
