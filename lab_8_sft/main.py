@@ -18,7 +18,6 @@ from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
     AutoModelForSeq2SeqLM,
-    AutoModelForSequenceClassification,
     AutoTokenizer,
     T5TokenizerFast,
     Trainer,
@@ -214,7 +213,11 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        return self._data[index]
+        item = self._data[index]
+        if not isinstance(item, dict):
+            raise TypeError(f"Expected dict, but got {type(item)} at index {index}")
+
+        return item
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -411,7 +414,8 @@ class SFTPipeline(AbstractSFTPipeline):
             target_modules=sft_params.target_modules
         )
 
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name).to(self._device)
+        self._model: Module = (AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+                               .to(self._device))
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
 
         self._finetuned_model_path = sft_params.finetuned_model_path
@@ -423,6 +427,15 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+
+        if (self._finetuned_model_path is None
+                or self._batch_size is None
+                or self._max_sft_steps is None
+                or self._learning_rate is None):
+            return
+
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Wrong class of model")
 
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),

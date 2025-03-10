@@ -61,7 +61,11 @@ def main() -> None:
     sft_pipeline.run()
 
     dataset = TaskDataset(preprocessor.data.head(100))
-    pipeline = LLMPipeline(str(sft_params.finetuned_model_path), dataset, max_length=120, batch_size=64, device='cpu')
+    pipeline = LLMPipeline(str(sft_params.finetuned_model_path),
+                           dataset,
+                           max_length=120,
+                           batch_size=64,
+                           device='cpu')
 
     pipeline.analyze_model()
 
