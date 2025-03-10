@@ -156,7 +156,7 @@ def main() -> None:
                                                             "lab_8_sft" /
                                                             "dist" / settings.parameters.model))
 
-    dataset = TaskDataset(preprocessor.data.head(100))
+    dataset = TaskDataset(preprocessor.data.head(10))
     pipeline = LLMPipeline(str(PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model),
                            dataset, max_length=120,
                            batch_size=64,
