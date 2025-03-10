@@ -14,7 +14,7 @@ from lab_8_sft.main import (
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    TaskEvaluator
+    TaskEvaluator,
 )
 
 

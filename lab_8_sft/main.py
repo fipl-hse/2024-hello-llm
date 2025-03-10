@@ -42,7 +42,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
-        dataset = datasets.load_dataset(self._hf_name, name='terra', split='test')
+        dataset = datasets.load_dataset(self._hf_name, name='terra', split='test', trust_remote_code=True)
         self._raw_data = pd.DataFrame(dataset)
 
         if not isinstance(self._raw_data, pd.DataFrame):
