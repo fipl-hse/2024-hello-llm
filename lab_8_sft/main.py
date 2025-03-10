@@ -329,7 +329,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        self.data_path = data_path
+        self._data_path = data_path
         self._metrics = metrics
 
 
@@ -340,7 +340,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        eval_data = pd.read_csv(self.data_path)
+        eval_data = pd.read_csv(self._data_path)
 
         predictions = eval_data[ColumnNames.PREDICTION.value]
         targets = eval_data[ColumnNames.TARGET.value]
