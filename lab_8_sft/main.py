@@ -168,8 +168,9 @@ class TokenizedTaskDataset(Dataset):
         self._data = data.apply(
             lambda x: tokenize_sample(sample=x,
                                       tokenizer=tokenizer,
-                                      max_length=max_length)
-        )
+                                      max_length=max_length),
+            axis=1
+        ).tolist()
 
     def __len__(self) -> int:
         """
@@ -366,7 +367,7 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
-        super.__init__(model_name, dataset)
+        super().__init__(model_name, dataset)
         self.sft_params = sft_params
         self._lora_config = LoraConfig(target_modules=self.sft_params.target_modules,
                                        r=4,
@@ -380,8 +381,10 @@ class SFTPipeline(AbstractSFTPipeline):
         self._learning_rate = self.sft_params.learning_rate
 
         self._model = get_peft_model(
-            self.AutoModelForSequenceClassification.from_pretrained(self._model_name),
-            self._lora_config
+            model=AutoModelForSequenceClassification.from_pretrained(
+                self._model_name
+            ),
+            peft_config=self._lora_config
         ).to(self.sft_params.device)
 
     def run(self) -> None:
@@ -406,4 +409,5 @@ class SFTPipeline(AbstractSFTPipeline):
         trainer.train()
 
         self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
+        AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
 
