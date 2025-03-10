@@ -70,7 +70,7 @@ def main() -> None:
     #8
 
     sft_params = SFTParams(
-        max_length=512,
+        max_length=120,
         batch_size=3,
         max_fine_tuning_steps=75,
         device="cpu",
