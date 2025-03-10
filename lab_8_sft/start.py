@@ -68,7 +68,6 @@ def main() -> None:
     print(inference_result)
 
     # fine-tuning params
-    batch_size = 3
     fine_tuning_steps = 50
     learning_rate = 1e-3
 
@@ -85,7 +84,7 @@ def main() -> None:
     model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     sft_params = SFTParams(
         max_length=max_length,
-        batch_size=batch_size,
+        batch_size=3,
         max_fine_tuning_steps=fine_tuning_steps,
         device=device,
         finetuned_model_path=model_path,
@@ -99,8 +98,8 @@ def main() -> None:
     pipeline_sft_llm = LLMPipeline(str(model_path),
                                    dataset,
                                    max_length,
-                                   batch_size=64,
-                                   device=device)
+                                   batch_size,
+                                   device)
 
     predictions_sft = pipeline_sft_llm.infer_dataset()
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
