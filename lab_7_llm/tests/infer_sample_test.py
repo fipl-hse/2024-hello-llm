@@ -17,9 +17,9 @@ def run_model_inference_check(lab_path: Path, pipeline_class: type[AbstractLLMPi
     """
     Evaluate metrics from a lab.
 
-    Arguments:
+    Args:
          lab_path (Path): path to lab
-         pipeline (type[AbstractLLMPipeline]): pipeline class
+         pipeline_class (type[AbstractLLMPipeline]): pipeline class
     """
 
     settings = LabSettings(lab_path / "settings.json")
@@ -54,7 +54,7 @@ class ModelWorkingTest(unittest.TestCase):
     @pytest.mark.mark6
     @pytest.mark.mark8
     @pytest.mark.mark10
-    def test_analyze_ideal(self):
+    def test_analyze_ideal(self) -> None:
         """
         Ideal inference scenario
         """
