@@ -193,6 +193,8 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
+        if not isinstance(self._data[index], dict):
+            raise ValueError
         return self._data[index]
 
 
@@ -200,6 +202,8 @@ class LLMPipeline(AbstractLLMPipeline):
     """
     A class that initializes a model, analyzes its properties and infers it.
     """
+
+    _model: torch.nn.Module
 
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
@@ -360,6 +364,8 @@ class SFTPipeline(AbstractSFTPipeline):
     A class that initializes a model, fine-tuning.
     """
 
+    _model: torch.nn.Module
+
     def __init__(self, model_name: str, dataset: Dataset, sft_params: SFTParams) -> None:
         """
         Initialize an instance of ClassificationSFTPipeline.
@@ -393,6 +399,14 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if not (
+                self._finetuned_model_path
+                and self._max_sft_steps
+                and self._batch_size
+                and self._learning_rate
+        ):
+            raise ValueError
+
         training_arguments = TrainingArguments(
             output_dir=self._finetuned_model_path,
             max_steps=self._max_sft_steps,

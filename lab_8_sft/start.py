@@ -96,7 +96,7 @@ def main() -> None:
     sft_pipeline = SFTPipeline(settings.parameters.model, sft_dataset, sft_params)
     sft_pipeline.run()
 
-    pipeline_sft_llm = LLMPipeline(model_path,
+    pipeline_sft_llm = LLMPipeline(str(model_path),
                                    dataset,
                                    max_length,
                                    batch_size=64,
