@@ -36,6 +36,26 @@ def main() -> None:
     print(preprocessor.analyze())
     preprocessor.transform()
 
+    num_samples = 10
+    dataset = TaskDataset(preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings.parameters.model, dataset,
+                           max_length=120, batch_size=64, device="cpu")
+    print("Analysis before finetuning: ", pipeline.analyze_model())
+
+    single_prediction = pipeline.infer_sample(dataset[0])
+    print("Prediction before finetuning: ", single_prediction)
+    dataset_inference = pipeline.infer_dataset()
+
+    predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
+    predictions_path.parent.mkdir(exist_ok=True)
+
+    dataset_inference.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
+    print("Metrics before finetuning: ", result)
+
+
     finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     sft_params = SFTParams(
         batch_size=3,
@@ -46,7 +66,6 @@ def main() -> None:
         finetuned_model_path=finetuned_model_path
     )
 
-    num_samples = 10
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
 
     tokenized_dataset = TokenizedTaskDataset(preprocessor.data.loc[
@@ -58,12 +77,15 @@ def main() -> None:
     sft_pipeline.run()
 
     dataset = TaskDataset(preprocessor.data.head(10))
-    pipeline = LLMPipeline(settings.parameters.model,
-                           dataset, max_length=120, batch_size=64, device='cpu')
+    finetuned_pipeline = LLMPipeline(
+                        str(Path(__file__).parent / 'dist' / settings.parameters.model),
+                        dataset, max_length=120, batch_size=64, device='cpu'
+    )
 
-    print(pipeline.analyze_model())
+    print("Analysis after finetuning: ", finetuned_pipeline.analyze_model())
 
-    dataset_inference = pipeline.infer_dataset()
+    dataset_inference = finetuned_pipeline.infer_dataset()
+    print("Prediction after finetuning: ", finetuned_pipeline.infer_sample(dataset[0]))
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(exist_ok=True)
 
@@ -71,7 +93,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     result = evaluator.run()
-    print(result)
+    print("Metrics after finetuning: ", result)
 
     assert result is not None, "Finetuning does not work correctly"
 

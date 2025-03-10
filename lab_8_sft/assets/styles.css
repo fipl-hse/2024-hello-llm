@@ -14,7 +14,18 @@ button {
    line-height: 28px;
    transition: .3s ease-in;
 }
-input {
+input[type="text"] {
     width: 80%;
     height: 100px;
+}
+
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.checkbox-container {
+    margin: 10px 0;
 }

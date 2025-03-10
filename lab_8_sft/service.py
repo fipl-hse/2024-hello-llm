@@ -38,13 +38,14 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     finetuned_llm_pipeline = LLMPipeline(str(finetuned_model_path),
                                dataset, max_length=120, batch_size=1, device="cpu")
     fastapi = FastAPI()
+    fastapi.mount("/assets", StaticFiles(directory=Path(__file__).parent / "assets"), "assets")
 
     return fastapi, llm_pipeline, finetuned_llm_pipeline
 
 
 app, pipeline, finetuned_pipeline = init_application()
 
-app.mount("/assets", StaticFiles(directory=Path(__file__).parent / "assets"), "assets")
+
 
 
 @app.get("/")
@@ -69,9 +70,10 @@ async def infer(query: Query) -> dict:
     """
     Main endpoint for model call
     """
+    print(f"Received query: {query.question}")
     if query.is_base_model:
         response_text = pipeline.infer_sample((query.question,))
     else:
         response_text = finetuned_pipeline.infer_sample((query.question,))
-
+    print(f"Model response: {response_text}")
     return {"infer": response_text}

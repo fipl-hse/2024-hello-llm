@@ -70,10 +70,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.drop(
-            ["id"], axis=1) \
+        self._data = (self._raw_data.drop(["id"], axis=1)\
             .rename(columns={"highlights": ColumnNames.TARGET.value,
-                             "article": ColumnNames.SOURCE.value}).drop_duplicates()
+                             "article": ColumnNames.SOURCE.value}).drop_duplicates())
         self._data["source"] = self._data["source"].str.replace("(CNN)", "")
         self._data.reset_index(inplace=True, drop=True)
 
