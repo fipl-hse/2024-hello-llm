@@ -12,9 +12,15 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -24,7 +30,6 @@ from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, Co
 from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-from peft import get_peft_model, LoraConfig
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -367,6 +372,13 @@ class SFTPipeline(AbstractSFTPipeline):
                                        r=4,
                                        lora_alpha=8,
                                        lora_dropout=0.1)
+        self._batch_size = self.sft_params.batch_size
+        self._max_length = self.sft_params.max_length
+        self._max_sft_steps = self.sft_params.max_fine_tuning_steps
+        self._device = self.sft_params.device
+        self._finetuned_model_path = self.sft_params.finetuned_model_path
+        self._learning_rate = self.sft_params.learning_rate
+
         self._model = get_peft_model(
             self.AutoModelForSequenceClassification.from_pretrained(self._model_name),
             self._lora_config
@@ -377,12 +389,12 @@ class SFTPipeline(AbstractSFTPipeline):
         Fine-tune model.
         """
         training_arguments = TrainingArguments(
-            output_dir=self.sft_params.finetuned_model_path,
-            max_steps=self.sft_params.max_fine_tuning_steps,
-            per_device_train_batch_size=self.sft_params.batch_size,
-            learning_rate=self.sft_params.learning_rate,
+            output_dir=self._finetuned_model_path,
+            max_steps=self._max_sft_steps,
+            per_device_train_batch_size=self._batch_size,
+            learning_rate=self._learning_rate,
             save_strategy='no',
-            use_cpu=bool(self.sft_params.device == 'cpu'),
+            use_cpu=bool(self._device == 'cpu'),
             load_best_model_at_end=False
         )
 
@@ -391,5 +403,7 @@ class SFTPipeline(AbstractSFTPipeline):
             model=self._model,
             args=training_arguments
         )
-
         trainer.train()
+
+        self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
+

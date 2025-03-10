@@ -4,18 +4,19 @@ Fine-tuning starter.
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
 
+from transformers import AutoTokenizer
+
 from config.lab_settings import LabSettings, SFTParams
 from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
     TaskEvaluator,
     TokenizedTaskDataset,
-    SFTPipeline
 )
-from transformers import AutoTokenizer
 
 
 @report_time
@@ -35,11 +36,13 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.transform()
 
-    batch_size = 1
+    # inference params
+    batch_size = 64
     max_length = 120
     device = 'cpu'
+    num_samples = 10
 
-    dataset = TaskDataset(preprocessor.data.head(10))
+    dataset = TaskDataset(preprocessor.data.loc[:num_samples])
     pipeline = LLMPipeline(settings.parameters.model,
                            dataset,
                            max_length,
@@ -64,8 +67,11 @@ def main() -> None:
     print("Dataset inference result: ")
     print(inference_result)
 
-    num_samples = 10
-    fine_tuning_steps = 10
+    # fine-tuning params
+    batch_size = 3
+    fine_tuning_steps = 50
+    lr = 1e-3
+
     fine_tune_samples = batch_size * fine_tuning_steps
     dataset = TokenizedTaskDataset(
         preprocessor.data.loc[
@@ -77,7 +83,6 @@ def main() -> None:
         max_length=max_length
     )
     model_path = Path(__file__).parent / 'dist' / settings.parameters.model
-    lr = 1e-3
     sft_params = SFTParams(
         max_length=max_length,
         batch_size=batch_size,
@@ -89,7 +94,10 @@ def main() -> None:
 
     )
     pipeline = SFTPipeline(settings.parameters.model, dataset, sft_params)
-    result = pipeline
+    pipeline.run()
+    predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
+    predictions_path.parent.mkdir(parents=True, exist_ok=True)
+    predictions.to_csv(predictions_path, index=False)
     assert result is not None, "Finetuning does not work correctly"
 
 
