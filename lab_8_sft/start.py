@@ -70,7 +70,7 @@ def main() -> None:
     # fine-tuning params
     batch_size = 3
     fine_tuning_steps = 50
-    lr = 1e-3
+    learning_rate = 1e-3
 
     fine_tune_samples = batch_size * fine_tuning_steps
     sft_dataset = TokenizedTaskDataset(
@@ -89,7 +89,7 @@ def main() -> None:
         max_fine_tuning_steps=fine_tuning_steps,
         device=device,
         finetuned_model_path=model_path,
-        learning_rate=lr,
+        learning_rate=learning_rate,
         target_modules=["query", "key", "value", "dense"]
 
     )
@@ -112,6 +112,7 @@ def main() -> None:
     print("Dataset fine-tuning result: ")
     print(result)
     assert result is not None, "Finetuning does not work correctly"
+    return None
 
 
 if __name__ == "__main__":

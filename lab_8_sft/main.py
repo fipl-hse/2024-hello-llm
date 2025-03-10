@@ -147,6 +147,8 @@ def tokenize_sample(
                                  truncation=True,
                                  max_length=max_length)
     tokenized_sample["labels"] = sample[ColumnNames.TARGET.value]
+    if not isinstance(tokenized_sample.data, dict):
+        raise ValueError
     return tokenized_sample.data
 
 
@@ -410,4 +412,3 @@ class SFTPipeline(AbstractSFTPipeline):
 
         self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
         AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
-
