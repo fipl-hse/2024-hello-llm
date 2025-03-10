@@ -132,11 +132,10 @@ def main() -> None:
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=15,
+        max_fine_tuning_steps=150,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT / "lab_8_sft" / "dist" / settings.parameters.model,
-        device="cpu",
-        target_modules=["q", "v"]
+        device="cpu"
     )
 
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps

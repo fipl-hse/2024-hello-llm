@@ -384,7 +384,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             if metric.value == Metrics.ROUGE.value:
                 scores[metric.value] = float(calculated['rougeL'])
             else:
-                scores[metric.value] = float(calculated[metric.value])
+                scores[metric.value] = float(calculated['bleu'])
 
         return scores
 
