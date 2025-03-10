@@ -337,7 +337,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         super().__init__(metrics)
         self._data_path = data_path
         self._metrics_dict = [load(metric.value, seed=77) if metric == Metrics.ROUGE.value
-                              else load(metric.value) for metric in self._metrics ]
+                              else load(metric.value) for metric in self._metrics]
 
 
     def run(self) -> dict | None:
@@ -351,7 +351,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         metric_counts = {}
         for metric in self._metrics_dict:
             res = metric.compute(references=pred_df[ColumnNames.TARGET.value],
-                                           predictions=pred_df[ColumnNames.PREDICTION.value])
+                                 predictions=pred_df[ColumnNames.PREDICTION.value])
             if metric.name == Metrics.BLEU.value:
                 metric_counts[metric.name] = float(res["bleu"])
             else:
@@ -409,6 +409,7 @@ class SFTPipeline(AbstractSFTPipeline):
         trainer = Trainer(model=self._model, args=training_params, train_dataset=self._dataset)
         trainer.train()
         merged_model = self._model.merge_and_unload()
-        self._model.save_pretrained(self._finetuned_model_path,
+        merged_model.save_pretrained(self._finetuned_model_path,
                                     safe_serialization=False)
-        AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
+        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+        tokenizer.save_pretrained(self._finetuned_model_path)
