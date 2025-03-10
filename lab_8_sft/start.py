@@ -16,7 +16,7 @@ from lab_8_sft.main import (
     SFTPipeline,
     TaskDataset,
     TaskEvaluator,
-    TokenizedTaskDataset
+    TokenizedTaskDataset,
 )
 
 
@@ -67,6 +67,8 @@ def main() -> None:
     result = evaluator.run()
     print(result)
 
+    #8
+
     sft_params = SFTParams(
         max_length=120,
         batch_size=3,
@@ -78,16 +80,18 @@ def main() -> None:
     )
 
     num_samples = 10
+
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
     base_tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
     dataset = TokenizedTaskDataset(
         preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
-        tokenizer=base_tokenizer,
-        max_length=sft_params.max_length)
+        tokenizer=base_tokenizer.from_pretrained(settings.parameters.model),
+        max_length=sft_params.max_length
+    )
 
     sft_pipeline = SFTPipeline(
         model_name=settings.parameters.model,
-        dataset=predictions,
+        dataset=dataset,
         sft_params=sft_params
     )
 
