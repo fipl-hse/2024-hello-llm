@@ -75,7 +75,7 @@ def main() -> None:
         max_fine_tuning_steps=200,
         device="cpu",
         finetuned_model_path=PROJECT_ROOT / 'lab_8_sft' / 'dist' / settings.parameters.model,
-        learning_rate=5e-3,
+        learning_rate=1e-3,
         target_modules=["q", "v"],
     )
 
