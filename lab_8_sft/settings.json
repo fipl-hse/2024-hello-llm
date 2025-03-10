@@ -1,7 +1,7 @@
 {
   "parameters": {
     "model": "cointegrated/rubert-tiny-bilingual-nli",
-    "dataset": "RussianNLP/russian_super_glue",
+    "dataset": "terra",
     "metrics": ["accuracy"]
   },
   "target_score": 6
