@@ -1,8 +1,6 @@
 """
 Web service for model inference.
 """
-import pandas as pd
-
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from fastapi import FastAPI
 
