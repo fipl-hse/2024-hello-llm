@@ -329,8 +329,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
         self._data_path = data_path
-        self._metrics = metrics
 
 
     def run(self) -> dict | None:
@@ -377,7 +377,8 @@ class SFTPipeline(AbstractSFTPipeline):
             r=4,
             lora_alpha=8,
             lora_dropout=0.1,
-            target_modules=sft_params.target_modules
+            target_modules=sft_params.target_modules,
+            task_type="SEQ_2_SEQ_LM"
         )
 
         self._model:torch.nn.Module = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)

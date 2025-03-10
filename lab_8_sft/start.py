@@ -70,9 +70,9 @@ def main() -> None:
     #8
 
     sft_params = SFTParams(
-        max_length=120,
+        max_length=512,
         batch_size=3,
-        max_fine_tuning_steps=100,
+        max_fine_tuning_steps=75,
         device="cpu",
         finetuned_model_path=PROJECT_ROOT / 'lab_8_sft' / 'dist' / settings.parameters.model,
         learning_rate=1e-3,
@@ -83,9 +83,10 @@ def main() -> None:
 
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
     base_tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
-    tokenized_dataset:TokenizedTaskDataset = TokenizedTaskDataset(
+    tokenized_dataset = TokenizedTaskDataset(
         preprocessor.data.loc[num_samples: num_samples + fine_tune_samples],
-        tokenizer=base_tokenizer.from_pretrained(settings.parameters.model),
+        #tokenizer=base_tokenizer.from_pretrained(settings.parameters.model),
+        tokenizer=base_tokenizer,
         max_length=sft_params.max_length
     )
 
