@@ -174,9 +174,9 @@ class TokenizedTaskDataset(Dataset):
         if not isinstance(data, pd.DataFrame):
             raise TypeError("data must be pandas DataFrame")
 
-        self._data = data
-        self._tokenizer = tokenizer
-        self._max_length = max_length
+        self._data: pd.DataFrame = data
+        self._tokenizer: AutoTokenizer = tokenizer
+        self._max_length: int = max_length
 
 
     def __len__(self) -> int:
@@ -380,7 +380,10 @@ class SFTPipeline(AbstractSFTPipeline):
             target_modules=sft_params.target_modules
         )
 
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+        self._model:torch.nn.Module = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Model must be torch.nn.Module instance")
+
         self._model = get_peft_model(self._model, self._lora_config)
 
         self._max_length = sft_params.max_length
