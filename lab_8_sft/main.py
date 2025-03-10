@@ -12,14 +12,22 @@ import pandas as pd
 import torch
 from evaluate import load
 from pandas import DataFrame
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+)
 
+from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
+from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -195,6 +203,8 @@ class LLMPipeline(AbstractLLMPipeline):
     A class that initializes a model, analyzes its properties and infers it.
     """
 
+    _model: torch.nn.Module
+
     def __init__(
         self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
     ) -> None:
@@ -301,6 +311,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     def run(self) -> dict | None:
         """
@@ -309,6 +321,14 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        data = pd.read_csv(self._data_path)
+        predictions = data[ColumnNames.PREDICTION.value]
+        references = data[ColumnNames.TARGET.value]
+        scores = {}
+        for metric in self._metrics:
+            scores[str(metric)] = load(str(metric)).compute(predictions=predictions,
+                                                            references=references)[str(metric)]
+        return scores
 
 
 class SFTPipeline(AbstractSFTPipeline):
