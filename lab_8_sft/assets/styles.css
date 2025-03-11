@@ -1,0 +1,109 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+}
+
+.container {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    width: 400px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+label {
+    font-size: 16px;
+    margin-bottom: 20px;
+    display: inline-block;
+    color: #555;
+}
+
+textarea {
+    width: 90%;
+    height: 300px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+    resize: none;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+textarea:focus {
+    border-color: #4CAF50;
+    outline: none;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 40%;
+    box-sizing: border-box;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#result {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f1f1f1;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+    display: none;
+    box-sizing: border-box;
+    word-wrap: break-word;
+}
+
+#result.active {
+    display: block;
+}
+
+footer {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #888;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Text Summarization AI</h1>
+    <label>
+        <input type="checkbox" id="fineTunedModel"> Use Fine-Tuned Model
+    </label>
+    <textarea id="inputText" placeholder="Enter text for summarization..."></textarea>
+    <button onclick="Summarize()">Summarize</button>
+    <div id="result"></div>
+</div>
+
+<footer></footer>
+
+</body>
+</html>
