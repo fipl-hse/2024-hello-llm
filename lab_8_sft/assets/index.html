@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Sentiment Detection Service</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+    <h1>Sentiment Detection</h1>
+    <form id="detection-form">
+        <label for="textInput">Enter text to classify:</label>
+        <input type="text" id="textInput" name="textInput" required>
+        <button type="submit" id="submitButton">Classify</button>
+        <div class="checkbox-container">
+            <input type="checkbox" id="base-model-checkbox" name="base-model-checkbox">
+            <label for="base-model-checkbox">Use base model</label>
+        </div>
+    </form>
+    <div id="responseContainer">
+            <p id="responseField">Type in the text to execute sentiment analysis!</p>
+    </div>
+    <script src="/assets/main.js"></script>
+</body>
+</html>
