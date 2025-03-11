@@ -98,6 +98,26 @@ def main() -> None:
 
     sft_pipeline.run()
 
+    dataset = TaskDataset(preprocessor.data.head(10))
+    pipeline = LLMPipeline(str(sft_params.finetuned_model_path),
+                           dataset, max_length=120,
+                           batch_size=64,
+                           device='cpu')
+
+    # pipeline.tokenizer = finetuned_tokenizer
+
+    pipeline.analyze_model()
+
+    _sample_infer = pipeline.infer_sample(dataset[0])
+
+    predictions_path = Path(PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv')
+    if not predictions_path.parent.exists():
+        predictions_path.parent.mkdir()
+    pipeline.infer_dataset().to_csv(predictions_path, index=False)
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    result = evaluator.run()
+    print(result)
+
     assert result is not None, "Demo does not work correctly"
 
 if __name__ == "__main__":
