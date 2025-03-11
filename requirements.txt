@@ -3,6 +3,7 @@ fastapi==0.115.7
 pandas==2.2.3
 peft==0.14.0
 pydantic==2.10.6
+pytest==8.3.5
 torch==2.5.1
 torchinfo==1.8.0
 tqdm==4.67.1
