@@ -36,7 +36,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
-        self._raw_data = load_dataset(path=self._hf_name, split='test').to_pandas()
+        self._raw_data = load_dataset(path=self._hf_name, split='train').to_pandas()
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError('Dataset is not Dataframe')
 
@@ -67,6 +67,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
+        self._data = (self._raw_data.rename(columns={
+            'toxic': ColumnNames.SOURCE.value,
+            'comment': ColumnNames.TARGET.value}).reset_index(drop=True))
 
 
 class TaskDataset(Dataset):
