@@ -94,5 +94,5 @@ async def infer(query: Query) -> dict[str, str]:
         dict[str, str]: The model's inference result.
     """
     if query.is_base_model:
-        return {"infer": pre_trained_pipeline.infer_sample((query.question,))}
-    return {"infer": fine_tuned_pipeline.infer_sample((query.question,))}
+        return {"infer": pretrained_pipeline.infer_sample((query.question,))}
+    return {"infer": finetuned_pipeline.infer_sample((query.question,))}
