@@ -297,23 +297,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        inputs = self._tokenizer(
-            list(sample_batch[0]),
-            padding=True,
-            truncation=True,
-            return_tensors="pt"
-        ).to(self._device)
-
-
-        generated_ids = self._model.generate(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
+        inputs = self._tokenizer(list(sample_batch[0]),
+                                 return_tensors="pt",
+                                 truncation=True,
+                                 padding=True,
+                                 max_length=self._max_length
+                                 ).to(self._device)
+        outputs = self._model.generate(
+            **inputs,
             max_length=self._max_length
         )
 
-        decoded_predictions = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-
-        return [prediction.strip() for prediction in decoded_predictions]
+        return [self._tokenizer.decode(pred, skip_special_tokens=True) for pred in outputs]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
