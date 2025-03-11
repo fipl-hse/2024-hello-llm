@@ -127,8 +127,9 @@ class TaskDataset(Dataset):
         return self._data
 
 
-def tokenize_sample(sample: pd.Series, tokenizer: AutoTokenizer,
-                    max_length: int) -> dict[str, torch.Tensor]:
+def tokenize_sample(
+        sample: pd.Series, tokenizer: AutoTokenizer, max_length: int
+) -> dict[str, torch.Tensor]:
     """
     Tokenize sample.
 
@@ -214,6 +215,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        self._model.to(self._device)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -287,16 +290,13 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        if self._model:
-            tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-            if len(sample_batch) == 1:
-                tokens = tokenizer(sample_batch[0][0], sample_batch[0][1], padding=True,
-                                   truncation=True, return_tensors='pt')
-            else:
-                tokens = tokenizer(sample_batch[0], sample_batch[1], padding=True,
-                                   truncation=True, return_tensors='pt')
-
-            output = self._model(**tokens).logits
+        if len(sample_batch) == 1:
+            tokens = self._tokenizer(sample_batch[0][0], sample_batch[0][1], padding=True,
+                                     truncation=True, return_tensors='pt')
+        else:
+            tokens = self._tokenizer(sample_batch[0], sample_batch[1], padding=True,
+                                     truncation=True, return_tensors='pt')
+        output = self._model(**tokens).logits
         return [str(prediction.item()) for prediction in list(torch.argmax(output, dim=1))]
 
 
