@@ -208,6 +208,9 @@ class LLMPipeline(AbstractSFTPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not self._model:
+            raise ValueError
+
         properties = dict()
         input_data = torch.ones((1, self._model.config.max_position_embeddings), dtype=torch.long)
         model_statistics = summary(self._model, input_data={'input_ids': input_data, 'attention_mask': input_data})
@@ -231,6 +234,9 @@ class LLMPipeline(AbstractSFTPipeline):
         Returns:
             str | None: A prediction
         """
+        if not self._model:
+            raise ValueError
+
         return self._infer_batch([sample])[0]
 
     @report_time
