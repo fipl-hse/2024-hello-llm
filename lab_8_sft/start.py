@@ -27,7 +27,7 @@ def main() -> None:
     Run the translation pipeline.
     """
     result = None
-    random.seed(42)
+    random.seed(77)
 
     settings = LabSettings(Path(__file__).parent / 'settings.json')
     importer = RawDataImporter(settings.parameters.dataset)
