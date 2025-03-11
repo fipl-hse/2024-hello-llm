@@ -3,9 +3,8 @@ Fine-tuning starter.
 """
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
-from transformers import AutoTokenizer
-
 import pandas as pd
+from transformers import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
@@ -17,7 +16,7 @@ from lab_8_sft.main import (
     SFTPipeline,
     TaskDataset,
     TaskEvaluator,
-    TokenizedTaskDataset
+    TokenizedTaskDataset,
 )
 
 

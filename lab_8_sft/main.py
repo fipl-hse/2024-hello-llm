@@ -317,7 +317,7 @@ class LLMPipeline(AbstractLLMPipeline):
             raise ValueError("Model is not initialized properly.")
         output = self._model.generate(**input_tokens)
         results = self._tokenizer.batch_decode(output, skip_special_tokens=True)
-        return [res for res in results]
+        return list(res for res in results)
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
@@ -332,7 +332,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        self._metrics = metrics
+        super().__init__(metrics)
         self._data_path = data_path
 
     def run(self) -> dict | None:
@@ -370,12 +370,12 @@ class SFTPipeline(AbstractSFTPipeline):
             dataset (torch.utils.data.dataset.Dataset): The dataset used.
             sft_params (SFTParams): Fine-Tuning parameters.
         """
-        self._model_name = model_name
-        self._dataset = dataset
+        super().__init__(model_name, dataset)
         self._lora_config = LoraConfig(
             r=4,
             lora_alpha=8,
             lora_dropout=0.1,
+            target_modules=sft_params.target_modules
         )
 
         self._max_steps = sft_params.max_fine_tuning_steps
