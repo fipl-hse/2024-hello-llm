@@ -69,7 +69,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     return application, pre_trained_pipeline, fine_tuned_pipeline
 
 
-app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
+app, pretrained_pipeline, finetuned_pipeline = init_application()
 
 templates = Jinja2Templates(directory=str(ASSETS_PATH))
 
