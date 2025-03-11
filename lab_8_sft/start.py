@@ -1,6 +1,8 @@
 """
 Fine-tuning starter.
 """
+import random
+
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
 
@@ -25,6 +27,7 @@ def main() -> None:
     Run the translation pipeline.
     """
     result = None
+    random.seed(77)
 
     settings = LabSettings(Path(__file__).parent / 'settings.json')
     importer = RawDataImporter(settings.parameters.dataset)
