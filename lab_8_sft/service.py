@@ -72,7 +72,7 @@ class Query:
 
 
 @app.post("/infer")
-async def infer(query: Query):
+async def infer(query: Query) -> dict:
     """
     Handle a POST request to classify the sentiment of the input text.
 
