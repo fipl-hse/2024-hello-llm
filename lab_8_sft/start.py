@@ -27,7 +27,7 @@ def main() -> None:
     Run the translation pipeline.
     """
     result = None
-    random.seed(77)
+    random.seed(42)
 
     settings = LabSettings(Path(__file__).parent / 'settings.json')
     importer = RawDataImporter(settings.parameters.dataset)
@@ -65,7 +65,7 @@ def main() -> None:
     sft_params = SFTParams(
         batch_size=2,
         max_length=120,
-        max_fine_tuning_steps=182,
+        max_fine_tuning_steps=175,
         learning_rate=1e-2,
         device="cpu",
         finetuned_model_path=finetuned_model_path

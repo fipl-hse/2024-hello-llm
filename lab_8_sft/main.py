@@ -336,7 +336,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         super().__init__(metrics)
         self._data_path = data_path
-        self._metrics_dict = [load(metric.value, seed=77) if metric == Metrics.ROUGE.value
+        self._metrics_dict = [load(metric.value, seed=42) if metric == Metrics.ROUGE.value
                               else load(metric.value) for metric in self._metrics]
 
 
