@@ -151,13 +151,13 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
-    texts, labels = sample[str(ColumnNames.SOURCE)], sample[str(ColumnNames.TARGET)]
-    tokenized = tokenizer(texts, padding='max_length', truncation=True, max_length=max_length)
+    tokenized = tokenizer(sample[str(ColumnNames.SOURCE)],
+                          padding='max_length', truncation=True, max_length=max_length)
 
     return {
         'input_ids': tokenized['input_ids'],
         'attention_mask': tokenized['attention_mask'],
-        'labels': labels
+        'labels': sample[str(ColumnNames.TARGET)]
     }
 
 

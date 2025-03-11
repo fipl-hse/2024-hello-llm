@@ -4,7 +4,7 @@ Fine-tuning starter.
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, set_seed
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
@@ -25,6 +25,7 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
+    set_seed(22)
     settings_path = PROJECT_ROOT / 'lab_8_sft' / 'settings.json'
     parameters = LabSettings(settings_path).parameters
 
@@ -39,8 +40,8 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(parameters.model, dataset,
-                           max_length=120, batch_size=64, device='cpu')
+    pipeline_params = {'max_length': 120, 'batch_size': 64, 'device': 'cpu'}
+    pipeline = LLMPipeline(parameters.model, dataset, **pipeline_params)
 
     print('base model analysis:', pipeline.analyze_model())
     sample = dataset[22]
@@ -51,7 +52,6 @@ def main() -> None:
 
     predictions_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
-
 
     predictions = pipeline.infer_dataset()
     predictions.to_csv(predictions_path)
@@ -67,7 +67,7 @@ def main() -> None:
         batch_size=3,
         max_length=120,
         max_fine_tuning_steps=50,
-        learning_rate=1e-3,
+        learning_rate=0.001,
         device='cpu',
         finetuned_model_path=finetuned_model_path
     )
@@ -87,7 +87,7 @@ def main() -> None:
 
     finetuned_pipeline = LLMPipeline(str(finetuned_model_path),
                                      TaskDataset(preprocessor.data.sample(num_samples)),
-                                     max_length=120, batch_size=64, device='cpu')
+                                     **pipeline_params)
 
     print('finetuned model analysis:', finetuned_pipeline.analyze_model())
 
