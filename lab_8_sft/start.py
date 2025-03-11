@@ -5,7 +5,7 @@ Fine-tuning starter.
 from pathlib import Path
 
 import pandas as pd
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, set_seed
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
@@ -43,6 +43,8 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     preprocessor.analyze()
     preprocessor.transform()
+
+    set_seed(42)
 
     sft_params = SFTParams(
         batch_size=3,
@@ -83,6 +85,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
     metrics = evaluator.run()
+    print(metrics)
 
     result = metrics
     assert result is not None, "Finetuning does not work correctly"

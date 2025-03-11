@@ -11,7 +11,7 @@ import evaluate
 import pandas as pd
 import torch
 from datasets import load_dataset
-from peft import get_peft_model, LoraConfig
+from peft import get_peft_model, LoraConfig, PeftConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
@@ -398,6 +398,8 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if not isinstance(self._lora_config, PeftConfig):
+            raise TypeError('Config instance is not PeftConfig.')
         model = get_peft_model(self._model, self._lora_config).to(self._sft_params.device)
         training_args = TrainingArguments(
             str(self._sft_params.finetuned_model_path),
