@@ -208,7 +208,11 @@ class LLMPipeline(AbstractLLMPipeline):
     """
 
     def __init__(
-            self, model_name: str, dataset: TaskDataset, max_length: int, batch_size: int, device: str
+            self, model_name: str,
+            dataset: TaskDataset,
+            max_length: int,
+            batch_size: int,
+            device: str
     ) -> None:
         """
         Initialize an instance of LLMPipeline.
@@ -374,8 +378,10 @@ class SFTPipeline(AbstractSFTPipeline):
             self._model_name
         )
         self._batch_size = sft_params.batch_size
-        self._lora_config = LoraConfig(r=4, lora_alpha=8,
-                                       lora_dropout=0.1, target_modules=sft_params.target_modules)
+        self._lora_config = LoraConfig(r=4,
+                                       lora_alpha=8,
+                                       lora_dropout=0.1,
+                                       target_modules=sft_params.target_modules)
         self._device = sft_params.device
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
         self._max_length = sft_params.max_length
@@ -391,7 +397,7 @@ class SFTPipeline(AbstractSFTPipeline):
                 or self._max_finetuning_steps is None
                 or self._batch_size is None
                 or self._learning_rate is None):
-            return None
+            return
 
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError("Expected self._model to be an instance of torch.nn.Module.")
@@ -414,8 +420,6 @@ class SFTPipeline(AbstractSFTPipeline):
 
         trainer.train()
 
-        merged_model = self._model.merge_and_unload()
-        merged_model.save_pretrained(self._finetuned_model_path)
-
-        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        tokenizer.save_pretrained(self._finetuned_model_path)
+        trainer.model.base_model.merge_and_unload()
+        trainer.model.base_model.save_pretrained(self._finetuned_model_path)
+        AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)

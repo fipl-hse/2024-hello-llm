@@ -53,9 +53,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, lab_settings.parameters.metrics)
     result = evaluator.run()
-    print("Evaluation results (mark 6):")
-    for metric, value in result.items():
-        print(metric, value, sep=': ')
+    print("Evaluation results (mark 6):", result)
 
     # for mark 8
     # Inference
@@ -69,9 +67,7 @@ def main() -> None:
                            device="cpu")
 
     model_analysis = pipeline.analyze_model()
-    print("Model analysis (inference):")
-    for field, value in model_analysis.items():
-        print(field, value, sep=': ')
+    print("Model analysis (inference):", model_analysis)
 
     pipeline.infer_dataset()
 
@@ -82,9 +78,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, lab_settings.parameters.metrics)
     result = evaluator.run()
-    print("Evaluation metrics (inference):")
-    for metric, value in result.items():
-        print(metric, value, sep=': ')
+    print("Evaluation metrics (inference):", result)
 
     # Fine-tuning
     sft_params = SFTParams(
@@ -111,16 +105,14 @@ def main() -> None:
     num_samples = 10
     pipeline = LLMPipeline(
         model_name=str(sft_params.finetuned_model_path),
-        dataset=TaskDataset(preprocessor.data.head(num_samples)),
+        dataset=TaskDataset(preprocessor.data.tail(num_samples)),
         max_length=120,
         batch_size=64,
         device="cpu"
     )
 
     model_analysis = pipeline.analyze_model()
-    print("Model analysis (fine-tuning):")
-    for field, value in model_analysis.items():
-        print(field, value, sep=': ')
+    print("Model analysis (fine-tuning):", model_analysis)
 
     pipeline.infer_dataset()
 
@@ -131,9 +123,7 @@ def main() -> None:
 
     evaluator = TaskEvaluator(predictions_path, lab_settings.parameters.metrics)
     result = evaluator.run()
-    print("Evaluation metrics (fine-tuning):")
-    for metric, value in result.items():
-        print(metric, value, sep=': ')
+    print("Evaluation metrics (fine-tuning):", result)
 
     assert result is not None, "Finetuning does not work correctly"
 
