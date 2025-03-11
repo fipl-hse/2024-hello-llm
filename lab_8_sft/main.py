@@ -88,7 +88,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
 
         # renamed_dataset.drop(columns=['title', 'date', 'url'])
         # renamed_dataset.reset_index(drop=True)
-        renamed_dataset = renamed_dataset.drop(columns=['title', 'date', 'url']).reset_index(drop=True)
+        renamed_dataset = (renamed_dataset
+                           .drop(columns=['title', 'date', 'url'])
+                           .reset_index(drop=True))
 
         self._data = renamed_dataset
 
