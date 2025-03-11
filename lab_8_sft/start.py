@@ -53,11 +53,11 @@ def main() -> None:
     dataset_inference.to_csv(predictions_path, index=False)
 
     evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
-    metric = evaluator.run()
+    evaluator.run()
 
     sft_params = SFTParams(
         batch_size=3,
-        max_length=150,
+        max_length=120,
         max_fine_tuning_steps=200,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT/'lab_8_sft'/'dist'/ settings.parameters.model,
