@@ -44,35 +44,11 @@ def main() -> None:
     preprocessor.analyze()
     preprocessor.transform()
 
-    set_seed(42)
-
-    sft_params = SFTParams(
-        batch_size=3,
-        max_length=120,
-        max_fine_tuning_steps=50,
-        device='cpu',
-        finetuned_model_path=dist_path / settings.parameters.model,
-        learning_rate=1e-4,
-        target_modules=['query', 'key', 'value', 'dense']
-    )
-
-    num_samples = 10
-    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
-    dataset = TokenizedTaskDataset(preprocessor.data.loc[
-                                   num_samples: num_samples + fine_tune_samples
-                                   ],
-                                   AutoTokenizer.from_pretrained(settings.parameters.model),
-                                   sft_params.max_length)
-
-    sft_pipeline = SFTPipeline(settings.parameters.model, dataset, sft_params)
-    sft_pipeline.run()
-
-    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
-    tokenizer.save_pretrained(sft_params.finetuned_model_path)
+    dataset = TaskDataset(preprocessor.data.head(100))
 
     pipeline = LLMPipeline(
-        str(sft_params.finetuned_model_path),
-        TaskDataset(preprocessor.data.head(10)),
+        settings.parameters.model,
+        dataset,
         max_length=120,
         batch_size=64,
         device='cpu'
@@ -87,7 +63,50 @@ def main() -> None:
     metrics = evaluator.run()
     print(metrics)
 
-    result = metrics
+    set_seed(42)
+
+    sft_params = SFTParams(
+        batch_size=3,
+        max_length=120,
+        max_fine_tuning_steps=50,
+        device='cpu',
+        finetuned_model_path=dist_path / settings.parameters.model,
+        learning_rate=1e-3,
+        target_modules=['query', 'key', 'value']
+    )
+
+    num_samples = 10
+    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
+    sft_dataset = TokenizedTaskDataset(preprocessor.data.loc[
+                                   num_samples: num_samples + fine_tune_samples
+                                   ],
+                                   AutoTokenizer.from_pretrained(settings.parameters.model),
+                                   sft_params.max_length)
+
+    sft_pipeline = SFTPipeline(settings.parameters.model, sft_dataset, sft_params)
+    sft_pipeline.run()
+
+    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenizer.save_pretrained(sft_params.finetuned_model_path)
+
+    finetuned_pipeline = LLMPipeline(
+        str(sft_params.finetuned_model_path),
+        TaskDataset(preprocessor.data.head(10)),
+        max_length=120,
+        batch_size=64,
+        device='cpu'
+    )
+    finetuned_pipeline.analyze_model()
+    finetuned_pipeline.infer_sample(sft_dataset[0])
+
+    sft_dataset_inference = finetuned_pipeline.infer_dataset()
+    sft_dataset_inference.to_csv(predictions_path)
+
+    finetuned_evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    finetuned_metrics = finetuned_evaluator.run()
+    print(finetuned_metrics)
+
+    result = finetuned_metrics
     assert result is not None, "Finetuning does not work correctly"
 
 
