@@ -22,7 +22,8 @@ submitButton.addEventListener('click', async () => {
 
         if (!response.ok) throw new Error(`Server error: ${await response.text()}`);
 
-        const { infer } = await response.json();
+        let { infer } = await response.json();
+        infer = infer === "0" ? "non-toxic text" : "toxic text";
         resultDisplay.textContent = infer;
     } catch (error) {
         resultDisplay.textContent = `Error: ${error.message}`;
