@@ -10,15 +10,19 @@ from datasets import load_dataset
 import pandas as pd
 from pandas import DataFrame
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.time_decorator import report_time
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.metrics import Metrics
-
+from transformers import BertForSequenceClassification, BertTokenizerFast
+from torchinfo import summary
+from transformers import AutoTokenizer
+from config.lab_settings import SFTParams
+from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -53,9 +57,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_number_of_samples': len(self._raw_data),
             'dataset_columns': len(self._raw_data.columns),
             'dataset_duplicates': int(self._raw_data.duplicated().sum()),
-            'dataset_empty_rows': int(self._raw_data.isnull().sum().sum()),
-            'dataset_sample_min_len': min(len(sample) for sample in self._raw_data['Reviews']),
-            'dataset_sample_max_len': max(len(sample) for sample in self._raw_data['Reviews']),
+            'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
+            'dataset_sample_min_len': self._raw_data['content'].dropna().map(len).min(),
+            'dataset_sample_max_len': self._raw_data['content'].dropna().map(len).max()
         }
 
     @report_time
@@ -63,11 +67,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data.drop(["part", "movie_name", "review_id", "author", "date", "title", "grade10"], axis=1, inplace=True)
-        self._data.rename(columns={"grade3": "target", "content": "source"}, inplace=True)
-        self._data.dropna(inplace=True)
-        self._data["target"].map({"Good": 1, "Bad": 2, "Neutral": 0})
-        self._data.reset_index(inplace=True, drop=True)
+        self._data = self._raw_data.drop(columns=["part", "movie_name", "review_id", "author", "date", "title", "grade10"], axis=1)
+        self._data = self._data.rename(columns={"grade3": ColumnNames.TARGET.value, "content": ColumnNames.SOURCE.value})
+        self._data = self._data.dropna()
+        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map({"Good": 1, "Bad": 2, "Neutral": 0})
+        self._data = self._data.reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
@@ -103,7 +107,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return tuple(self._data["source"][index])
+        return (self._data[str(ColumnNames.SOURCE)][index],)
 
     @property
     def data(self) -> DataFrame:
@@ -187,6 +191,10 @@ class LLMPipeline(AbstractLLMPipeline):
             batch_size (int): The size of the batch inside DataLoader.
             device (str): The device for inference.
         """
+        super().__init__(model_name, dataset, max_length, batch_size, device)
+        self._model = BertForSequenceClassification.from_pretrained(model_name)
+        self._model.to(self._device)
+        self._tokenizer = BertTokenizerFast.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -195,6 +203,24 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError("Wrong class of model")
+
+        max_length = self._model.config.max_position_embeddings
+        input_ids = torch.ones((1, max_length), dtype=torch.long, device=self._device)
+        attention_mask = torch.ones((1, max_length), dtype=torch.long, device=self._device)
+
+        result = summary(self._model, input_data={"input_ids": input_ids, "attention_mask": attention_mask}, device="cpu", verbose=0)
+
+        return {
+            "input_shape": {"input_ids": list(result.input_size["input_ids"]), "attention_mask": list(result.input_size["input_ids"])},
+            "embedding_size": self._model.config.max_position_embeddings,
+            "output_shape": result.summary_list[-1].output_size,
+            "num_trainable_params": result.trainable_params,
+            "vocab_size": self._model.config.vocab_size,
+            "size": result.total_param_bytes,
+            "max_context_length": self._model.config.max_length
+        }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
@@ -207,6 +233,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -216,6 +243,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        dataloader = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
+
+        predictions = []
+
+        for batch in dataloader:
+            batch_predictions = self._infer_batch(batch)
+            predictions.extend(batch_predictions)
+
+        results_df = pd.DataFrame({
+            "target": self._dataset.data[str(ColumnNames.TARGET)].tolist(),
+            "prediction": predictions
+        })
+
+        return results_df
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -228,6 +269,18 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        text_samples = [sample[0] for sample in sample_batch]
+
+        inputs = self._tokenizer(text_samples, max_length=self._max_length, padding=True, truncation=True, return_tensors='pt').to(self._device)
+
+        if not self._model:
+            raise ValueError("There is no model")
+
+        outputs = self._model(**inputs)
+        predicted_classes = torch.argmax(outputs.logits, dim=1).tolist()
+        predictions = [str(i) if i != 0 else "2" for i in predicted_classes]
+
+        return predictions
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
