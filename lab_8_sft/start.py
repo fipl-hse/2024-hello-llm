@@ -42,9 +42,11 @@ def main() -> None:
                            max_length=120, batch_size=64, device="cpu")
     print("Analysis before finetuning: ", pipeline.analyze_model())
 
+
+    dataset_inference = pipeline.infer_dataset()
+    print(dataset_inference)
     single_prediction = pipeline.infer_sample(dataset[0])
     print("Prediction before finetuning: ", single_prediction)
-    dataset_inference = pipeline.infer_dataset()
 
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(exist_ok=True)
@@ -58,7 +60,7 @@ def main() -> None:
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=5,
+        max_fine_tuning_steps=60,
         learning_rate=1e-3,
         device="cpu",
         finetuned_model_path=finetuned_model_path
@@ -83,6 +85,7 @@ def main() -> None:
     print("Analysis after finetuning: ", finetuned_pipeline.analyze_model())
 
     dataset_inference = finetuned_pipeline.infer_dataset()
+    print(dataset_inference)
     print("Prediction after finetuning: ", finetuned_pipeline.infer_sample(dataset[0]))
     predictions_path = Path(__file__).parent / 'dist' / 'predictions.csv'
     predictions_path.parent.mkdir(exist_ok=True)
