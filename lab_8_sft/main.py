@@ -263,7 +263,8 @@ class LLMPipeline(AbstractSFTPipeline):
         """
         tokenized = self._tokenizer(list(sample_batch[0]), max_length=self._max_length,
                                     padding=True, truncation=True, return_tensors='pt')
-        return torch.argmax(self._model(**tokenized).logits, dim=1).tolist()
+        predict = torch.argmax(self._model(**tokenized).logits, dim=1).tolist()
+        return [str(i) for i in predict]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
