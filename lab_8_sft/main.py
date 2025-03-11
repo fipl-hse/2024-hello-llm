@@ -397,7 +397,6 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-
         model = get_peft_model(self._model, self._lora_config).to(self._device)
         training_args = TrainingArguments(
             output_dir=self._output_dir,

@@ -4,7 +4,7 @@ Fine-tuning starter.
 # pylint: disable=too-many-locals, undefined-variable, unused-import, too-many-branches, too-many-statements
 from pathlib import Path
 
-from transformers import BertTokenizerFast
+from transformers import BertTokenizerFast, set_seed
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings, SFTParams
@@ -25,6 +25,8 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
+    set_seed(42)
+
     # Inference of a base model
     settings = LabSettings(PROJECT_ROOT / "lab_8_sft" / "settings.json")
 
@@ -66,7 +68,7 @@ def main() -> None:
     batch = 3
     num_samples = 10
     max_length = 120
-    fine_tuning_steps = 50
+    fine_tuning_steps = 100
     learning_rate = 1e-3
     fine_tune_samples = batch * fine_tuning_steps
 
@@ -92,7 +94,7 @@ def main() -> None:
     # parameters for sft model inference
     batch_size = 64
 
-    dataset = TaskDataset(preprocessor.data.head(num_samples))
+    dataset = TaskDataset(preprocessor.data.head(11))
     sft_inference = LLMPipeline(str(model_path), dataset, max_length, batch_size, "cpu")
     sft_analyze = sft_inference.analyze_model()
     print("SFT model information:")
