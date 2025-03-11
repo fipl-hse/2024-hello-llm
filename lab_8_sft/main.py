@@ -14,7 +14,7 @@ from evaluate import load
 from pandas import DataFrame
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -148,7 +148,6 @@ class TokenizedTaskDataset(Dataset):
             max_length (int): max length of a sequence
         """
 
-
     def __len__(self) -> int:
         """
         Return the number of items in the dataset.
@@ -157,8 +156,7 @@ class TokenizedTaskDataset(Dataset):
             int: The number of items in the dataset
         """
 
-
-def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
         Retrieve an item from the dataset by index.
 
@@ -168,7 +166,6 @@ def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -249,9 +246,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         loader_data = DataLoader(dataset=self._dataset, batch_size=self._batch_size)
         predictions = []
-
-        for batch in loader_data:
-            with torch.no_grad():
+        with torch.no_grad():
+            for batch in loader_data:
                 batch_predictions = self._infer_batch(batch)
                 predictions.extend(batch_predictions)
 
@@ -297,8 +293,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
-        self.data_path = data_path
-        self._metrics = metrics
+        self._data_path = data_path
+        self._metrics = [load(metric.value) for metric in metrics]
 
     def run(self) -> dict | None:
         """
@@ -307,7 +303,20 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        eval_data = pd.read_csv(self._data_path)
 
+        predictions = eval_data[ColumnNames.PREDICTION.value]
+        targets = eval_data[ColumnNames.TARGET.value]
+
+        eval_results = {}
+        for metric in self._metrics:
+            scores = metric.compute(predictions=predictions,
+                                    references=targets,
+                                    average="micro")
+            key = metric.__class__.__name__.lower()
+            eval_results[key] = scores.get(key)
+
+        return eval_results
 
 
 class SFTPipeline(AbstractSFTPipeline):
