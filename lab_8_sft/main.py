@@ -375,7 +375,7 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
         self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
-        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1)
+        self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.5)
         self._device = sft_params.device
         self._model = get_peft_model(self._model, self._lora_config).to(self._device)
         self._finetuned_model_path = sft_params.finetuned_model_path
