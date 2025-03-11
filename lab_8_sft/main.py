@@ -383,6 +383,7 @@ class SFTPipeline(AbstractSFTPipeline):
         self._learning_rate = sft_params.learning_rate
         self._finetuned_model_path = sft_params.finetuned_model_path
         self._model = T5ForConditionalGeneration.from_pretrained(self._model_name)
+
         if self._lora_config is None:
             raise ValueError("self._lora_config should not be None")
         self._model = get_peft_model(self._model, self._lora_config)
@@ -406,6 +407,9 @@ class SFTPipeline(AbstractSFTPipeline):
             use_cpu=True,
             load_best_model_at_end=False,
         )
+
+        if not isinstance(self._model, Module):
+            raise TypeError(f"Model is not of type torch.nn.Module")
 
         trainer = Trainer(
             model=self._model,
