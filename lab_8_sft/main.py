@@ -313,13 +313,11 @@ class TaskEvaluator(AbstractTaskEvaluator):
         """
         data = pd.read_csv(self._data_path)
         calculated_metrics = {}
-        metric_dict = {'bleu': 'bleu'}
         for metric in self._metrics:
             metric_eval = load(metric.value)
             info = metric_eval.compute(predictions=data['predictions'].to_list(),
                                        references=data['target'].to_list())
-            if metric.value in metric_dict:
-                calculated_metrics.update({metric.value: info[metric_dict[metric.value]]})
+            calculated_metrics.update({metric.value: info[metric.value]})
         return calculated_metrics
 
 
