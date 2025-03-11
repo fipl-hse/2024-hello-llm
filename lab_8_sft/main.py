@@ -68,7 +68,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             (columns=['part', 'movie_name', 'review_id', 'author', 'date', 'title', 'grade10'])
         self._data = self._data.rename(columns={'content': ColumnNames.SOURCE, 'grade3': ColumnNames.TARGET})
         self._data = self._data.dropna()
-        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map({'Bad': 0, 'Neutral': 1, 'Good': 2})
+        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map({'Bad': 2, 'Neutral': 1, 'Good': 0})
         self._data.reset_index(drop=True, inplace=True)
 
 
