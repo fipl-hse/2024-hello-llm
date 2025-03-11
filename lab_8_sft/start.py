@@ -13,10 +13,10 @@ from lab_8_sft.main import (
     RawDataImporter,
     RawDataPreprocessor,
     report_time,
+    SFTPipeline,
     TaskDataset,
     TaskEvaluator,
     TokenizedTaskDataset,
-    SFTPipeline,
 )
 
 
@@ -39,8 +39,8 @@ def main() -> None:
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
     print("Dataset information:")
-    for analyze in analysis:
-        print(rf"{analyze}: {analysis[analyze]}")
+    for name, analyze  in analysis.items():
+        print(rf"{name}: {analyze}")
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))
@@ -48,8 +48,8 @@ def main() -> None:
     pipeline = LLMPipeline(settings.parameters.model, dataset, 120, 64, "cpu")
     analysis = pipeline.analyze_model()
     print("Base model information:")
-    for analyze in analysis:
-        print(rf"{analyze}: {analysis[analyze]}")
+    for name, analyze in analysis.items():
+        print(rf"{name}: {analyze}")
 
     inference = pipeline.infer_dataset()
     output_path = Path(__file__).parent / "dist" / "predictions.csv"
@@ -59,8 +59,8 @@ def main() -> None:
     evaluator = TaskEvaluator(output_path, settings.parameters.metrics)
     evaluations = evaluator.run()
     print("Base model evaluation:")
-    for evaluation in evaluations:
-        print(rf"{evaluation}: {evaluations[evaluation]}")
+    for metric, evaluation in evaluations:
+        print(rf"{metric}: {evaluation}")
     print()
 
     # Inference of sft model
@@ -108,8 +108,8 @@ def main() -> None:
     sft_evaluator = TaskEvaluator(output_path, settings.parameters.metrics)
     sft_evaluations = sft_evaluator.run()
     print("SFT model evaluation:")
-    for evaluation in sft_evaluations:
-        print(rf"{evaluation}: {sft_evaluations[evaluation]}")
+    for metric, evaluation in sft_evaluations.items():
+        print(rf"{metric}: {evaluation}")
 
     result = sft_evaluations
     assert result is not None, "Finetuning does not work correctly"

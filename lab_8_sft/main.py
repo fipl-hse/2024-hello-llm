@@ -13,8 +13,8 @@ from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
 from peft import get_peft_model, LoraConfig
-from torch.utils.data import DataLoader, Dataset
 from torch.nn.functional import softmax
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
     AutoTokenizer,
@@ -29,9 +29,9 @@ from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
 from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
-from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -318,6 +318,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        if self._model is None:
+            raise TypeError('Model should not be of type None')
+
         inputs = self._tokenizer(
             [sample[0] for sample in sample_batch],
             max_length=self._max_length,
@@ -397,6 +400,14 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if not (
+                self._lora_config or
+                self._max_sft_steps or
+                self._batch_size
+        ):
+            raise TypeError('values should not be None')
+
+
         model = get_peft_model(self._model, self._lora_config).to(self._device)
         training_args = TrainingArguments(
             output_dir=self._output_dir,
