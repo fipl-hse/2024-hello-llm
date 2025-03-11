@@ -13,6 +13,7 @@ from pydantic.dataclasses import dataclass
 
 from config.lab_settings import LabSettings
 from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
 LAB_PATH = Path(__file__).parent
 
@@ -28,7 +29,9 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     """
     my_app = FastAPI()
     lab_settings = LabSettings(LAB_PATH / "settings.json")
-    ft_model_path = str(LAB_PATH / "dist" / lab_settings.parameters.model)
+    ft_model_path = LAB_PATH / "dist" / lab_settings.parameters.model
+    if not ft_model_path.exists():
+        main()
 
     dataset = TaskDataset(pd.DataFrame())
     original_pipeline = LLMPipeline(
@@ -40,7 +43,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     )
 
     ft_pipeline = LLMPipeline(
-        model_name=ft_model_path,
+        model_name=str(ft_model_path),
         dataset=dataset,
         max_length=120,
         batch_size=1,
