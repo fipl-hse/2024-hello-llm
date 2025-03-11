@@ -27,7 +27,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
     """
     my_app = FastAPI()
-    lab_settings = LabSettings(Path(__file__).parent / "settings.json")
+    lab_settings = LabSettings(LAB_PATH / "settings.json")
     ft_model_path = str(LAB_PATH / "dist" / lab_settings.parameters.model)
 
     dataset = TaskDataset(pd.DataFrame())
