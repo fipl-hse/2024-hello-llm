@@ -5,16 +5,17 @@ Fine-tuning starter.
 from pathlib import Path
 
 import pandas as pd
+from transformers import AutoTokenizer
 
 from config.constants import PROJECT_ROOT
-from config.lab_settings import LabSettings
+from config.lab_settings import LabSettings, SFTParams
 from core_utils.llm.time_decorator import report_time
 from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
     TaskDataset,
-    TaskEvaluator,
+    TaskEvaluator, TokenizedTaskDataset, SFTPipeline,
 )
 
 
@@ -41,11 +42,30 @@ def main() -> None:
     preprocessor.analyze()
     preprocessor.transform()
 
-    dataset = TaskDataset(preprocessor.data.head(100))
+    sft_params = SFTParams(
+        batch_size=3,
+        max_length=120,
+        max_fine_tuning_steps=50,
+        device='cpu',
+        finetuned_model_path=dist_path / settings.parameters.model,
+        learning_rate=1e-4,
+        target_modules=['query', 'key', 'value', 'dense']
+    )
+
+    num_samples = 10
+    fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
+    dataset = TokenizedTaskDataset(preprocessor.data.loc[
+                                   num_samples: num_samples + fine_tune_samples
+                                   ],
+                                   AutoTokenizer.from_pretrained(settings.parameters.model),
+                                   sft_params.max_length)
+
+    pipeline = SFTPipeline(settings.parameters.model, dataset, sft_params)
+    pipeline.run()
 
     pipeline = LLMPipeline(
-        settings.parameters.model,
-        dataset,
+        str(sft_params.finetuned_model_path),
+        TaskDataset(preprocessor.data.head(10)),
         max_length=120,
         batch_size=64,
         device='cpu'
