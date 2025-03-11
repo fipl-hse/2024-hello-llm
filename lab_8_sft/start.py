@@ -25,7 +25,9 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    settings = LabSettings(PROJECT_ROOT / "lab_8_sft" / "settings.json")
+    current_folder = PROJECT_ROOT / "lab_8_sft"
+
+    settings = LabSettings(current_folder / "settings.json")
 
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
@@ -58,7 +60,7 @@ def main() -> None:
 
     inference_data = pipeline.infer_dataset()
 
-    predictions = PROJECT_ROOT / "lab_8_sft" / "dist" / "predictions.csv"
+    predictions = current_folder / "dist" / "predictions.csv"
     predictions.parent.mkdir(exist_ok=True)
     inference_data.to_csv(predictions)
 
@@ -73,7 +75,7 @@ def main() -> None:
         max_length=120,
         max_fine_tuning_steps=50,
         learning_rate=1e-3,
-        finetuned_model_path=PROJECT_ROOT / "dist" / settings.parameters.model,
+        finetuned_model_path=current_folder / "dist" / settings.parameters.model,
         device="cpu"
     )
 
@@ -81,6 +83,8 @@ def main() -> None:
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
 
     tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenizer.save_pretrained(sft_params.finetuned_model_path)
+
     tokenized_dataset = TokenizedTaskDataset(
         preprocessor.data.loc[num_samples : num_samples + fine_tune_samples],
         tokenizer=tokenizer,
@@ -96,13 +100,8 @@ def main() -> None:
     print('Fine-tuning...')
     sft_pipeline.run()
 
-    fine_tuned_model_path = PROJECT_ROOT / "dist" / settings.parameters.model
-
-    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
-    tokenizer.save_pretrained(fine_tuned_model_path)
-
     fine_tuned_pipeline = LLMPipeline(
-        model_name=str(PROJECT_ROOT / "dist" / settings.parameters.model),
+        model_name=str(current_folder / "dist" / settings.parameters.model),
         dataset=TaskDataset(preprocessor.data.head(num_samples)),
         max_length=120,
         batch_size=64,
@@ -120,7 +119,7 @@ def main() -> None:
 
     predictions_dataframe = fine_tuned_pipeline.infer_dataset()
 
-    predictions_path = PROJECT_ROOT / "dist" / "predictions.csv"
+    predictions_path = current_folder / "dist" / "predictions.csv"
     predictions_path.parent.mkdir(exist_ok=True)
     predictions_dataframe.to_csv(predictions_path)
 

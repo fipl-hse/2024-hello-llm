@@ -1,0 +1,87 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #FFDFDC;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+    transition: background 0.5s;
+}
+
+.title {
+    font-size: 50px;
+    color: #d06f49;
+    margin-bottom: 40px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    animation: glowingTitle 1.5s infinite alternate;
+}
+
+@keyframes glowingTitle {
+    0%, 100% {
+        text-shadow: 0 0 5px rgba(255, 153, 85, 0.5), 0 0 10px rgba(255, 153, 85, 0.3);
+    }
+    50% {
+        text-shadow: 0 0 10px rgba(255, 153, 85, 1), 0 0 20px rgba(255, 153, 85, 0.8);
+    }
+}
+
+.text-input, .response-box {
+    width: 80%;
+    max-width: 600px;
+    padding: 10px 15px;
+    font-size: 16px;
+    color: #d06f49;
+    background: #fff2e6;
+    border: 1px solid #f1c6b8;
+    border-radius: 20px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s, transform 0.2s;
+    margin-bottom: 20px;
+}
+
+.text-input:focus {
+    box-shadow: 0 0 10px rgba(255, 153, 85, 0.7);
+    transform: scale(1.02);
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.submit-button {
+    background: linear-gradient(135deg, #ff9e80, #ff7a53);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 12px 30px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.3s, background-color 0.3s;
+    margin-bottom: 20px;
+}
+
+.submit-button:hover {
+    background: linear-gradient(135deg, #ff7a53, #ff9e80);
+    transform: translateY(-4px);
+}
+
+.response-box {
+    min-height: 150px;
+    background: #fff9f0;
+    white-space: pre-wrap;
+    text-align: left;
+}
+
+.response-box:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
