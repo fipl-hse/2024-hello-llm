@@ -409,7 +409,7 @@ class SFTPipeline(AbstractSFTPipeline):
         )
 
         if not isinstance(self._model, Module):
-            raise TypeError(f"Model is not of type torch.nn.Module")
+            raise TypeError("Model is not of type torch.nn.Module")
 
         trainer = Trainer(
             model=self._model,
