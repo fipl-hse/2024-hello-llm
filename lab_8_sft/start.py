@@ -57,15 +57,15 @@ def main() -> None:
 
     sft_params = SFTParams(
         batch_size=3,
-        max_length=120,
-        max_fine_tuning_steps=50,
+        max_length=150,
+        max_fine_tuning_steps=200,
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT/'lab_8_sft'/'dist'/ settings.parameters.model,
         device='cpu',
         target_modules=None
     )
 
-    num_samples = 10
+    num_samples = 11
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
     tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
     tokenised_dataset = TokenizedTaskDataset(preprocessor.data.loc[
@@ -81,7 +81,7 @@ def main() -> None:
 
     finetuned_pipline = LLMPipeline(
         str(sft_params.finetuned_model_path),
-        TaskDataset(preprocessor.data.head(10)),
+        TaskDataset(preprocessor.data.head(11)),
         max_length=120,
         batch_size=64,
         device='cpu'
@@ -89,9 +89,10 @@ def main() -> None:
     finetuned_pipline.analyze_model()
     finetuned_pipline.infer_dataset()
 
-    predictions_ft_path = PROJECT_ROOT/'lab_8_sft'/'dist'/'predictions_ft.csv'
+    predictions_ft_path = PROJECT_ROOT/'lab_8_sft'/'dist'/'predictions.csv'
     predictions_path.parent.mkdir(exist_ok=True)
     predictions_df = finetuned_pipline.infer_dataset()
+    # print(predictions_df.predictions)
     predictions_df.to_csv(predictions_path, index=False)
 
     evaluator_ft = TaskEvaluator(predictions_ft_path, settings.parameters.metrics)

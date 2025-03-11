@@ -170,9 +170,9 @@ def tokenize_sample(
     )
 
     return {
-        "input_ids": source_tokens['input_ids'],
-        "decoder_input_ids": source_tokens['attention_mask'],
-        "labels": target_tokens['input_ids']
+        "input_ids": source_tokens['input_ids'].squeeze(0),
+        "decoder_input_ids": source_tokens['attention_mask'].squeeze(0),
+        "labels": target_tokens['input_ids'].squeeze(0)
             }
 
 
@@ -191,7 +191,7 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
-        self._data = data.apply(lambda x: tokenize_sample(x, tokenizer, max_length), axis=1)
+        self._data = list(data.apply(lambda x: tokenize_sample(x, tokenizer, max_length), axis=1))
 
     def __len__(self) -> int:
         """
@@ -212,7 +212,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        return dict(self._data.iloc[index])
+        return dict(self._data[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -392,6 +392,12 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if (self._finetuned_model_path is None
+                or self._max_steps is None
+                or self._per_device_train_batch_size is None
+                or self._learning_rate is None):
+            return
+
         model = get_peft_model(self._model, self._lora_config)
 
         training_args = TrainingArguments(
