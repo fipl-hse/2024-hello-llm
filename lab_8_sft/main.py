@@ -23,6 +23,7 @@ from torchinfo import summary
 from transformers import AutoTokenizer
 from config.lab_settings import SFTParams
 from core_utils.llm.sft_pipeline import AbstractSFTPipeline
+from peft import get_peft_model, LoraConfig
 
 
 class RawDataImporter(AbstractRawDataImporter):
