@@ -30,8 +30,10 @@ def main() -> None:
         raise ValueError('Received None instead of dataframe')
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
+    print(preprocessor.analyze())
     preprocessor.transform()
-    dataset = TaskDataset(preprocessor.data.head(10))
+    dataset = TaskDataset(preprocessor.data.head(100))
+
     pipeline = LLMPipeline(settings.parameters.model, dataset, 120, 64, 'cpu')
     infer_dataframe = pipeline.infer_dataset()
     print(pipeline.infer_sample(dataset[0]))

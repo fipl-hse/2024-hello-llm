@@ -68,8 +68,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         self._data = (self._raw_data.rename(columns={
-            'toxic': ColumnNames.SOURCE.value,
-            'comment': ColumnNames.TARGET.value}).reset_index(drop=True))
+            'toxic': ColumnNames.TARGET.value,
+            'comment': ColumnNames.SOURCE.value}).
+                      drop_duplicates().
+                      reset_index(drop=True))
+        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].apply(int)
 
 
 class TaskDataset(Dataset):
@@ -105,7 +108,8 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (self._data.source.iloc[index],)
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),
+                str(self._data.loc[index, ColumnNames.TARGET.value]))
 
     @property
     def data(self) -> DataFrame:
@@ -271,16 +275,18 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: model predictions as strings
         """
         encoded_batch = self._tokenizer(
-            list(sample_batch[0]),
+            sample_batch[0],
             return_tensors="pt",
             padding=True,
             truncation=True,
             max_length=self._max_length)
 
         encoded_batch.to(self._device)
+        outputs = self._model(**encoded_batch).logits
+        return [str(pred.argmax().item()) for pred in outputs]
 
-        preds = torch.argmax(self._model(**encoded_batch).logits, dim=1)
-        return [str(pred.item()) for pred in preds]
+        # preds = torch.argmax(self._model(**encoded_batch).logits, dim=1)
+        # return [str(pred.item()) for pred in preds]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -316,8 +322,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             scores = metric.compute(predictions=predictions,
                                     references=targets,
                                     average="micro")
-            key = metric.__class__.__name__.lower()
-            eval_results[key] = scores.get(key)
+            #key = metric.__class__.__name__.lower()
+            eval_results[metric.name] = scores[metric.name]
 
         return eval_results
 
