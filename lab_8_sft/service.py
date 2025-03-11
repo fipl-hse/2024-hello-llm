@@ -18,32 +18,30 @@ from lab_8_sft.start import main
 PARENT_DIR = Path(__file__).resolve().parent
 ASSETS_PATH = PARENT_DIR / "assets"
 
+
 @dataclass
 class Query:
     """
-    Query model with question text and model selection flag.
-    Attributes:
-        question (str): User input text.
-        is_base_model (bool): Flag to use either base or fine-tuned model.
+    Query model with question text
     """
     question: str
     is_base_model: bool
+
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     """
     Initialize core application.
 
-    Run: uvicorn lab_8_sft.service:app --reload
+    Run: uvicorn reference_service.server:app --reload
 
     Returns:
-        tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
+        tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
     """
     settings = LabSettings(PARENT_DIR / "settings.json")
 
     application = FastAPI()
     application.mount("/static", StaticFiles(directory=str(ASSETS_PATH)), name="static")
 
-    # Загружаем предобученную модель
     pre_trained_pipeline = LLMPipeline(
         model_name=settings.parameters.model,
         dataset=TaskDataset(pd.DataFrame()),
@@ -56,33 +54,34 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     if not fine_tuned_model_path.exists():
         main()
 
-        fine_tuned_pipeline = LLMPipeline(
-            model_name=str(fine_tuned_model_path),
-            dataset=TaskDataset(pd.DataFrame()),
-            batch_size=1,
-            max_length=120,
-            device="cpu"
-        )
+    fine_tuned_pipeline = LLMPipeline(
+        model_name=str(fine_tuned_model_path),
+        dataset=TaskDataset(pd.DataFrame()),
+        batch_size=1,
+        max_length=120,
+        device="cpu"
+    )
 
-        return application, pre_trained_pipeline, fine_tuned_pipeline
+    return application, pre_trained_pipeline, fine_tuned_pipeline
+
 
 app, pretrained_pipeline, finetuned_pipeline = init_application()
 
 templates = Jinja2Templates(directory=str(ASSETS_PATH))
 
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
-
+    """
+    The root endpoint for rendering the start page
+    """
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.post("/infer")
 async def infer(query: Query) -> dict[str, str]:
     """
-    Perform inference based on the user query and selected model.
-    Args:
-        query (Query): User input and model selection flag.
-    Returns:
-        dict[str, str]: The model's inference result.
+    The main endpoint for text processing via the LLM Pipeline
     """
     if query.is_base_model:
         return {"infer": pretrained_pipeline.infer_sample((query.question,))}
