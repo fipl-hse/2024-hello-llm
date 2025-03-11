@@ -121,9 +121,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        item = str(self._data.loc[index, ColumnNames.SOURCE.value])
-
-        return tuple([item])
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -186,8 +184,12 @@ class TokenizedTaskDataset(Dataset):
                 tokenize the dataset
             max_length (int): max length of a sequence
         """
-        self._data = [tokenize_sample(sample, tokenizer, max_length)
-                      for _, sample in data.iterrows()]
+        self._data = list(
+            data.apply(
+                lambda sample: tokenize_sample(sample, tokenizer, max_length),
+                axis=1
+            )
+        )
 
     def __len__(self) -> int:
         """
@@ -253,17 +255,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
-        try:
-            embedding_size = self._model.config.max_position_embeddings
-        except AttributeError:
-            if hasattr(self._model.config, "encoder"):
-                embedding_size = getattr(self._model.config.encoder,
-                                         "max_position_embeddings", None)
-                if embedding_size is None:
-                    embedding_size = getattr(self._model.config.encoder,
-                                             "hidden_size", None)
-            else:
-                embedding_size = None
+        embedding_size = self._model.config.hidden_size
 
         return {
             'input_shape': list(input_data['input_ids'].shape),
@@ -333,8 +325,8 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self._max_length
         )
 
-        decoded: list[str] = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        return decoded
+        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
@@ -352,6 +344,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         super().__init__(metrics)
         self._data_path = data_path
 
+
     def run(self) -> dict | None:
         """
         Evaluate the predictions against the references using the specified metric.
@@ -359,10 +352,10 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
-        data = pd.read_csv(self._data_path)
+        df = pd.read_csv(self._data_path)
 
-        preds = data[ColumnNames.PREDICTION.value]
-        refs = data[ColumnNames.TARGET.value]
+        preds = df[ColumnNames.PREDICTION.value]
+        refs = df[ColumnNames.TARGET.value]
 
         results = {}
         for metric in self._metrics:
@@ -400,8 +393,6 @@ class SFTPipeline(AbstractSFTPipeline):
 
         self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
 
-        self._model = get_peft_model(self._model, self._lora_config)
-
         self._batch_size = sft_params.batch_size
         self._max_length = sft_params.max_length
         self._max_sft_steps = sft_params.max_fine_tuning_steps
@@ -414,19 +405,14 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        batch_size = self._batch_size if self._batch_size is not None else 1
-        max_steps = self._max_sft_steps if self._max_sft_steps is not None else 100
-        learning_rate = self._learning_rate if self._learning_rate is not None else 1e-3
-
-        if not isinstance(self._model, torch.nn.Module):
-            raise TypeError("Expected a valid torch model, but got an invalid instance.")
+        self._model = get_peft_model(self._model, self._lora_config).to(self._device)
 
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),
-            per_device_train_batch_size=batch_size,
-            max_steps=max_steps,
-            learning_rate=learning_rate,
-            use_cpu=(self._device == "cpu"),
+            per_device_train_batch_size=self._batch_size,
+            max_steps=self._max_sft_steps,
+            learning_rate=self._learning_rate,
+            use_cpu=bool(self._device == "cpu"),
             save_strategy="no",
             load_best_model_at_end=False
         )
@@ -439,8 +425,6 @@ class SFTPipeline(AbstractSFTPipeline):
 
         trainer.train()
 
-        if self._lora_config is not None:
-            merged_model = self._model.merge_and_unload()
-            merged_model.save_pretrained(self._finetuned_model_path)
-        else:
-            self._model.save_pretrained(self._finetuned_model_path)
+        merged_model = self._model.merge_and_unload()
+
+        merged_model.save_pretrained(self._finetuned_model_path)
