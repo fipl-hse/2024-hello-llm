@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const isBaseModel = checkbox.checked;
 
         if (!text) {
-            responseParagraph.innerText = "Введите текст!";
+            responseParagraph.innerText = "Type!";
             return;
         }
 

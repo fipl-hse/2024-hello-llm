@@ -22,10 +22,7 @@ ASSETS_PATH = PARENT_DIR / "assets"
 @dataclass
 class Query:
     """
-    Query model with question text and model selection flag.
-    Attributes:
-        question (str): User input text.
-        is_base_model (bool): Flag to use either base or fine-tuned model.
+    Query model with question text
     """
     question: str
     is_base_model: bool
@@ -33,17 +30,18 @@ class Query:
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     """
-    Initialize the FastAPI application and load both base and fine-tuned models.
+    Initialize core application.
+
+    Run: uvicorn reference_service.server:app --reload
+
     Returns:
-        tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: Server instance and two model pipelines.
+        tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
     """
     settings = LabSettings(PARENT_DIR / "settings.json")
 
-    # Создаем FastAPI приложение и монтируем статические файлы
     application = FastAPI()
     application.mount("/static", StaticFiles(directory=str(ASSETS_PATH)), name="static")
 
-    # Загружаем предобученную модель
     pre_trained_pipeline = LLMPipeline(
         model_name=settings.parameters.model,
         dataset=TaskDataset(pd.DataFrame()),
@@ -52,12 +50,10 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         device="cpu"
     )
 
-    # Проверяем, существует ли дообученная модель, если нет — запускаем main() для её обучения
     fine_tuned_model_path = PARENT_DIR / "dist" / settings.parameters.model
     if not fine_tuned_model_path.exists():
         main()
 
-    # Загружаем дообученную модель
     fine_tuned_pipeline = LLMPipeline(
         model_name=str(fine_tuned_model_path),
         dataset=TaskDataset(pd.DataFrame()),
@@ -77,9 +73,7 @@ templates = Jinja2Templates(directory=str(ASSETS_PATH))
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
     """
-    Root endpoint for the web application.
-    Returns:
-        HTMLResponse: The rendered HTML page.
+    The root endpoint for rendering the start page
     """
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -87,11 +81,7 @@ async def root(request: Request) -> HTMLResponse:
 @app.post("/infer")
 async def infer(query: Query) -> dict[str, str]:
     """
-    Perform inference based on the user query and selected model.
-    Args:
-        query (Query): User input and model selection flag.
-    Returns:
-        dict[str, str]: The model's inference result.
+    The main endpoint for text processing via the LLM Pipeline
     """
     if query.is_base_model:
         return {"infer": pretrained_pipeline.infer_sample((query.question,))}

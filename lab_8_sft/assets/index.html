@@ -7,18 +7,17 @@
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Check what language it is</h1>
+    <h1>Summarizer</h1>
 
-    <label for="input-text">Введите текст:</label>
-    <textarea id="input-text" placeholder="Введите текст..."></textarea>
+    <label for="input-text">Your text:</label>
+    <textarea id="input-text" placeholder="Type here..."></textarea>
 
-    <!-- Чекбокс для выбора модели -->
     <div class="checkbox-container">
         <input type="checkbox" id="use-base-model" checked>
         <label for="use-base-model">Use base model</label>
     </div>
 
-    <button id="submit-btn">Отправить</button>
+    <button id="submit-btn">Summarize!</button>
     <p id="response"></p>
 
     <script src="/static/main.js"></script>

@@ -86,8 +86,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'text': ColumnNames.SOURCE.value
         }, inplace=False)
 
-        renamed_dataset.drop(columns=['title', 'date', 'url'])
-        renamed_dataset.reset_index(drop=True)
+        # renamed_dataset.drop(columns=['title', 'date', 'url'])
+        # renamed_dataset.reset_index(drop=True)
+        renamed_dataset = renamed_dataset.drop(columns=['title', 'date', 'url']).reset_index(drop=True)
 
         self._data = renamed_dataset
 
@@ -154,22 +155,36 @@ def tokenize_sample(
     Returns:
         dict[str, torch.Tensor]: Tokenized sample
     """
-    tokenized_source = tokenizer(sample[ColumnNames.SOURCE.value],
-                                 padding="max_length",
-                                 truncation=True,
-                                 return_tensors="pt",
-                                 max_length=max_length
-                                 )
-    tokenized_target = tokenizer(sample[ColumnNames.TARGET.value],
-                                 padding="max_length",
-                                 truncation=True,
-                                 return_tensors="pt",
-                                 max_length=max_length
-                                 )
+    # tokenized_source = tokenizer(sample[ColumnNames.SOURCE.value],
+    #                              padding="max_length",
+    #                              truncation=True,
+    #                              return_tensors="pt",
+    #                              max_length=max_length
+    #                              )
+    # tokenized_target = tokenizer(sample[ColumnNames.TARGET.value],
+    #                              padding="max_length",
+    #                              truncation=True,
+    #                              return_tensors="pt",
+    #                              max_length=max_length
+    #                              )
+    # return {
+    #     "input_ids": tokenized_source["input_ids"].squeeze(),
+    #     "attention_mask": tokenized_source["attention_mask"].squeeze(),
+    #     "labels": tokenized_target["input_ids"].squeeze()
+    # }
+
+    tokenized = tokenizer(
+        [sample[ColumnNames.SOURCE.value], sample[ColumnNames.TARGET.value]],
+        padding="max_length",
+        truncation=True,
+        return_tensors="pt",
+        max_length=max_length
+    )
+
     return {
-        "input_ids": tokenized_source["input_ids"].squeeze(),
-        "attention_mask": tokenized_source["attention_mask"].squeeze(),
-        "labels": tokenized_target["input_ids"].squeeze()
+        "input_ids": tokenized["input_ids"][0].squeeze(),
+        "attention_mask": tokenized["attention_mask"][0].squeeze(),
+        "labels": tokenized["input_ids"][1].squeeze()
     }
 
 
@@ -280,18 +295,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        # if not self._model:
-        #     return None
-        #
-        # inputs = self._tokenizer(
-        #     sample, return_tensors="pt", padding=True, truncation=True, max_length=120
-        # ).to(self._device)
-        #
-        # with torch.no_grad():
-        #     output_ids = self._model.generate(**inputs)
-        #
-        # prediction = self._tokenizer.decode(output_ids[0], skip_special_tokens=True)
-        # return prediction
 
         return self._infer_batch([sample])[0]
 
@@ -384,7 +387,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             if metric.value == Metrics.ROUGE.value:
                 scores[metric.value] = float(calculated['rougeL'])
             else:
-                scores[metric.value] = float(calculated['bleu'])
+                scores[metric.value] = float(calculated[metric.value])
 
         return scores
 
@@ -442,12 +445,6 @@ class SFTPipeline(AbstractSFTPipeline):
             load_best_model_at_end=False
         )
 
-        # trainer = Trainer(
-        #     model=self._model,
-        #     args=training_args,
-        #     train_dataset=self._dataset,
-        # )
-
         trainer = Trainer(
             model=self._model,
             args=training_args,
@@ -455,21 +452,7 @@ class SFTPipeline(AbstractSFTPipeline):
         )
 
         trainer.train()
-        # var 1
-        # self._model.merge_and_unload().save_pretrained(self._finetuned_model_path)
-        # AutoTokenizer.from_pretrained(self._model_name)
-        # .save_pretrained(self._finetuned_model_path)
 
-        # var 2
-        # self._model.save_pretrained(self._finetuned_model_path)
-        # AutoTokenizer.from_pretrained(self._model_name)
-        # .save_pretrained(self._finetuned_model_path)
-
-        # var 3
-        # self._model.merge_and_unload()
         trainer.model.base_model.merge_and_unload()
         trainer.model.base_model.save_pretrained(self._finetuned_model_path)
         AutoTokenizer.from_pretrained(self._model_name).save_pretrained(self._finetuned_model_path)
-
-        # T5TokenizerFast.from_pretrained(self._model_name)
-        # .save_pretrained(self._finetuned_model_path)
