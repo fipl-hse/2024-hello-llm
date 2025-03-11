@@ -1,18 +1,21 @@
 """
 Web service for model inference.
 """
+import logging
+from dataclasses import dataclass
+from pathlib import Path
+
+import pandas as pd
+
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
 from fastapi import FastAPI
-import logging
-from pathlib import Path
-from config.lab_settings import LabSettings
-from dataclasses import dataclass
-import pandas as pd
-from fastapi.staticfiles import StaticFiles
-from lab_8_sft.main import LLMPipeline, TaskDataset
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+from config.lab_settings import LabSettings
+from lab_8_sft.main import LLMPipeline, TaskDataset
 from lab_8_sft.start import main
 
 
@@ -61,30 +64,25 @@ app.mount("/assets", StaticFiles(directory=Path(__file__).parent / "assets"), "a
 
 @dataclass
 class Query:
+    """
+    Class for queries + checkbox for pretrained | base model
+    """
     question: str
     use_base_model: bool
 
 
 @app.post("/infer")
 async def infer(query: Query):
-    logging.debug(f"Received query: {query.question}")
+    logging.debug("Received query: %s", query.question)
     inquiry = tuple([query.question])
     print(inquiry)
     if query.use_base_model:
         prediction = pre_trained_pipeline.infer_sample(inquiry)
     else:
         prediction = fine_tuned_pipeline.infer_sample(inquiry)
-    logging.debug(f"Prediction: {prediction}")
+    logging.debug("Prediction: %s", prediction)
     print(prediction, type(prediction))
     return {"infer": "Negative" if prediction == '0' else "Positive"}
-
-    # print(query.question)
-    # inquiry = tuple(query.question)
-    # if query.use_base_model:
-    #     prediction = pre_trained_pipeline.infer_sample(inquiry)
-    # else:
-    #     prediction = fine_tuned_pipeline.infer_sample(inquiry)
-    # return {"infer": "Negative" if prediction == 0 else "Positive"}
 
 
 @app.get("/", response_class=HTMLResponse)
