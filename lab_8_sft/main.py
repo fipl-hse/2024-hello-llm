@@ -400,10 +400,10 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
-        if not (
-                self._lora_config or
-                self._max_sft_steps or
-                self._batch_size
+        if (
+                self._lora_config is None or
+                self._max_sft_steps is None or
+                self._batch_size is None
         ):
             raise TypeError('values should not be None')
 
