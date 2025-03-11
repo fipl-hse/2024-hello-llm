@@ -1,6 +1,9 @@
 datasets==3.2.0
 fastapi==0.115.7
 pandas==2.2.3
+peft==0.14.0
 pydantic==2.10.6
 torch==2.5.1
+torchinfo==1.8.0
 tqdm==4.67.1
+transformers==4.49.0
