@@ -284,9 +284,9 @@ class LLMPipeline(AbstractLLMPipeline):
             sample_predictions = self._infer_batch(batch)
             predictions.extend(sample_predictions)
 
-        res = pd.DataFrame(self._dataset.data)
-        res[ColumnNames.PREDICTION.value] = predictions
-        return res
+        results = pd.DataFrame(self._dataset.data)
+        results[ColumnNames.PREDICTION.value] = predictions
+        return results
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -305,8 +305,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True)
 
         output_ids = self._model.generate(
-            input_ids=inputs["input_ids"].to(self._device),
-            attention_mask=inputs["attention_mask"].to(self._device),
+            **inputs.to(self._device),
             max_length=self._max_length
         )
 

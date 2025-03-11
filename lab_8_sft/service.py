@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
 
 class InferenceRequest(BaseModel):
@@ -53,9 +54,12 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         batch_size=1,
         device="cpu"
     )
+    fine_tuned_model_path = Path(__file__).parent / "dist" / lab_settings.parameters.model
+    if not fine_tuned_model_path.exists():
+        main()
 
     finetuned_pipeline = LLMPipeline(
-        model_name=str(Path(__file__).parent / "dist" / lab_settings.parameters.model),
+        model_name=str(fine_tuned_model_path),
         dataset=TaskDataset(pd.DataFrame()),
         max_length=120,
         batch_size=1,
@@ -69,16 +73,22 @@ app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
 
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
+async def read_root(request: Request) -> HTMLResponse:
     """
     Get request to root, returns the index.html template.
+
+    Args:
+        request (Request): The incoming HTTP request.
+
+    Returns:
+        HTMLResponse: The rendered HTML response for 'index.html'.
     """
     templates = Jinja2Templates(directory=Path(__file__).parent / "assets")
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/inference")
-async def infer(request: InferenceRequest):
+async def infer(request: InferenceRequest) -> dict[str, str]:
     """
     Handle inference requests and return predictions using the selected model.
 
