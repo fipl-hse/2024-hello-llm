@@ -194,13 +194,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        sample = self._data[index]
-
-        return {
-            'input_ids': sample['input_ids'],
-            'attention_mask': sample['attention_mask'],
-            'labels': sample['labels']
-        }
+        return self._data[index]
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -222,8 +216,9 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference.
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)\
-            .to(self._device)
+        self._model = (
+            AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
+        )
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model.eval()
 
@@ -309,9 +304,7 @@ class LLMPipeline(AbstractLLMPipeline):
                                  truncation=True,
                                  max_length=self._max_length).to(self._device)
 
-        with torch.no_grad():
-            outputs = self._model(**inputs).logits
-
+        outputs = self._model(**inputs).logits
         return [str(pred.argmax().item()) for pred in outputs]
 
 
@@ -340,15 +333,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         outputs_df = pd.read_csv(self.data_path)
-        preds = outputs_df[ColumnNames.PREDICTION.value]
-        targets = outputs_df[ColumnNames.TARGET.value]
-        evaluation = {}
 
-        for metr in self._metrics:
-            metric = metr.compute(predictions=preds, references=targets, average="micro")
-            evaluation[metr.name] = metric[metr.name]
-
-        return evaluation
+        return {
+            metr.name: metr.compute(predictions=outputs_df[ColumnNames.PREDICTION.value],
+                                    references=outputs_df[ColumnNames.TARGET.value],
+                                    average="micro")[metr.name] for metr in self._metrics
+        }
 
 
 class SFTPipeline(AbstractSFTPipeline):
@@ -367,8 +357,9 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         super().__init__(model_name, dataset)
         self._device = sft_params.device
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)\
-            .to(self._device)
+        self._model = (
+            AutoModelForSequenceClassification.from_pretrained(model_name).to(self._device)
+        )
         self._lora_config = LoraConfig(r=4, lora_alpha=8, lora_dropout=0.1,
                                        target_modules=sft_params.target_modules)
         self._model = get_peft_model(self._model, self._lora_config)

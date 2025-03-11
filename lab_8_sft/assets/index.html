@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <title>Toxicity detection</title>
+</head>
+<body>
+    <h1 class="header">Toxicity detection tool</h1>
+    <textarea id="input" class="input-line" rows="2" cols="50" placeholder="Your query..."></textarea>
+    <button id="button" class="button-class">Send query</button>
+
+    <div class="check"><input type="checkbox" id="checkbox">
+        <label>Use base model</label></div>
+
+    <h2 class="header">Prediction</h2>
+    <h5><i>1 if the text is toxic, 0 otherwise</i></h5>
+    <div id="response" class="output-line" contenteditable="true">your prediction</div>
+
+    <script src="/assets/main.js"></script>
+</body>
+</html>
