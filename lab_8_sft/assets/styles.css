@@ -1,0 +1,127 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #e0f7fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    flex-direction: column;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.frame {
+    background-color: #b2ebf2;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 150%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.title {
+    font-size: 48px;
+    color: #4caf50;
+    margin-bottom: 40px;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    animation: zoomTitle 2s ease-in-out;
+    position: absolute;
+    top: 20px;
+}
+
+@keyframes zoomTitle {
+    0% {
+        transform: scale(1);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.text-input {
+    width: 80%;
+    height: 40px;
+    padding: 10px 15px;
+    background-color: #b2ebf2;
+    border: 1px solid #80deea;
+    font-size: 16px;
+    color: #00796b;
+    outline: none;
+    border-radius: 20px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+    margin-bottom: 20px;
+}
+
+.text-input:focus {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.02);
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.checkbox-container input {
+    margin-right: 10px;
+}
+
+.submit-button {
+    background: linear-gradient(135deg, #80deea, #26c6da);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 12px 30px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.submit-button:hover {
+    background: linear-gradient(135deg, #26c6da, #80deea);
+    transform: translateY(-4px);
+}
+
+.response-box {
+    min-height: 150px;
+    width: 80%;
+    padding: 20px;
+    background-color: #e0f7fa;
+    border: 1px solid #80deea;
+    font-size: 16px;
+    color: #00796b;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    text-align: left;
+    margin-top: 20px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    transition: box-shadow 0.3s ease;
+}
+
+.response-box:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
