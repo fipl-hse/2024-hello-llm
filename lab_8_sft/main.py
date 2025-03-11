@@ -290,6 +290,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        if not self._model:
+            return ['']
         if len(sample_batch) == 1:
             tokens = self._tokenizer(sample_batch[0][0], sample_batch[0][1], padding=True,
                                      truncation=True, return_tensors='pt')
