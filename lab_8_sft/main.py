@@ -121,9 +121,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        item = str(self._data.loc[index, ColumnNames.SOURCE.value])
-
-        return tuple([item])
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -253,17 +251,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
-        try:
-            embedding_size = self._model.config.max_position_embeddings
-        except AttributeError:
-            if hasattr(self._model.config, "encoder"):
-                embedding_size = getattr(self._model.config.encoder,
-                                         "max_position_embeddings", None)
-                if embedding_size is None:
-                    embedding_size = getattr(self._model.config.encoder,
-                                             "hidden_size", None)
-            else:
-                embedding_size = None
+        embedding_size = self._model.config.hidden_size
 
         return {
             'input_shape': list(input_data['input_ids'].shape),
@@ -333,7 +321,7 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self._max_length
         )
 
-        decoded: list[str] = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        decoded = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
         return decoded
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -439,8 +427,5 @@ class SFTPipeline(AbstractSFTPipeline):
 
         trainer.train()
 
-        if self._lora_config is not None:
-            merged_model = self._model.merge_and_unload()
-            merged_model.save_pretrained(self._finetuned_model_path)
-        else:
-            self._model.save_pretrained(self._finetuned_model_path)
+        merged_model = self._model.merge_and_unload()
+        merged_model.save_pretrained(self._finetuned_model_path)
