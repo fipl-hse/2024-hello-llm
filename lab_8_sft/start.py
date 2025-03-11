@@ -60,9 +60,9 @@ def main() -> None:
 
     finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     sft_params = SFTParams(
-        batch_size=5,
+        batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=150,
+        max_fine_tuning_steps=200,
         learning_rate=1e-2,
         device="cpu",
         finetuned_model_path=finetuned_model_path
@@ -83,7 +83,7 @@ def main() -> None:
                         str(Path(__file__).parent / 'dist' / settings.parameters.model),
                         dataset, max_length=120, batch_size=64, device='cpu'
     )
-
+    print(dataset.data())
     print("Analysis after finetuning: ", finetuned_pipeline.analyze_model())
 
     dataset_inference = finetuned_pipeline.infer_dataset()
