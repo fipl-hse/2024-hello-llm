@@ -18,11 +18,12 @@ from lab_8_sft.start import main
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     """
-    Initializes and configures the core application
+    Initialize core application.
+
+    Run: uvicorn lab_8_sft.service:app --reload
 
     Returns:
-        tuple: A tuple containing the FastAPI instance and two LLMPipeline instances
-        (one for the pre-trained model and one for the fine-tuned model)
+        tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
     """
     settings = LabSettings(Path(__file__).parent / "settings.json")
 
@@ -30,7 +31,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     if not fine_tuned_model_path.exists():
         main()
 
-    api_app  = FastAPI()
+    api_app = FastAPI()
 
     api_app.mount(
         path="/assets",
@@ -57,7 +58,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     return api_app, pre_trained_pipeline, fine_tuned_pipeline
 
 
-app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
+app, pre_trained_model, fine_tuned_model = init_application()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -89,14 +90,14 @@ async def infer(query: Query) -> dict[str, str]:
     Performs model inference on user input
 
     Args:
-        query: The user-provided input
+        query (Query): The user-provided input
 
     Returns:
         dict[str, str]: The inference result
     """
     if query.is_base_model:
-        answer = pre_trained_pipeline.infer_sample((query.question,))
+        answer = pre_trained_model.infer_sample((query.question,))
     else:
-        answer = fine_tuned_pipeline.infer_sample((query.question,))
+        answer = fine_tuned_model.infer_sample((query.question,))
 
     return {"infer": answer}
