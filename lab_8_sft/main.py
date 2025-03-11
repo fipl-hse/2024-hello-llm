@@ -251,7 +251,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         model_summary = summary(self._model, input_data=input_data, verbose=0)
 
-        embedding_size = self._model.config.hidden_size
+        embedding_size = self._model.config.encoder.hidden_size
 
         return {
             'input_shape': list(input_data['input_ids'].shape),
@@ -321,8 +321,7 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self._max_length
         )
 
-        decoded = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        return decoded
+        return [self._tokenizer.decode(pred, skip_special_tokens=True) for pred in outputs]
 
 class TaskEvaluator(AbstractTaskEvaluator):
     """
