@@ -377,8 +377,7 @@ class SFTPipeline(AbstractSFTPipeline):
             r=4,
             lora_alpha=8,
             lora_dropout=0.1,
-            target_modules=["q", "v", "k", "o"],
-            task_type="SEQ_2_SEQ_LM"
+            target_modules=sft_params.target_modules
         )
 
         self._model:torch.nn.Module = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
