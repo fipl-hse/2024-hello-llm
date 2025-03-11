@@ -14,8 +14,10 @@ from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
-    TaskEvaluator, TokenizedTaskDataset, SFTPipeline,
+    TaskEvaluator,
+    TokenizedTaskDataset,
 )
 
 
@@ -60,8 +62,11 @@ def main() -> None:
                                    AutoTokenizer.from_pretrained(settings.parameters.model),
                                    sft_params.max_length)
 
-    pipeline = SFTPipeline(settings.parameters.model, dataset, sft_params)
-    pipeline.run()
+    sft_pipeline = SFTPipeline(settings.parameters.model, dataset, sft_params)
+    sft_pipeline.run()
+
+    tokenizer = AutoTokenizer.from_pretrained(settings.parameters.model)
+    tokenizer.save_pretrained(sft_params.finetuned_model_path)
 
     pipeline = LLMPipeline(
         str(sft_params.finetuned_model_path),

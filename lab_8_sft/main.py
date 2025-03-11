@@ -11,10 +11,16 @@ import evaluate
 import pandas as pd
 import torch
 from datasets import load_dataset
-from peft import LoraConfig, get_peft_model
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import AutoTokenizer, BertTokenizerFast, EncoderDecoderModel, Trainer, TrainingArguments
+from transformers import (
+    AutoTokenizer,
+    BertTokenizerFast,
+    EncoderDecoderModel,
+    Trainer,
+    TrainingArguments,
+)
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
@@ -237,10 +243,18 @@ class LLMPipeline(AbstractLLMPipeline):
         if not isinstance(self._model, torch.nn.Module):
             raise TypeError('The model is not a torch.nn.Module instance.')
 
-        tensor = torch.zeros(1, self._model.config.decoder.max_position_embeddings, dtype=torch.long)
+        tensor = torch.zeros(
+            1,
+            self._model.config.decoder.max_position_embeddings,
+            dtype=torch.long
+        )
         model_summary = summary(
             self._model,
-            input_data={'input_ids': tensor, 'attention_mask': tensor, 'decoder_input_ids': tensor},
+            input_data={
+                'input_ids': tensor,
+                'attention_mask': tensor,
+                'decoder_input_ids': tensor
+            },
             device='cpu'
         )
 
@@ -351,7 +365,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
                 references=dataframe[ColumnNames.TARGET.value],
                 predictions=dataframe[ColumnNames.PREDICTION.value]
             )
-            metrics_scores[metric.value] = score['rougeL' if metric.value == 'rouge' else metric.value]
+            metrics_scores[metric.value] = float(
+                score['rougeL' if metric.value == 'rouge' else metric.value]
+            )
         return metrics_scores
 
 
@@ -389,7 +405,7 @@ class SFTPipeline(AbstractSFTPipeline):
             per_device_train_batch_size=self._sft_params.batch_size,
             learning_rate=self._sft_params.learning_rate,
             save_strategy='no',
-            use_cpu=True,
+            use_cpu=bool(self._sft_params.device == 'cpu'),
             load_best_model_at_end=False
         )
         trainer = Trainer(
