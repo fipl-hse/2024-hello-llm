@@ -214,8 +214,8 @@ class LLMPipeline(AbstractSFTPipeline):
         properties = dict()
         input_data = torch.ones((1, self._model.config.max_position_embeddings), dtype=torch.long)
         model_statistics = summary(self._model, input_data={'input_ids': input_data, 'attention_mask': input_data})
-        properties['input_shape'] = {'input_ids': model_statistics.input_size['input_ids'],
-                                     'attention_mask': model_statistics.input_size['input_ids']}
+        properties['input_shape'] = {'input_ids': list(model_statistics.input_size['input_ids']),
+                                     'attention_mask': list(model_statistics.input_size['input_ids'])}
         properties['embedding_size'] = self._model.config.max_position_embeddings
         properties['output_shape'] = model_statistics.summary_list[-1].output_size
         properties['num_trainable_params'] = model_statistics.trainable_params
