@@ -14,8 +14,10 @@ from lab_8_sft.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
+    SFTPipeline,
     TaskDataset,
-    TaskEvaluator, TokenizedTaskDataset, SFTPipeline,
+    TaskEvaluator,
+    TokenizedTaskDataset
 )
 
 
@@ -62,7 +64,6 @@ def main() -> None:
         learning_rate=1e-3,
         finetuned_model_path=PROJECT_ROOT/'lab_8_sft'/'dist'/ settings.parameters.model,
         device='cpu',
-        target_modules=None
     )
 
     num_samples = 11

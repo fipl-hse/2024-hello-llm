@@ -11,7 +11,7 @@ import evaluate
 import pandas as pd
 import torch
 from datasets import load_dataset
-from peft import LoraConfig, get_peft_model
+from peft import get_peft_model, LoraConfig
 from torch.nn import Module
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
@@ -376,7 +376,6 @@ class SFTPipeline(AbstractSFTPipeline):
             r=4,
             lora_alpha=8,
             lora_dropout=0.1,
-            target_modules=sft_params.target_modules
         )
 
         self._max_steps = sft_params.max_fine_tuning_steps
