@@ -23,7 +23,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     Run: uvicorn lab_8_sft.service:app --reload
 
     Returns:
-        tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
+        tuple[FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
     """
     settings = LabSettings(Path(__file__).parent / "settings.json")
 
@@ -33,7 +33,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
 
     llm_app = FastAPI()
 
-    pre_trained_pipeline = LLMPipeline(
+    pre_pipeline = LLMPipeline(
         model_name=settings.parameters.model,
         dataset=TaskDataset(pd.DataFrame()),
         max_length=120,
@@ -41,7 +41,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         device="cpu"
     )
 
-    fine_tuned_pipeline = LLMPipeline(
+    fine_pipeline = LLMPipeline(
         model_name=str(fine_tuned_model_path),
         dataset=TaskDataset(pd.DataFrame()),
         max_length=120,
@@ -55,7 +55,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         name="assets"
     )
 
-    return llm_app, pre_trained_pipeline, fine_tuned_pipeline
+    return llm_app, pre_pipeline, fine_pipeline
 
 
 app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
@@ -75,6 +75,13 @@ async def root(request: Request) -> HTMLResponse:
 
 
 class Query(BaseModel):
+    """
+    Represents a query for model inference.
+
+    Attributes:
+        question (str): User input question.
+        is_base_model (bool): Flag to use the base or fine-tuned model.
+    """
     question: str
     is_base_model: bool
 

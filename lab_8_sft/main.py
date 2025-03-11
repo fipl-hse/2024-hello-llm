@@ -133,8 +133,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),
-                str(self._data.loc[index, ColumnNames.TARGET.value]))
+        return (str(self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -348,9 +347,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
         self._metrics = [Metrics(m) if isinstance(m, str) else m for m in metrics]
         super().__init__(self._metrics)
 
-        self._metricstomodule = {}
+        self._metrics_to_module = {}
         for metric in self._metrics:
-            self._metricstomodule[metric.value] = load(metric.value)
+            self._metrics_to_module[metric.value] = load(metric.value)
 
     def run(self) -> dict | None:
         """
@@ -364,7 +363,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
         targets = outputs_df[ColumnNames.TARGET.value]
         evaluation = {}
         targets = targets.astype(int)
-        for metric, module in self._metricstomodule.items():
+        for metric, module in self._metrics_to_module.items():
             metric_result = module.compute(
                 predictions=predictions,
                 references=targets,

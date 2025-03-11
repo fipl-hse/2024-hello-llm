@@ -4,6 +4,6 @@
     "dataset": "s-nlp/ru_paradetox_toxicity",
     "metrics": ["f1"]
   },
-  "target_score": 8
+  "target_score": 10
 }
 
