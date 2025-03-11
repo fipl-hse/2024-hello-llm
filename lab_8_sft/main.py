@@ -383,6 +383,9 @@ class SFTPipeline(AbstractSFTPipeline):
         self._learning_rate = sft_params.learning_rate
         self._finetuned_model_path = sft_params.finetuned_model_path
         self._model = T5ForConditionalGeneration.from_pretrained(self._model_name)
+        if self._lora_config is None:
+            raise ValueError("self._lora_config should not be None")
+        self._model = get_peft_model(self._model, self._lora_config)
 
     def run(self) -> None:
         """
@@ -393,8 +396,6 @@ class SFTPipeline(AbstractSFTPipeline):
                 or self._per_device_train_batch_size is None
                 or self._learning_rate is None):
             return
-
-        model = get_peft_model(self._model, self._lora_config)
 
         training_args = TrainingArguments(
             output_dir=str(self._finetuned_model_path),
@@ -407,7 +408,7 @@ class SFTPipeline(AbstractSFTPipeline):
         )
 
         trainer = Trainer(
-            model=model,
+            model=self._model,
             args=training_args,
             train_dataset=self._dataset
         )
