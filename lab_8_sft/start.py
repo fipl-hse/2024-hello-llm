@@ -63,7 +63,7 @@ def main() -> None:
 
     finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     sft_params = SFTParams(
-        batch_size=3,
+        batch_size=5,
         max_length=120,
         max_fine_tuning_steps=175,
         learning_rate=1e-2,
