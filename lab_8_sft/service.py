@@ -73,6 +73,19 @@ class Query:
 
 @app.post("/infer")
 async def infer(query: Query):
+    """
+    Handle a POST request to classify the sentiment of the input text.
+
+    Args:
+        query (Query): A dataclass containing:
+            - question (str): The input text to classify.
+            - use_base_model (bool): If True, use the base model;
+            otherwise, use the fine-tuned model.
+
+    Returns:
+        dict: A dictionary containing the sentiment classification result:
+            - "infer" (str): The sentiment classification, either "Negative" or "Positive".
+    """
     logging.debug("Received query: %s", query.question)
     inquiry = tuple([query.question])
     print(inquiry)
@@ -88,11 +101,14 @@ async def infer(query: Query):
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
     """
-    Root endpoint for the web application.
+    Serve the main HTML page for the web application.
+
     Args:
-        request (Request): The incoming HTTP request.
+        request (Request): The incoming HTTP request object, which is passed to the template
+                           for rendering.
+
     Returns:
-        HTMLResponse: The rendered HTML response for 'index.html'.
+        HTMLResponse: A response containing the rendered HTML page from the 'index.html' template.
     """
     templates = Jinja2Templates(directory=Path(__file__).parent / "assets")
     return templates.TemplateResponse("index.html", {"request": request})
