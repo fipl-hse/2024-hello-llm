@@ -83,7 +83,6 @@ def main() -> None:
                         str(Path(__file__).parent / 'dist' / settings.parameters.model),
                         dataset, max_length=120, batch_size=64, device='cpu'
     )
-    print(dataset.data())
     print("Analysis after finetuning: ", finetuned_pipeline.analyze_model())
 
     dataset_inference = finetuned_pipeline.infer_dataset()
