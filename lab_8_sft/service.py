@@ -111,4 +111,4 @@ async def infer(request: Query) -> dict[str, str]:
         result = fine_tuned_pipeline.infer_sample((request.question, ))
     logger.info('model inference complete: %s', result)
 
-    return {'infer': f'your emotion is {id2label[int(result)]}, right?'}
+    return {'infer': f'your emotion is {id2label[int(result)]}, right??'}
