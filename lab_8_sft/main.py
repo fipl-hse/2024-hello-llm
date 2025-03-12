@@ -300,12 +300,14 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        if self._model is None:
+            return []
+
         model_input = self._tokenizer(sample_batch[0],
                                       return_tensors='pt',
                                       max_length=self._max_length,
                                       padding=True,
                                       truncation=True).to(self._device)
-
 
         logits = self._model(**model_input).logits
         return [self._model.config.id2label[i] for i in torch.argmax(logits, dim=1).tolist()]

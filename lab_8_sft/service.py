@@ -40,20 +40,23 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     Returns:
         tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
     """
-    pipeline_params = {'max_length': 120, 'batch_size': 1, 'device': 'cpu'}
+    max_length = 120
+    batch_size = 1
+    device = 'cpu'
 
     settings_path = PROJECT_ROOT / 'lab_8_sft' / 'settings.json'
     parameters = LabSettings(settings_path).parameters
 
     pretrained_pipeline = LLMPipeline(
         parameters.model, TaskDataset(pd.DataFrame()),
-        **pipeline_params)
+        max_length=max_length, batch_size=batch_size, device=device
+    )
 
-    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'finetuned'
+    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / parameters.model
 
     finetuned_pipeline = LLMPipeline(
         str(finetuned_model_path), TaskDataset(pd.DataFrame()),
-        **pipeline_params
+        max_length=max_length, batch_size=batch_size, device=device
     )
 
     classfication_app = FastAPI()
