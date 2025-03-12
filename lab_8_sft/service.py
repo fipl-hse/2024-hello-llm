@@ -14,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
 from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +54,8 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     )
 
     finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / parameters.model
+    if not finetuned_model_path.exists():
+        main()
 
     finetuned_pipeline = LLMPipeline(
         str(finetuned_model_path), TaskDataset(pd.DataFrame()),
