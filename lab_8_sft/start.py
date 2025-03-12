@@ -54,7 +54,7 @@ def main() -> None:
         batch_size=3,
         max_length=120,
         max_fine_tuning_steps=50,
-        learning_rate=0.005,
+        learning_rate=0.004,
         finetuned_model_path=ft_model_path,
         device="cpu"
     )

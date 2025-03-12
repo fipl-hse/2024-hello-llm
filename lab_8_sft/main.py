@@ -64,7 +64,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             'dataset_columns': len(self._raw_data.columns),
             'dataset_duplicates': int(self._raw_data.duplicated().sum()),
             'dataset_empty_rows': int(self._raw_data.isnull().all(axis=1).sum()),
-            'dataset_empty_strings': len([i for i in self._raw_data if i == '']),
             'dataset_sample_min_len': int(self._raw_data['comment'].str.len().min()),
             'dataset_sample_max_len': int(self._raw_data['comment'].str.len().max()),
         }
@@ -300,7 +299,7 @@ class LLMPipeline(AbstractLLMPipeline):
             list[str]: model predictions as strings
         """
         encoded_batch = self._tokenizer(
-            list(sample_batch[0]),
+            sample_batch[0],
             return_tensors="pt",
             padding=True,
             truncation=True,
@@ -308,8 +307,8 @@ class LLMPipeline(AbstractLLMPipeline):
 
         encoded_batch.to(self._device)
 
-        preds = torch.argmax(self._model(**encoded_batch).logits, dim=1)
-        return [str(pred.item()) for pred in preds]
+        outputs = self._model(**encoded_batch).logits
+        return [str(pred.argmax().item()) for pred in outputs]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
