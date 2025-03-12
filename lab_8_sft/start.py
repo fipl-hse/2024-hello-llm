@@ -57,7 +57,6 @@ def main() -> None:
         learning_rate=1e-3,
         finetuned_model_path=ft_model_path,
         device="cpu",
-        target_modules=''
     )
     num_samples = 15
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
