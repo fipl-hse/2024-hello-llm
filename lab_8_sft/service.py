@@ -88,13 +88,11 @@ async def infer(query: Query) -> dict:
     """
     logging.debug("Received query: %s", query.question)
     inquiry = tuple([query.question])
-    print(inquiry)
     if query.use_base_model:
         prediction = pre_trained_pipeline.infer_sample(inquiry)
     else:
         prediction = fine_tuned_pipeline.infer_sample(inquiry)
     logging.debug("Prediction: %s", prediction)
-    print(prediction, type(prediction))
     return {"infer": "Negative" if prediction == '0' else "Positive"}
 
 

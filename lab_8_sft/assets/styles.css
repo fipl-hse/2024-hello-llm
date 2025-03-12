@@ -45,3 +45,32 @@ input[type="checkbox"] {
 .checkbox-container {
     margin: 10px 0;
 }
+
+#responseContainer {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#responseField {
+    font-size: 1.2rem;
+    color: #513833;
+    margin: 0;
+    text-align: center;
+}
+
+#responseContainer {
+    animation: fadeIn 0.5s ease;
+}
+
+#responseField.positive {
+    color: #4CAF50;
+}
+
+#responseField.negative {
+    color: #F44336;
+}

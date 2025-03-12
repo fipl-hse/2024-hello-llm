@@ -36,9 +36,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const responseData = await response.json();
 
-            responseField.innerText = `This text is classified as: ${responseData.infer}`;
+            if (responseData.infer === "Positive") {
+                responseField.innerText = `This text is classified as: ${responseData.infer}`;
+                responseField.classList.remove('negative');
+                responseField.classList.add('positive');
+            } else {
+                responseField.innerText = `This text is classified as: ${responseData.infer}`;
+                responseField.classList.remove('positive');
+                responseField.classList.add('negative');
+            }
         } catch (error) {
             responseField.innerText = `Error: ${error.message}`;
+            responseField.classList.remove('positive', 'negative');
         }
     });
 });
