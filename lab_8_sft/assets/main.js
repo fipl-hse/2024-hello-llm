@@ -2,7 +2,7 @@ const classifyButton = document.getElementById('classifyButton');
 
 classifyButton.addEventListener('click', async () => {
     const inputText = document.getElementById('inputText').value;
-    const useBaseModel = document.getElementById('useBaseModel').checked;
+    const isBaseModel = document.getElementById('isBaseModel').checked;
     const classificationResult = document.getElementById('result');
 
     if (!inputText.trim()) {
@@ -18,7 +18,7 @@ classifyButton.addEventListener('click', async () => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ question: inputText, use_base_model: useBaseModel }),
+            body: JSON.stringify({ question: inputText, is_base_model: isBaseModel }),
         });
 
         if (!response.ok) {

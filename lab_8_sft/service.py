@@ -29,7 +29,7 @@ class Query:
     and the model (base/finetuned) to be used
     """
     question: str
-    use_base_model: bool
+    is_base_model: bool
 
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
@@ -105,10 +105,10 @@ async def infer(request: Query) -> dict[str, str]:
                 3: 'anger', 4: 'fear', 5: 'surprise'}
 
     logger.info('received request: %s', request.question)
-    if request.use_base_model:
+    if request.is_base_model:
         result = pre_trained_pipeline.infer_sample((request.question, ))
     else:
         result = fine_tuned_pipeline.infer_sample((request.question, ))
     logger.info('model inference complete: %s', result)
 
-    return {'infer': f'your emotion is {id2label[int(result)]}, right??'}
+    return {'infer': f'your emotion is {id2label[int(result)]}, right?'}
