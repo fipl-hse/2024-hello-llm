@@ -54,21 +54,21 @@ def main() -> None:
         batch_size=3,
         max_length=120,
         max_fine_tuning_steps=50,
-        learning_rate=1e-3,
+        learning_rate=0.005,
         finetuned_model_path=ft_model_path,
-        device="cpu",
+        device="cpu"
     )
-    num_samples = 15
+    num_samples = 17
     fine_tune_samples = sft_params.batch_size * sft_params.max_fine_tuning_steps
 
-    tok_dataset = TokenizedTaskDataset(preprocessor.data.loc[
+    tox_dataset = TokenizedTaskDataset(preprocessor.data.loc[
                                        num_samples: num_samples + fine_tune_samples],
                                        max_length=sft_params.max_length,
                                        tokenizer=AutoTokenizer
                                        .from_pretrained(settings.parameters.model))
 
     sft_pipeline = SFTPipeline(settings.parameters.model,
-                               tok_dataset,
+                               tox_dataset,
                                sft_params)
     sft_pipeline.run()
 
