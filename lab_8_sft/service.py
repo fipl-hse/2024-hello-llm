@@ -25,8 +25,8 @@ class InferenceRequest(BaseModel):
         use_finetuned (bool): Whether to use the fine-tuned model or not.
         text (str): The text to be passed for inference.
     """
-    use_finetuned: bool
-    text: str
+    is_base_model: bool
+    question: str
 
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
@@ -87,7 +87,7 @@ async def read_root(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-@app.post("/inference")
+@app.post("/infer")
 async def infer(request: InferenceRequest) -> dict[str, str]:
     """
     Handle inference requests and return predictions using the selected model.
@@ -98,11 +98,9 @@ async def infer(request: InferenceRequest) -> dict[str, str]:
     Returns:
         dict: Prediction result from the selected model.
     """
-    if request.use_finetuned:
-        pipeline = fine_tuned_pipeline
-    else:
+    if request.is_base_model:
         pipeline = pre_trained_pipeline
+    else:
+        pipeline = fine_tuned_pipeline
 
-    prediction = pipeline.infer_sample((request.text,))
-
-    return {"prediction": prediction}
+    return {"infer": pipeline.infer_sample((request.question,))}

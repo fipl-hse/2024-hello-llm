@@ -1,5 +1,5 @@
 function Summarize() {
-    const useFinetuned = document.getElementById('use_finetuned').checked;
+    const useBasemodel = document.getElementById('is_base_model').checked;
     const inputText = document.getElementById('input-text').value;
 
     if (!inputText.trim()) {
@@ -7,20 +7,20 @@ function Summarize() {
         return;
     }
 
-    fetch('/inference', {
+    fetch('/infer', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            use_finetuned: useFinetuned,
-            text: inputText
+            is_base_model: useBasemodel,
+            question: inputText
         })
     })
     .then(response => response.json())
     .then(data => {
         const resultElement = document.getElementById('result');
-        resultElement.innerText = `Summarization: ${data.prediction}.`;
+        resultElement.innerText = `Summarization: ${data.infer}.`;
         resultElement.classList.add('active');
     })
     .catch(error => {
