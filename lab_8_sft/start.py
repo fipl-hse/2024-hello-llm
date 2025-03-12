@@ -39,7 +39,7 @@ def main() -> None:
     print(preprocessor.analyze())
     preprocessor.transform()
 
-    num_samples = 9
+    num_samples = 11
 
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model, dataset,
