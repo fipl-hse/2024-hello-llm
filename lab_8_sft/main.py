@@ -12,7 +12,7 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from peft import LoraConfig, get_peft_model
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
@@ -324,6 +324,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
         self._data_path = data_path
         self._metrics = [load(metric.value) for metric in metrics]
 
