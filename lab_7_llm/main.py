@@ -256,7 +256,7 @@ class TaskEvaluator(AbstractTaskEvaluator):
             metrics (Iterable[Metrics]): List of metrics to check
         """
         super().__init__(metrics)
-        self._loaded_metrics = [load(metric.value) for metric in self._metrics]
+        self._loaded_metrics = [load(metric.value, seed=77) for metric in self._metrics]
         self._data_path = data_path
 
 
