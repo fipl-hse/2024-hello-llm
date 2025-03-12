@@ -298,6 +298,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a Module model')
         encoded_batch = self._tokenizer(
             sample_batch[0],
             return_tensors="pt",
