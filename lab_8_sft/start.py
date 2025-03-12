@@ -39,7 +39,7 @@ def main() -> None:
     print(preprocessor.analyze())
     preprocessor.transform()
 
-    num_samples = 11
+    num_samples = 12
 
     dataset = TaskDataset(preprocessor.data.head(100))
     pipeline = LLMPipeline(settings.parameters.model, dataset,
@@ -65,7 +65,7 @@ def main() -> None:
     sft_params = SFTParams(
         batch_size=3,
         max_length=120,
-        max_fine_tuning_steps=195,
+        max_fine_tuning_steps=190,
         learning_rate=1e-2,
         device="cpu",
         finetuned_model_path=finetuned_model_path
