@@ -27,16 +27,10 @@ classifyButton.addEventListener('click', async () => {
 
         const data = await response.json();
 
-        const trimmedInfer = (data.infer || '').trim();
-
-        if (trimmedInfer === "") {
-            summaryResult.textContent = 'We could not classify your text :(';
-        } else {
-            summaryResult.textContent = trimmedInfer;
-        }
+        classificationResult.textContent = data.infer;
 
     } catch (error) {
-        classificationResult.textContent = 'An error occurred text classification :(';
+        classificationResult.textContent = 'An error occurred during text classification :(' + error.message;
         console.error(`Error: ${error.message}`);
     }
 });

@@ -8,8 +8,6 @@ except ImportError:
     print('Library "fastapi" not installed. Failed to import.')
     FastAPI = None
 
-from lab_8_sft.main import LLMPipeline, TaskDataset
-
 import logging
 from dataclasses import dataclass
 
@@ -21,9 +19,12 @@ from fastapi.templating import Jinja2Templates
 
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
+from lab_8_sft.main import LLMPipeline, TaskDataset
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+app_path = PROJECT_ROOT / 'lab_8_sft' / 'assets'
 
 
 @dataclass
@@ -45,38 +46,34 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     Returns:
         tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
     """
-    max_length = 120
-    batch_size = 1
-    device = 'cpu'
+    pipeline_params = {'max_length': 120, 'batch_size': 1, 'device': 'cpu'}
 
     settings_path = PROJECT_ROOT / 'lab_8_sft' / 'settings.json'
     parameters = LabSettings(settings_path).parameters
 
     pretrained_pipeline = LLMPipeline(
         parameters.model, TaskDataset(pd.DataFrame()),
-        max_length, batch_size, device
-    )
+        **pipeline_params)
 
     finetuned_model_dir = f'finetuned_{parameters.model.split("/")[-1]}'
     finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / finetuned_model_dir
 
     finetuned_pipeline = LLMPipeline(
         str(finetuned_model_path), TaskDataset(pd.DataFrame()),
-        max_length, batch_size, device
+        **pipeline_params
     )
 
     classfication_app = FastAPI()
+
+    classfication_app.mount('/assets', StaticFiles(directory=app_path), name='assets')
+
+    logger.info('fastapi application started')
 
     return classfication_app, pretrained_pipeline, finetuned_pipeline
 
 
 app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
 
-
-app_path = PROJECT_ROOT / 'lab_8_sft' / 'assets'
-app.mount('/assets', StaticFiles(directory=app_path), name='assets')
-
-logger.info('fastapi application started')
 
 
 @app.get('/', response_class=HTMLResponse)
@@ -105,11 +102,14 @@ async def infer(request: Query) -> dict[str, str]:
     Returns:
         dict[str, str]: A dictionary containing the inference results
     """
+    id2label = {0: 'sadness', 1: 'joy', 2: 'love',
+                3: 'anger', 4: 'fear', 5: 'surprise'}
+
     logger.info('received request: %s', request.question)
-    if Query.use_base_model:
+    if request.use_base_model:
         result = pre_trained_pipeline.infer_sample((request.question, ))
     else:
         result = fine_tuned_pipeline.infer_sample((request.question, ))
     logger.info('model inference complete: %s', result)
 
-    return {'infer': result}
+    return {'infer': f'your emotion is {id2label[int(result)]}, right?'}

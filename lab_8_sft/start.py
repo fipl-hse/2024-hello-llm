@@ -25,7 +25,7 @@ def main() -> None:
     """
     Run the translation pipeline.
     """
-    set_seed(22)
+    set_seed(42)
     settings_path = PROJECT_ROOT / 'lab_8_sft' / 'settings.json'
     parameters = LabSettings(settings_path).parameters
 
@@ -67,7 +67,7 @@ def main() -> None:
         batch_size=3,
         max_length=120,
         max_fine_tuning_steps=50,
-        learning_rate=0.001,
+        learning_rate=1e-3,
         device='cpu',
         finetuned_model_path=finetuned_model_path
     )
