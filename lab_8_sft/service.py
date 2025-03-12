@@ -2,12 +2,6 @@
 Web service for model inference.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
-try:
-    from fastapi import FastAPI
-except ImportError:
-    print('Library "fastapi" not installed. Failed to import.')
-    FastAPI = None
-
 import logging
 from dataclasses import dataclass
 
@@ -55,8 +49,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         parameters.model, TaskDataset(pd.DataFrame()),
         **pipeline_params)
 
-    finetuned_model_dir = f'finetuned_{parameters.model.split("/")[-1]}'
-    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / finetuned_model_dir
+    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / 'finetuned'
 
     finetuned_pipeline = LLMPipeline(
         str(finetuned_model_path), TaskDataset(pd.DataFrame()),

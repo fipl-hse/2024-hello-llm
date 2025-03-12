@@ -306,10 +306,9 @@ class LLMPipeline(AbstractLLMPipeline):
                                       padding=True,
                                       truncation=True).to(self._device)
 
-        output = self._model(**model_input)
 
-        target_ids = list(map(lambda x: x.argmax().item(), output[0]))
-        return [self._model.config.id2label[id] for id in target_ids]
+        logits = self._model(**model_input).logits
+        return [self._model.config.id2label[i] for i in torch.argmax(logits, dim=1).tolist()]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):

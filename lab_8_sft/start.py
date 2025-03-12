@@ -40,8 +40,12 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline_params = {'max_length': 120, 'batch_size': 64, 'device': 'cpu'}
-    pipeline = LLMPipeline(parameters.model, dataset, **pipeline_params)
+    max_length = 120
+    batch_size = 64
+    device = 'cpu'
+
+    pipeline = LLMPipeline(parameters.model, dataset,
+                           max_length=max_length, batch_size=batch_size, device=device)
 
     print('base model analysis:', pipeline.analyze_model())
     sample = dataset[22]
@@ -60,8 +64,8 @@ def main() -> None:
     metrics_result = evaluator.run()
     print('results of base model:', metrics_result)
 
-    finetuned_model_dir = f'finetuned_{parameters.model.split("/")[-1]}'
-    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / finetuned_model_dir
+    finetuned_model_path = PROJECT_ROOT / 'lab_8_sft' / 'dist' / parameters.model
+    finetuned_model_path.mkdir(parents=True, exist_ok=True)
 
     sft_parameters = SFTParams(
         batch_size=3,
@@ -87,7 +91,7 @@ def main() -> None:
 
     finetuned_pipeline = LLMPipeline(str(finetuned_model_path),
                                      TaskDataset(preprocessor.data.sample(num_samples)),
-                                     **pipeline_params)
+                                     max_length=max_length, batch_size=batch_size, device=device)
 
     print('finetuned model analysis:', finetuned_pipeline.analyze_model())
 
