@@ -353,9 +353,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
             res = metric.compute(references=pred_df[ColumnNames.TARGET.value],
                                  predictions=pred_df[ColumnNames.PREDICTION.value])
             if metric.name == Metrics.BLEU.value:
-                metric_counts[metric.name] = float(res["bleu"])
+                metric_counts[metric.name] = round(float(res["bleu"]), 2)
             else:
-                metric_counts[metric.name] = float(res["rougeL"])
+                metric_counts[metric.name] = round(float(res["rougeL"]), 2)
         return metric_counts
 
 
