@@ -2,13 +2,15 @@
 Web service for model inference.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
+from typing import Any
+from lab_8_sft.main import LLMPipeline
+
+FastAPI: Any
 try:
     from fastapi import FastAPI
 except ImportError:
     print('Library "fastapi" not installed. Failed to import.')
     FastAPI = None
-
-from lab_8_sft.main import LLMPipeline
 
 
 def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:

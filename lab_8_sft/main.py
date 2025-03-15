@@ -12,13 +12,12 @@ import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from peft import get_peft_model, LoraConfig  # PeftMixedModel, PeftModel
+from peft import get_peft_model, LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
-    # PreTrainedModel,
     Trainer,
     TrainingArguments,
 )
@@ -364,8 +363,7 @@ class SFTPipeline(AbstractSFTPipeline):
     """
     A class that initializes a model, fine-tuning.
     """
-
-    _model: Any  # PreTrainedModel | PeftModel | PeftMixedModel
+    _model: Any
 
     def __init__(self, model_name: str, dataset: Dataset, sft_params: SFTParams) -> None:
         """
