@@ -5,20 +5,20 @@ Fine-tuning Large Language Models for a downstream task.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, duplicate-code, unused-argument, too-many-arguments
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
 import pandas as pd
 import torch
 from datasets import load_dataset
 from evaluate import load
 from pandas import DataFrame
-from peft import get_peft_model, LoraConfig, PeftMixedModel, PeftModel
+from peft import get_peft_model, LoraConfig  # PeftMixedModel, PeftModel
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
-    PreTrainedModel,
+    # PreTrainedModel,
     Trainer,
     TrainingArguments,
 )
@@ -365,7 +365,7 @@ class SFTPipeline(AbstractSFTPipeline):
     A class that initializes a model, fine-tuning.
     """
 
-    _model: PreTrainedModel | PeftModel | PeftMixedModel
+    _model: Any  # PreTrainedModel | PeftModel | PeftMixedModel
 
     def __init__(self, model_name: str, dataset: Dataset, sft_params: SFTParams) -> None:
         """
