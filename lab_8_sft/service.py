@@ -2,6 +2,7 @@
 Web service for model inference.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
+
 from typing import Any
 from lab_8_sft.main import LLMPipeline
 
