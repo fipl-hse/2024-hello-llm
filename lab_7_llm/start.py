@@ -44,6 +44,8 @@ def main() -> None:
                            preprocessed_dataset,
                            max_length, batch_size, device)
     _model_params = pipeline.analyze_model()
+    print(_model_params)
+    raise Exception
 
     sample = preprocessed_dataset[random.randint(0, len(preprocessed_dataset) - 1)]
     _sample_prediction = pipeline.infer_sample(sample)
