@@ -81,17 +81,17 @@ def main() -> None:
     set_seed(42)
 
     sft_parameters = SFTParams(
-        max_length = max_length,
-        batch_size = sft_batch_size,
-        max_fine_tuning_steps = max_fine_tuning_steps,
-        device = device,
-        finetuned_model_path = finetuned_model_path,
-        learning_rate = learning_rate,
-        target_modules = target_modules
+        max_length=max_length,
+        batch_size=sft_batch_size,
+        max_fine_tuning_steps=max_fine_tuning_steps,
+        device=device,
+        finetuned_model_path=str(finetuned_model_path),
+        learning_rate=learning_rate,
+        target_modules=target_modules
     )
     tokenized_dataset = TokenizedTaskDataset(
         data_preprocessor.data.loc[
-            num_samples : num_samples + batch_size * max_fine_tuning_steps
+            num_samples : num_samples + sft_batch_size * max_fine_tuning_steps
         ],
         AutoTokenizer.from_pretrained(settings.parameters.model),
         max_length
@@ -103,7 +103,7 @@ def main() -> None:
     # 4. Fine-tuned model inference
     test_dataset = TaskDataset(data_preprocessor.data.head(num_samples))
     llm_pipeline_finetuned = LLMPipeline(
-        finetuned_model_path.absolute().name,
+        str(finetuned_model_path),
         test_dataset,
         max_length, batch_size, device
     )
