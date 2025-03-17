@@ -210,7 +210,7 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        return self._data.loc[index]
+        return dict(self._data.loc[index])
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -330,7 +330,9 @@ class LLMPipeline(AbstractLLMPipeline):
 
         outputs = self._model.generate(**tokens,  max_length=self._max_length)
 
-        return self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        decoded_seq = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        decoded_seq: list
+        return decoded_seq
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -396,14 +398,17 @@ class SFTPipeline(AbstractSFTPipeline):
             lora_dropout=0.1,
             target_modules=sft_params.target_modules
         )
-        self._model = get_peft_model(pretrained_model, self._lora_config).to(sft_params.device)
+        self._model: Module = get_peft_model(
+            pretrained_model,
+            self._lora_config
+        ).to(sft_params.device)
 
-        self._batch_size = sft_params.batch_size
-        self._max_length = sft_params.max_length
-        self._max_sft_steps = sft_params.max_fine_tuning_steps
-        self._device = sft_params.device
-        self._finetuned_model_path = sft_params.finetuned_model_path
-        self._learning_rate = sft_params.learning_rate
+        self._batch_size: int = sft_params.batch_size
+        self._max_length: int = sft_params.max_length
+        self._max_sft_steps: int = sft_params.max_fine_tuning_steps
+        self._device: str = sft_params.device
+        self._finetuned_model_path: Path = sft_params.finetuned_model_path
+        self._learning_rate: float = sft_params.learning_rate
 
     def run(self) -> None:
         """
@@ -411,7 +416,7 @@ class SFTPipeline(AbstractSFTPipeline):
         """
 
         training_args = TrainingArguments(
-            output_dir=self._finetuned_model_path,
+            output_dir=str(self._finetuned_model_path),
             max_steps=self._max_sft_steps,
             per_device_train_batch_size=self._batch_size,
             learning_rate=self._learning_rate,

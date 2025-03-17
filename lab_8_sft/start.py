@@ -90,7 +90,7 @@ def main() -> None:
         batch_size=sft_batch_size,
         max_fine_tuning_steps=max_fine_tuning_steps,
         device=device,
-        finetuned_model_path=str(finetuned_model_path),
+        finetuned_model_path=finetuned_model_path,
         learning_rate=learning_rate,
         target_modules=target_modules
     )
