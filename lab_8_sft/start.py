@@ -74,7 +74,7 @@ def main() -> None:
     max_fine_tuning_steps = 300
     device = 'cpu'
     finetuned_model_path = Path(__file__).parent / 'dist' / f'{settings.parameters.model}-finetuned'
-    learning_rate = 1e-3
+    learning_rate = 2e-3
     target_modules = [
         "k_proj",
         "v_proj",
