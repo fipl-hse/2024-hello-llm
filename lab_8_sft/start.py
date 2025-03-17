@@ -70,12 +70,17 @@ def main() -> None:
     ## Fine-tuning constants
     max_length = 120
     batch_size = 64
-    sft_batch_size=3
-    max_fine_tuning_steps = 50
+    sft_batch_size = 3
+    max_fine_tuning_steps = 300
     device = 'cpu'
     finetuned_model_path = Path(__file__).parent / 'dist' / f'{settings.parameters.model}-finetuned'
     learning_rate = 1e-3
-    target_modules = ["k_proj", "v_proj", "q_proj", "out_proj"]
+    target_modules = [
+        "k_proj",
+        "v_proj",
+        "q_proj",
+        "out_proj"
+    ]
     num_samples = 10
 
     set_seed(42)
@@ -124,6 +129,11 @@ def main() -> None:
                               settings.parameters.metrics)
     evaluation_result_finetuned = evaluator.run()
     print(f'Fine-tuning result: {evaluation_result_finetuned}')
+
+    # "Helsinki-NLP/opus-mt-en-fr": {
+    #     "enimai/MuST-C-fr": {
+    #         "bleu": 0.45020
+    #     }
 
     result = evaluation_result_finetuned
     assert result is not None, "Finetuning does not work correctly"
