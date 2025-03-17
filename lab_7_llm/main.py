@@ -4,8 +4,19 @@ Laboratory work. no meow I hate pycharm so much and venv is the worst ting to ex
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+import pandas as pd
+import torch
+from pandas import DataFrame
 from pathlib import Path
 from typing import Iterable, Sequence
+from torch.utils.data import Dataset
+from datasets import load_dataset
+from core_utils.llm.llm_pipeline import AbstractLLMPipeline
+from core_utils.llm.metrics import Metrics
+from core_utils.llm.raw_data_importer import AbstractRawDataImporter
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.task_evaluator import AbstractTaskEvaluator
+from core_utils.llm.time_decorator import report_time
 
 
 class RawDataImporter(AbstractRawDataImporter):
@@ -21,6 +32,9 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
+        self._raw_data = load_dataset(self._hf_name, split='validation').to_pandas()
+        if not isinstance(self._raw_data, pd.DataFrame):
+            raise TypeError('downloaded dataset is not pd.DataFrame')
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -35,6 +49,13 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
+        key_properties = {'dataset_number_of_samples': len(self._raw_data.index),
+                          'dataset_columns': len(self._raw_data.columns),
+                          'dataset_duplicates': self._raw_data.duplicated().sum(),
+                          'dataset_empty_rows': self._raw_data.isnull().sum(),
+                          'dataset_sample_min_len': self._raw_data.dropna().min(),
+                          'dataset_sample_max_len': self._raw_data.dropna().max()}
+        return key_properties
 
     @report_time
     def transform(self) -> None:
