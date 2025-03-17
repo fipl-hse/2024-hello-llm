@@ -16,10 +16,7 @@ from peft import get_peft_model, LoraConfig
 from torch.nn import Module
 from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
-from transformers import (AutoTokenizer,
-                          MarianMTModel,
-                          TrainingArguments,
-                          Trainer)
+from transformers import AutoTokenizer, MarianMTModel, Trainer, TrainingArguments
 
 from config.lab_settings import SFTParams
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
