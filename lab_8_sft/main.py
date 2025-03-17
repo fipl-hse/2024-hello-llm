@@ -210,7 +210,8 @@ class TokenizedTaskDataset(Dataset):
         Returns:
             dict[str, torch.Tensor]: An element from the dataset
         """
-        return dict(self._data.loc[index])
+        item: dict = self._data.loc[index]
+        return item
 
 
 class LLMPipeline(AbstractLLMPipeline):
@@ -330,8 +331,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         outputs = self._model.generate(**tokens,  max_length=self._max_length)
 
-        decoded_seq = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        decoded_seq: list
+        decoded_seq: list = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)
         return decoded_seq
 
 
