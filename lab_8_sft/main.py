@@ -12,7 +12,7 @@ class RawDataImporter(AbstractRawDataImporter):
     """
     Custom implementation of data importer.
     """
-
+    pass
     @report_time
     def obtain(self) -> None:
         """
