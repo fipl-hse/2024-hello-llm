@@ -14,7 +14,7 @@ from datasets import load_dataset
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
 from core_utils.llm.raw_data_importer import AbstractRawDataImporter
-from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor
+from core_utils.llm.raw_data_preprocessor import AbstractRawDataPreprocessor, ColumnNames
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
@@ -32,7 +32,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        self._raw_data = load_dataset(self._hf_name, split='validation').to_pandas()
+        self._raw_data = load_dataset(self._hf_name).to_pandas()
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError('downloaded dataset is not pd.DataFrame')
 
@@ -62,7 +62,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-
+        self._data = self._raw_data.copy()
+        self._data.drop(["id"],axis=1, inplace=True)
+        self._data.rename(columns={
+            'label': ColumnNames.TARGET.value,
+            'comment_text': ColumnNames.SOURCE.value}, inplace=True).reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
