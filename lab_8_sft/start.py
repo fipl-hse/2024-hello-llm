@@ -47,24 +47,24 @@ def main() -> None:
     data_preprocessor.transform()
 
     # # 2. Pre-trained model inference
-    # preprocessed_dataset = TaskDataset(data_preprocessor.data.head(100))
-    # pipeline = LLMPipeline(settings.parameters.model,
-    #                        preprocessed_dataset,
-    #                        max_length, batch_size, device)
-    # _model_params = pipeline.analyze_model()
-    #
-    # sample = preprocessed_dataset[random.randint(0, len(preprocessed_dataset) - 1)]
-    # _sample_prediction = pipeline.infer_sample(sample)
-    #
-    # dataset_predictions = pipeline.infer_dataset()
-    #
-    # predictions_path.parent.mkdir(parents=True, exist_ok=True)
-    # dataset_predictions.to_csv(predictions_path)
-    #
-    # evaluator = TaskEvaluator(predictions_path,
-    #                           settings.parameters.metrics)
-    # evaluation_result = evaluator.run()
-    # print(f'Inference result: {evaluation_result}')
+    preprocessed_dataset = TaskDataset(data_preprocessor.data.head(100))
+    pipeline = LLMPipeline(settings.parameters.model,
+                           preprocessed_dataset,
+                           max_length, batch_size, device)
+    _model_params = pipeline.analyze_model()
+
+    sample = preprocessed_dataset[random.randint(0, len(preprocessed_dataset) - 1)]
+    _sample_prediction = pipeline.infer_sample(sample)
+
+    dataset_predictions = pipeline.infer_dataset()
+
+    predictions_path.parent.mkdir(parents=True, exist_ok=True)
+    dataset_predictions.to_csv(predictions_path)
+
+    evaluator = TaskEvaluator(predictions_path,
+                              settings.parameters.metrics)
+    evaluation_result = evaluator.run()
+    print(f'Inference result: {evaluation_result}')
 
     # 3. Fine-tuning
     ## Fine-tuning constants
@@ -129,11 +129,6 @@ def main() -> None:
                               settings.parameters.metrics)
     evaluation_result_finetuned = evaluator.run()
     print(f'Fine-tuning result: {evaluation_result_finetuned}')
-
-    # "Helsinki-NLP/opus-mt-en-fr": {
-    #     "enimai/MuST-C-fr": {
-    #         "bleu": 0.45020
-    #     }
 
     result = evaluation_result_finetuned
     assert result is not None, "Finetuning does not work correctly"

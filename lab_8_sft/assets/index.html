@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English-French translation</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+</head>
+<body>
+    <h1>Enter the text in English below to translate it to French</h1>
+
+    <form id="textForm">
+        <label for="textInput">Enter text for translation:</label><br>
+        <textarea id="textInput" name="text" rows="5" cols="70"></textarea><br>
+        <input type="checkbox" id="checkboxInput">
+        <label for="checkboxInput">Use base model (without fine-tuning)</label><br>
+        <button id="buttonInput" type="button">Translate</button><br><br>
+    </form>
+
+    <form id="predictionForm">
+        <label for="predictionForm">Your result:</label><br>
+        <div id="result"></div>
+    </form>
+    <script src="{{ url_for('static', path='/main.js') }}"></script>
+</body>
+</html>
