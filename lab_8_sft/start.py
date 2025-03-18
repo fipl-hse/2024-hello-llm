@@ -65,6 +65,7 @@ def main() -> None:
     pipeline = LLMPipeline(str(predictions_path / settings.parameters.model),
                            TaskDataset(preprocessor.data.head(10)), batch_size=64,
                            max_length=120, device='cpu')
+
     print(pipeline.analyze_model())
     pipeline.infer_dataset().to_csv(predictions_path / 'SFT-predictions.csv', index=False)
     evaluator = TaskEvaluator(predictions_path / 'SFT-predictions.csv', settings.parameters.metrics)
