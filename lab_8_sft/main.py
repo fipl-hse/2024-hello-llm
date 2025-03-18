@@ -79,7 +79,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.rename(columns={'label': ColumnNames.TARGET.value}).replace({0: 1, 1: 0})
+        self._data = self._raw_data.rename(
+            columns={'label': ColumnNames.TARGET.value}).replace({0: 1, 1: 0})
         self._data = self._data.dropna().drop_duplicates()
         self._data.reset_index(drop=True, inplace=True)
 
@@ -363,6 +364,11 @@ class SFTPipeline(AbstractSFTPipeline):
         """
         Fine-tune model.
         """
+        if (self._batch_size is None or self._finetuned_model_path is None or
+                self._learning_rate is None or self._max_sft_steps is None or
+                self._lora_config is None):
+            return
+
         model = get_peft_model(self._model, self._lora_config)
         training_args = TrainingArguments(output_dir=str(self._finetuned_model_path),
                                           max_steps=self._max_sft_steps,
