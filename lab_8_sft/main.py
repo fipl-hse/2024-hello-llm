@@ -56,7 +56,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: dataset key properties.
         """
-        lens = self._raw_data['summary'].map(len, na_action='ignore')
+        lens = self._raw_data['article_content'].map(len, na_action='ignore')
         data_no_na = self._raw_data.replace('', np.nan).dropna()
         analysis = {
             'dataset_number_of_samples': len(self._raw_data),
@@ -77,7 +77,6 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         self._data.drop(['title', 'date', 'url'], axis=1, inplace=True)
         self._data.rename(columns={'article_content': ColumnNames.SOURCE, 'summary': ColumnNames.TARGET},
                           inplace=True)
-        self._data.drop_duplicates(inplace=True)
         self._data.reset_index(inplace=True)
 
 
@@ -200,8 +199,7 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model.eval()
-        self._model.to(self._device)
+        self._model.to(self._device).eval()
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
