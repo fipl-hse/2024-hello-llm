@@ -280,16 +280,12 @@ class LLMPipeline(AbstractLLMPipeline):
         if not self._model:
             raise ValueError('Model is not defined')
         tokens = self._tokenizer(list(sample_batch[0]),
+                                 max_length=self._max_length,
                                  return_tensors='pt',
                                  padding=True,
-                                 truncation=True)
-        output = self._model.generate(
-            input_ids=tokens['input_ids'].to(self._device),
-            attention_mask=tokens['attention_mask'].to(self._device),
-            max_length=self._max_length
-        )
-        output_seqs = self._tokenizer.batch_decode(output,
-                                                   skip_special_tokens=True)
+                                 truncation=True).to(self._device)
+        output = self._model.generate(**tokens, max_length=self._max_length)
+        output_seqs = self._tokenizer.batch_decode(output, skip_special_tokens=True)
         return [str(seq) for seq in output_seqs]
 
 
