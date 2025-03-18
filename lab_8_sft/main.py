@@ -114,7 +114,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        return (self._data[ColumnNames.SOURCE].iloc[index],)
+        return (str(self._data[ColumnNames.SOURCE].iloc[index]),)
 
     @property
     def data(self) -> pd.DataFrame:
@@ -260,7 +260,10 @@ class LLMPipeline(AbstractLLMPipeline):
             pd.DataFrame: Data with predictions
         """
         dataloader = DataLoader(self._dataset, self._batch_size)
-        preds = sum([self._infer_batch(batch) for batch in dataloader], [])
+        preds = []
+        for batch in dataloader:
+            pred = self._infer_batch(batch)
+            preds.extend(pred)
         return pd.DataFrame({ColumnNames.TARGET.value: self._dataset.data[ColumnNames.TARGET],
                              ColumnNames.PREDICTION.value: preds})
 
