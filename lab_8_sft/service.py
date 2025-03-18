@@ -39,14 +39,15 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     device = 'cpu'
     settings_path = Path(__file__).parent / 'settings.json'
     settings = LabSettings(settings_path)
-    finetuned_model_path = Path(__file__).parent / 'dist' / f'{settings.parameters.model}-finetuned'
+    # finetuned_model_path = Path(__file__).parent / 'dist' / f'{settings.parameters.model}-finetuned'
+    finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
     empty_dataset = TaskDataset(pd.DataFrame())
 
     fastapi_app = FastAPI()
     fastapi_app.mount('/static',
                       StaticFiles(directory=f'{Path(__file__).parent}/assets'), name='static')
 
-    pre_trained_pipeline = LLMPipeline(
+    pre_trained = LLMPipeline(
         settings.parameters.model,
         empty_dataset,
         max_length,
@@ -54,7 +55,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         device
     )
 
-    fine_tuned_pipeline = LLMPipeline(
+    fine_tuned = LLMPipeline(
         str(finetuned_model_path),
         empty_dataset,
         max_length,
@@ -62,7 +63,7 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         device
     )
 
-    return fastapi_app, pre_trained_pipeline, fine_tuned_pipeline
+    return fastapi_app, pre_trained, fine_tuned
 
 app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
 
