@@ -73,8 +73,8 @@ def main() -> None:
     sft_batch_size = 3
     max_fine_tuning_steps = 300
     device = 'cpu'
-    # finetuned_model_path = Path(__file__).parent / 'dist' / f'{settings.parameters.model}-finetuned'
-    finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
+    finetuned_model_path = (Path(__file__).parent / 'dist'
+                            / f'{settings.parameters.model}-finetuned')
     learning_rate = 4e-3
     target_modules = [
         "k_proj",

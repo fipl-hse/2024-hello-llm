@@ -14,6 +14,7 @@ from pydantic.dataclasses import dataclass
 
 from config.lab_settings import LabSettings
 from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
 
 @dataclass
@@ -39,8 +40,8 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     device = 'cpu'
     settings_path = Path(__file__).parent / 'settings.json'
     settings = LabSettings(settings_path)
-    # finetuned_model_path = Path(__file__).parent / 'dist' / f'{settings.parameters.model}-finetuned'
-    finetuned_model_path = Path(__file__).parent / 'dist' / settings.parameters.model
+    finetuned_model_path = (Path(__file__).parent / 'dist' /
+                            f'{settings.parameters.model}-finetuned')
     empty_dataset = TaskDataset(pd.DataFrame())
 
     fastapi_app = FastAPI()
@@ -54,6 +55,9 @@ def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
         batch_size,
         device
     )
+
+    if not finetuned_model_path.exists():
+        main()
 
     fine_tuned = LLMPipeline(
         str(finetuned_model_path),
