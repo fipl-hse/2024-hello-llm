@@ -1,8 +1,8 @@
 {
   "parameters": {
-    "model": "",
-    "dataset": "",
-    "metrics": []
+    "model": "stevhliu/my_awesome_billsum_model",
+    "dataset": "d0rj/curation-corpus-ru",
+    "metrics": ["bleu", "rouge"]
   },
-  "target_score": 0
+  "target_score": 6
 }
