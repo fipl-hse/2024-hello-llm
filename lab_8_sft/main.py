@@ -199,7 +199,8 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
 
         self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self._model.to(self._device).eval()
+        self._model.eval()
+        self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
@@ -283,8 +284,8 @@ class LLMPipeline(AbstractLLMPipeline):
                                  padding=True,
                                  truncation=True)
         output = self._model.generate(
-            input_ids=tokens['input_ids'],
-            attention_mask=tokens['attention_mask'],
+            input_ids=tokens['input_ids'].to(self._device),
+            attention_mask=tokens['attention_mask'].to(self._device),
             max_length=self._max_length
         )
         output_seqs = self._tokenizer.batch_decode(output,
@@ -320,8 +321,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric in self.metrics:
             metric = str(metric)
             result = load(metric, seed=77).compute(
-                predictions=target2pred[ColumnNames.TARGET.value],
-                references=target2pred[ColumnNames.PREDICTION.value]
+                predictions=target2pred[ColumnNames.PREDICTION.value],
+                references=target2pred[ColumnNames.TARGET.value]
             )
             if metric == Metrics.ROUGE.value:
                 results[metric] = result['rougeL']
