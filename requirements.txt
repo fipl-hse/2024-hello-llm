@@ -1,13 +1,9 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-datasets == 2.14.6
+datasets == 3.2.0
 evaluate == 0.4.0
-fastapi == 0.115.11
-numpy == 1.26.4
 pandas == 2.2.3
-python-dateutil == 2.9.0
-pytz == 2025.1
+scikit-learn==1.6.1
 torch==2.5.1
 torchinfo == 1.8.0
 transformers == 4.49.0
-tzdata == 2025.1
 
