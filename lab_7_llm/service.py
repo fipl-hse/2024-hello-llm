@@ -17,6 +17,7 @@ from lab_8_sft.start import main
 
 LAB_FOLDER = Path(__file__).parent
 
+
 @dataclass
 class Query:
     """
