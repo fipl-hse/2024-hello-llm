@@ -55,11 +55,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
         key_properties = {'dataset_number_of_samples': self._raw_data.shape[0],
-                        'dataset_columns': self._raw_data.shape[1],
-                        'dataset_duplicates': self._raw_data.duplicated().sum(),
-                        'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
-                        'dataset_sample_min_len': self._raw_data['comment_text'].dropna().str.len().min(),
-                        'dataset_sample_max_len': self._raw_data['comment_text'].dropna().str.len().max()}
+                'dataset_columns': self._raw_data.shape[1],
+                'dataset_duplicates': self._raw_data.duplicated().sum(),
+                'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
+                'dataset_sample_min_len': self._raw_data['comment_text'].dropna().str.len().min(),
+                'dataset_sample_max_len': self._raw_data['comment_text'].dropna().str.len().max()}
         return key_properties
 
     @report_time
