@@ -10,8 +10,9 @@ from typing import Iterable, Sequence
 import datasets
 import pandas as pd
 import torch
+from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -75,7 +76,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             columns={'comment': ColumnNames.SOURCE.value,
                      'toxic': ColumnNames.TARGET.value})
 
-        self._data.drop_duplicates().reset_index(drop=True, inplace=True)
+        self._data.drop_duplicates().reset_index(drop=True)
         mapping = {'true': 1, 'false': 0}
         self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(mapping)
 
@@ -146,7 +147,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self._model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+        self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
     def analyze_model(self) -> dict:
         """
@@ -155,7 +156,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-
         embeddings_length = self._model.config.max_position_embeddings
         dummy_input = torch.ones(1, embeddings_length, dtype=torch.long)
         input_data = {"input_ids": dummy_input, "attention_mask": dummy_input}
@@ -186,7 +186,7 @@ class LLMPipeline(AbstractLLMPipeline):
             str | None: A prediction
         """
 
-        return self._infer_batch((sample,))[0]
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -214,8 +214,8 @@ class LLMPipeline(AbstractLLMPipeline):
                                  max_length=self._max_length,
                                  return_tensors="pt")
 
-        outputs = self._model(**inputs).logits
-        predictions = [str(prediction.item()) for prediction in list(torch.argmax(outputs, dim=1))]
+        outputs = self._model(**inputs)
+        predictions = [str(prediction.item()) for prediction in list(torch.argmax(outputs.logits, dim=1))]
         return predictions
 
 
