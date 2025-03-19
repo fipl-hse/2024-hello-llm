@@ -221,6 +221,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        if self._model is None:
+            raise ValueError("Model is not initialized.")
+        
         inputs = self._tokenizer(sample_batch[0],
                                  padding=True,
                                  truncation=True,
