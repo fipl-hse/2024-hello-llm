@@ -2,7 +2,7 @@
 Web service for model inference.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, unused-import, assignment-from-no-return, duplicate-code
-from typing import Any
+from pathlib import Path
 
 import pandas as pd
 from fastapi import FastAPI, Request
@@ -16,6 +16,7 @@ from lab_8_sft.main import LLMPipeline, TaskDataset
 from lab_8_sft.start import main
 
 LAB_FOLDER = Path(__file__).parent
+
 
 @dataclass
 class Query:
