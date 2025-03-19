@@ -222,7 +222,6 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return model_properties
 
-
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
         """
