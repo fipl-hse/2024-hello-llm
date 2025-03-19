@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 from evaluate import load
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from torchinfo import summary
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -74,11 +74,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = self._raw_data.rename(
             columns={'comment': ColumnNames.SOURCE.value,
-                     'toxic': ColumnNames.TARGET.value})
+                     'toxic': ColumnNames.TARGET.value}).reset_index(drop=True)
 
-        self._data.drop_duplicates().reset_index(drop=True)
-        mapping = {'true': 1, 'false': 0}
-        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(mapping)
+        self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].replace(
+            {'true': 1, 'false': 0}).astype(int)
 
 
 class TaskDataset(Dataset):
@@ -196,6 +195,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_load = DataLoader(self._dataset, batch_size=self._batch_size)
+        predictions = []
+        for batch in data_load:
+            predictions.extend(self._infer_batch(batch))
+
+        data_with_predictions = pd.DataFrame(
+            {'target': self._dataset.data[ColumnNames.TARGET.value],
+             'prediction': pd.Series(predictions)})
+        return data_with_predictions
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -232,6 +240,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     @report_time
     def run(self) -> dict | None:
@@ -241,3 +251,15 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        predictions = pd.read_csv(self._data_path)
+        metric_scores = {}
+
+        for metric in self._metrics:
+            metric = Metrics[str(metric).upper()]
+            metric = load(metric.value)
+            scores = metric.compute(
+                references=predictions['target'].tolist(),
+                predictions=predictions['prediction'].tolist(), average='micro')
+            metric_scores[metric.name] = scores.get(metric.name)
+
+        return metric_scores
