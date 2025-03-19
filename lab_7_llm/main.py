@@ -255,9 +255,9 @@ class TaskEvaluator(AbstractTaskEvaluator):
         for metric in self._metrics:
             evaluator = evaluate.load(metric.value)
             score = evaluator.compute(
-                references=dataframe[ColumnNames.TARGET.value],
-                predictions=dataframe[ColumnNames.PREDICTION.value],
+                references=dataframe[ColumnNames.TARGET.value].tolist(),
+                predictions=dataframe[ColumnNames.PREDICTION.value].tolist(),
                 average=None
             )
-            metrics_scores[metric.value] = score[metric.value]
+            metrics_scores[metric.value] = score[metric.value][0]
         return metrics_scores
