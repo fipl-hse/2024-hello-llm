@@ -155,10 +155,16 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if self._model is None:
+            raise ValueError("Model is not initialized.")
+        
         embeddings_length = self._model.config.max_position_embeddings
         dummy_input = torch.ones(1, embeddings_length, dtype=torch.long)
         input_data = {"input_ids": dummy_input, "attention_mask": dummy_input}
-        model_summary = summary(model=self._model, input_data=input_data, device=self._device, verbose=False)
+        model_summary = summary(model=self._model,
+                                input_data=input_data,
+                                device=self._device,
+                                verbose=False)
 
         model_properties = {
             "input_shape": {'attention_mask': list(input_data['attention_mask'].shape),
@@ -223,7 +229,8 @@ class LLMPipeline(AbstractLLMPipeline):
                                  return_tensors="pt")
 
         outputs = self._model(**inputs)
-        predictions = [str(prediction.item()) for prediction in list(torch.argmax(outputs.logits, dim=1))]
+        predictions = [str(prediction.item()) for prediction in list(torch.argmax(outputs.logits,
+                                                                                  dim=1))]
         return predictions
 
 
