@@ -245,6 +245,15 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_load = DataLoader(self._dataset, batch_size=self._batch_size)
+        predictions = []
+        for batch in data_load:
+            predictions.extend(self._infer_batch(batch))
+
+        data_with_predictions = pd.DataFrame(
+            {'target': self._dataset.data[ColumnNames.TARGET.value],
+             'prediction': pd.Series(predictions)})
+        return data_with_predictions
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -283,6 +292,8 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(metrics)
+        self._data_path = data_path
 
     def run(self) -> dict | None:
         """
@@ -291,6 +302,24 @@ class TaskEvaluator(AbstractTaskEvaluator):
         Returns:
             dict | None: A dictionary containing information about the calculated metric
         """
+        predictions = pd.read_csv(self._data_path)
+        scores = {}
+
+        for metric in self._metrics:
+            if metric.value == 'rouge':
+                metric = load(metric.value, seed=77)
+            else:
+                metric = load(metric.value)
+
+            result = metric.compute(references=predictions['target'],
+                                    predictions=predictions['prediction'])
+
+            if metric.name == 'rouge':
+                scores['rouge'] = result.get('rougeL')
+            else:
+                scores[metric.name] = result.get(metric.name)
+
+        return scores
 
 
 class SFTPipeline(AbstractSFTPipeline):

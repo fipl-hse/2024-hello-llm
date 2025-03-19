@@ -2,7 +2,7 @@
   "parameters": {
     "model": "stevhliu/my_awesome_billsum_model",
     "dataset": "d0rj/curation-corpus-ru",
-    "metrics": []
+    "metrics": ["rouge", "bleu"]
   },
-  "target_score": 4
+  "target_score": 6
 }
