@@ -28,7 +28,7 @@ def main() -> None:
         raise TypeError('The downloaded dataset is not pd.DataFrame.')
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
-    key_properties = preprocessor.analyze()
+    preprocessor.analyze()
     preprocessor.transform()
 
     dataset = TaskDataset(preprocessor.data.head(100))

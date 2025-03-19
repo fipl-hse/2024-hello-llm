@@ -68,7 +68,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         # self._data = self._raw_data.copy()
-        self._data = self._raw_data.rename(columns={
+        self._data = self._raw_data.drop(['id'], axis=1).rename(columns={
             'label': ColumnNames.TARGET.value,
             'comment_text': ColumnNames.SOURCE.value}).reset_index(drop=True)
 
