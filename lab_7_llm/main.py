@@ -157,7 +157,7 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if self._model is None:
             raise ValueError("Model is not initialized.")
-        
+
         embeddings_length = self._model.config.max_position_embeddings
         dummy_input = torch.ones(1, embeddings_length, dtype=torch.long)
         input_data = {"input_ids": dummy_input, "attention_mask": dummy_input}
