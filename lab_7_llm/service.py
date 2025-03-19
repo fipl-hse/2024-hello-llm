@@ -12,10 +12,10 @@ from fastapi.templating import Jinja2Templates
 from pydantic.dataclasses import dataclass
 
 from config.lab_settings import LabSettings
-from lab_7_llm.main import LLMPipeline, TaskDataset
+from lab_8_sft.main import LLMPipeline, TaskDataset
+from lab_8_sft.start import main
 
-PARENT_DIRECTORY = Path(__file__).parent
-
+LAB_FOLDER = Path(__file__).parent
 
 @dataclass
 class Query:
@@ -26,20 +26,29 @@ class Query:
         question (str): User input text
     """
     question: str
+    is_base_model: bool
 
 
-def init_application() -> tuple[FastAPI, LLMPipeline]:
+def init_application() -> tuple[FastAPI, LLMPipeline, LLMPipeline]:
     """
     Initialize core application.
 
-    Run: uvicorn reference_service.server:app --reload
+
+    Run: uvicorn lab_8_sft.service:app --reload
 
     Returns:
-        tuple[fastapi.FastAPI, LLMPipeline]: instance of server and pipeline
+        tuple[fastapi.FastAPI, LLMPipeline, LLMPipeline]: instance of server and pipeline
     """
-    settings = LabSettings(PARENT_DIRECTORY / "settings.json")
+    settings = LabSettings(LAB_FOLDER / "settings.json")
 
-    llm_pipe = LLMPipeline(
+    llm_app = FastAPI()
+    llm_app.mount(
+        path="/assets",
+        app=StaticFiles(directory=LAB_FOLDER / "assets"),
+        name="assets"
+    )
+
+    pre_trained_llm_pipe = LLMPipeline(
         model_name=settings.parameters.model,
         dataset=TaskDataset(pd.DataFrame()),
         max_length=120,
@@ -47,17 +56,22 @@ def init_application() -> tuple[FastAPI, LLMPipeline]:
         device="cpu"
     )
 
-    llm_app = FastAPI()
-    llm_app.mount(
-        path="/assets",
-        app=StaticFiles(directory=PARENT_DIRECTORY / "assets"),
-        name="assets"
+    fine_tuned_model_path = LAB_FOLDER / "dist" / settings.parameters.model
+    if not fine_tuned_model_path.exists():
+        main()
+
+    fine_tuned_llm_pipe = LLMPipeline(
+        model_name=str(fine_tuned_model_path),
+        dataset=TaskDataset(pd.DataFrame()),
+        max_length=120,
+        batch_size=1,
+        device="cpu"
     )
 
-    return llm_app, llm_pipe
+    return llm_app, pre_trained_llm_pipe, fine_tuned_llm_pipe
 
 
-app, pipeline = init_application()
+app, pre_trained_pipeline, fine_tuned_pipeline = init_application()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -72,7 +86,7 @@ async def root(request: Request) -> HTMLResponse:
         HTMLResponse: The rendered HTML response containing the content of
         'index.html'.
     """
-    templates = Jinja2Templates(directory=PARENT_DIRECTORY / "assets")
+    templates = Jinja2Templates(directory=LAB_FOLDER / "assets")
     return templates.TemplateResponse('index.html', {'request': request})
 
 
@@ -87,4 +101,6 @@ async def infer(query: Query) -> dict[str, str]:
     Returns:
         dict[str, str]: Inference results as a dictionary.
     """
-    return {"infer": pipeline.infer_sample((query.question,))}
+    if query.is_base_model:
+        return {"infer": pre_trained_pipeline.infer_sample((query.question,))}
+    return {"infer": fine_tuned_pipeline.infer_sample((query.question,))}
