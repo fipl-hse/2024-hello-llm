@@ -141,6 +141,7 @@ class LLMPipeline(AbstractLLMPipeline):
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
+
     def analyze_model(self) -> dict:
         """
         Analyze model computing properties.
@@ -148,6 +149,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a torch.nn.Module instance.')
+
         tensor = torch.zeros(1, self._model.config.max_position_embeddings, dtype=torch.long)
         model_summary = summary(
             self._model,
