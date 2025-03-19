@@ -42,9 +42,8 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
-        dataset = datasets.load_dataset("RussianNLP/russian_super_glue", name=self._hf_name,
-                                        split='validation', trust_remote_code=True)
-        self._raw_data = pd.DataFrame(dataset)
+        self._raw_data = datasets.load_dataset("RussianNLP/russian_super_glue", name=self._hf_name,
+                                        split='validation', trust_remote_code=True).to_pandas()
 
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError("downloaded dataset is not pd.DataFrame.")
