@@ -12,7 +12,6 @@ import pandas as pd
 import torch
 from evaluate import load
 from pandas import DataFrame
-from peft import get_peft_model, LoraConfig
 from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
