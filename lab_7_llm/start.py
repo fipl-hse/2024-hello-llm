@@ -3,9 +3,9 @@ Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
 from pathlib import Path
+import pandas as pd
 from config.constants import PROJECT_ROOT
 from config.lab_settings import LabSettings
-import pandas as pd
 from core_utils.llm.time_decorator import report_time
 from lab_7_llm.main import (RawDataImporter, RawDataPreprocessor, TaskDataset,
                             LLMPipeline, TaskEvaluator)
@@ -33,7 +33,11 @@ def main() -> None:
 
     dataset = TaskDataset(preprocessor.data.head(100))
 
-    pipeline = LLMPipeline(settings.parameters.model, dataset, max_length = 120, batch_size = 1, device = 'cpu')
+    pipeline = LLMPipeline(settings.parameters.model,
+                           dataset,
+                           max_length = 120,
+                           batch_size = 1,
+                           device = 'cpu')
     pipeline.analyze_model()
     pipeline.infer_sample(dataset[0])
 

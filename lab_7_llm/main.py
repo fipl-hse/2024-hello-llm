@@ -4,13 +4,13 @@ Laboratory work. no meow I hate pycharm so much and venv is the worst ting to ex
 Working with Large Language Models.
 """
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
+from pathlib import Path
+from typing import Iterable, Sequence
 import evaluate
 import pandas as pd
 import torch
 from datasets import load_dataset
 from pandas import DataFrame
-from pathlib import Path
-from typing import Iterable, Sequence
 from torch.utils.data import Dataset, DataLoader
 from torchinfo import summary
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -53,11 +53,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: Dataset key properties
         """
         key_properties = {'dataset_number_of_samples': self._raw_data.shape[0],
-                          'dataset_columns': self._raw_data.shape[1],
-                          'dataset_duplicates': self._raw_data.duplicated().sum(),
-                          'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
-                          'dataset_sample_min_len': self._raw_data['comment_text'].dropna().str.len().min(),
-                          'dataset_sample_max_len': self._raw_data['comment_text'].dropna().str.len().max()}
+                        'dataset_columns': self._raw_data.shape[1],
+                        'dataset_duplicates': self._raw_data.duplicated().sum(),
+                        'dataset_empty_rows': self._raw_data.isnull().any(axis=1).sum(),
+                        'dataset_sample_min_len': self._raw_data['comment_text'].dropna().str.len().min(),
+                        'dataset_sample_max_len': self._raw_data['comment_text'].dropna().str.len().max()}
         return key_properties
 
     @report_time
@@ -152,7 +152,9 @@ class LLMPipeline(AbstractLLMPipeline):
             input_data={'attention_mask': tensor, 'input_ids': tensor},
             device='cpu'
         )
-        model_props = {'input_shape': {'attention_mask':list(tensor.size()), 'input_ids':list(tensor.size())},
+        model_props = {'input_shape':
+                           {'attention_mask':list(tensor.size()),
+                            'input_ids':list(tensor.size())},
                        'embedding_size': self._model.config.max_position_embeddings,
                        'output_shape': model_summary.summary_list[-1].output_size,
                        'num_trainable_params':model_summary.trainable_params,
