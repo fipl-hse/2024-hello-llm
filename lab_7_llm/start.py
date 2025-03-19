@@ -2,6 +2,7 @@
 Starter for demonstration of laboratory work.
 """
 # pylint: disable= too-many-locals, undefined-variable, unused-import
+
 from pathlib import Path
 import os
 
@@ -24,7 +25,7 @@ def main() -> None:
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
     analysis = preprocessor.analyze()
-    print(analysis)  # for mark 4
+    print(analysis)
 
     preprocessor.transform()
     dataset = TaskDataset(preprocessor.data.head(100))
