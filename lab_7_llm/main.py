@@ -147,7 +147,6 @@ class LLMPipeline(AbstractLLMPipeline):
         super().__init__(model_name, dataset, max_length, batch_size, device)
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model = AutoModelForSequenceClassification.from_pretrained(model_name)
-        self._model.eval()
 
     def analyze_model(self) -> dict:
         """
@@ -156,8 +155,8 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        if self._model is None:
-            raise ValueError("Model is not initialized.")
+        if not isinstance(self._model, torch.nn.Module):
+            raise TypeError('The model is not a Module model')
 
         embeddings_length = self._model.config.max_position_embeddings
         dummy_input = torch.ones(1, embeddings_length, dtype=torch.long)
