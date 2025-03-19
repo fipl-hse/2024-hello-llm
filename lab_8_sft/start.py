@@ -32,8 +32,11 @@ def main() -> None:
                            max_length=120,
                            batch_size=1,
                            device='cpu')
-    print(pipeline.analyze_model())
-    result = pipeline.infer_sample(dataset[0])
+    model_analysis = pipeline.analyze_model()
+    print(model_analysis)
+
+    sample = dataset[0]
+    result = pipeline.infer_sample(sample)
     print(result)
 
     assert result is not None, "Finetuning does not work correctly"

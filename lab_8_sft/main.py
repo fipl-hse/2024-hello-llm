@@ -58,11 +58,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             dict: dataset key properties.
         """
         properties = {'dataset_number_of_samples': len(self._raw_data),
-                          'dataset_columns': self._raw_data.shape[1],
-                          'dataset_duplicates': self._raw_data.duplicated().sum(),
-                          'dataset_empty_rows': self._raw_data.isna().sum().sum(),
-                          'dataset_sample_min_len': len(min(self._raw_data['article_content'], key=len)),
-                          'dataset_sample_max_len': len(max(self._raw_data['article_content'], key=len))}
+                      'dataset_columns': self._raw_data.shape[1],
+                      'dataset_duplicates': self._raw_data.duplicated().sum(),
+                      'dataset_empty_rows': self._raw_data.isna().sum().sum(),
+                      'dataset_sample_min_len': len(min(self._raw_data['article_content'], key=len)),
+                      'dataset_sample_max_len': len(max(self._raw_data['article_content'], key=len))}
 
         return properties
 
@@ -110,8 +110,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        item = (self._data.loc[index, ColumnNames.SOURCE.value])
-        return item
+        return ((self._data.loc[index, ColumnNames.SOURCE.value]),)
 
     @property
     def data(self) -> DataFrame:
@@ -196,8 +195,10 @@ class LLMPipeline(AbstractLLMPipeline):
             device (str): The device for inference.
         """
         super().__init__(model_name, dataset, max_length, batch_size, device)
-        self.tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(self._model_name)
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self._model.to(self._device).eval()
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                        model_max_length=max_length)
 
     def analyze_model(self) -> dict:
         """
@@ -206,14 +207,9 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        dummy_inputs = torch.ones((1,
-                                   self._model.config.d_model),
-                                  dtype=torch.long)
-
-        input_data = {"input_ids": dummy_inputs,
-                      "decoder_input_ids": dummy_inputs}
-
-        model_summary = summary(self._model, input_data=input_data, device=self._device, verbose=False)
+        input_ids = torch.ones((1, self._model.config.d_model), dtype=torch.long, device=self._device)
+        input_data = {"input_ids": input_ids, "decoder_input_ids": input_ids}
+        model_summary = summary(self._model, input_data=input_data, verbose=0)
 
         model_properties = {
             "input_shape": list(model_summary.input_size["input_ids"]),
@@ -227,6 +223,7 @@ class LLMPipeline(AbstractLLMPipeline):
 
         return model_properties
 
+
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
         """
@@ -238,7 +235,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-        return self._infer_batch((sample,))[0]
+        return self._infer_batch([sample])[0]
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -260,16 +257,17 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: model predictions as strings
         """
-        tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        predictions = []
+        inputs = self._tokenizer(list(sample_batch[0]),
+                                 return_tensors="pt",
+                                 padding=True,
+                                 truncation=True)
 
-        tokens = tokenizer(sample_batch[0], max_length=120, padding=True,
-                           return_tensors='pt', truncation=True)
-        output = self._model.generate(**tokens)
-        result = tokenizer.batch_decode(output, skip_special_tokens=True)
-        predictions.extend(result)
+        output_ids = self._model.generate(**inputs, max_length=self._max_length)
 
-        return predictions
+        output_sequences = self._tokenizer.batch_decode(output_ids,
+                                                        skip_special_tokens=True)
+
+        return [str(seq) for seq in output_sequences]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
