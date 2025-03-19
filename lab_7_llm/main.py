@@ -72,7 +72,7 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        self._data = self._raw_data.rename(
+        self._data = self._raw_data.drop_duplicates().rename(
             columns={'comment': ColumnNames.SOURCE.value,
                      'toxic': ColumnNames.TARGET.value}).reset_index(drop=True)
 
@@ -190,7 +190,6 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             str | None: A prediction
         """
-
         return self._infer_batch([sample])[0]
 
     @report_time
@@ -226,11 +225,11 @@ class LLMPipeline(AbstractLLMPipeline):
                                  padding=True,
                                  truncation=True,
                                  max_length=self._max_length,
-                                 return_tensors="pt")
+                                 return_tensors="pt").to(self._device)
 
-        outputs = self._model(**inputs)
-        predictions = [str(prediction.item()) for prediction in list(torch.argmax(outputs.logits,
-                                                                                  dim=1))]
+        outputs = self._model(**inputs).logits
+        predictions = [str(prediction.argmax().item()) for prediction
+                       in outputs]
         return predictions
 
 
@@ -259,14 +258,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
             dict | None: A dictionary containing information about the calculated metric
         """
         predictions = pd.read_csv(self._data_path)
-        metric_scores = {}
-
+        evaluations = {}
         for metric in self._metrics:
-            metric = Metrics[str(metric).upper()]
             metric = load(metric.value)
-            scores = metric.compute(
-                references=predictions['target'].tolist(),
-                predictions=predictions['prediction'].tolist(), average='micro')
-            metric_scores[metric.name] = scores.get(metric.name)
+            evaluation = metric.compute(references=predictions['target'].tolist(),
+                                        predictions=predictions['prediction'].tolist(),
+                                        average='micro')
+            evaluations.update(dict(evaluation))
 
-        return metric_scores
+        return evaluations
