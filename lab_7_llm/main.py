@@ -223,7 +223,6 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if self._model is None:
             raise ValueError("Model is not initialized.")
-        
         inputs = self._tokenizer(sample_batch[0],
                                  padding=True,
                                  truncation=True,
