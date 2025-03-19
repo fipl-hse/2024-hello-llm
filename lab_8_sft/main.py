@@ -43,7 +43,7 @@ class RawDataImporter(AbstractRawDataImporter):
         Import dataset.
         """
         dataset = load_dataset(self._hf_name, split="validation")
-        self._raw_data = pd.DataFrame(dataset)
+        self._raw_data = dataset.to_pandas()
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):

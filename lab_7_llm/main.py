@@ -273,5 +273,4 @@ class TaskEvaluator(AbstractTaskEvaluator):
                                        references=data['target'].to_list())
             if metric.value in metric_dict:
                 calculated_metrics.update({metric.value: info[metric_dict[metric.value]]})
-        # calculated_metrics = dict(zip(calculated_metrics.keys(), (0.01410, 0.09541)))
         return calculated_metrics
